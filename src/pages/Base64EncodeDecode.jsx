@@ -18,10 +18,9 @@ export default function Base64EncodeDecode() {
   };
 
   return (
-    <div className="max-w-md mx-auto">
-      <h1 className="text-3xl font-bold mb-6 text-center text-blue-600">Base64 Encode/Decode</h1>
-
-      <div className="max-w-xl mx-auto bg-white p-6 rounded-lg shadow-md">
+    <div className="max-w-md">
+      <h1 className="text-3xl font-bold mb-6">Base64 Encoder/Decoder</h1>
+      <div className="max-w-xl mx-auto">
         <div className="mb-4">
           <label className="inline-flex items-center">
             <input

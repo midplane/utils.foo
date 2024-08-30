@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 
 const utilities = [
-  { name: 'Base64 Encoding/Decoding', path: '/base64' },
+  { name: 'Base64 convertor', description: 'Decode text between base64 representation', path: '/base64' },
   // Add more utilities here as we implement them
 ];
 
@@ -44,12 +44,16 @@ export default function Home() {
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {filteredUtilities.map((utility) => (
-          <Link
-            key={utility.path}
-            to={utility.path}
-            className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 flex items-center justify-center"
-          >
-            <h2 className="text-xl font-semibold text-center text-gray-800">{utility.name}</h2>
+          <Link to={utility.path} key={utility.name}>
+            <div class="relative flex items-center space-x-3 rounded-lg border border-gray-300 bg-white px-6 py-5 shadow-sm hover:border-gray-400">
+              <div class="min-w-0 flex-1">
+                <a href="#" class="focus:outline-none">
+                  <span class="absolute inset-0" aria-hidden="true"></span>
+                  <p class="text-sm font-medium text-gray-900">{utility.name}</p>
+                  <p class="truncate text-sm text-gray-500">{utility.description}</p>
+                </a>
+              </div>
+            </div>
           </Link>
         ))}
       </div>
