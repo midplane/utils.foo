@@ -17,7 +17,7 @@ function App() {
           <Route path="/base64" element={<Base64EncodeDecode />} />
           <Route path="/url" element={<URLEncodeDecode />} />
           <Route path="/hash" element={<HashGenerator />} />
-          <Route path="/json" element={<JSONFormatter />} />
+          <Route path="/json-format" element={<JSONFormatter />} />
         </Routes>
       </Layout>
     </Router>
