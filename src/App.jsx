@@ -4,6 +4,7 @@ import Home from './pages/Home';
 import Base64EncodeDecode from './pages/Base64EncodeDecode';
 import URLEncodeDecode from './pages/URLEncodeDecode';
 import HashGenerator from './pages/HashGenerator';
+import JSONFormatter from './pages/JSONFormatter';
 import Layout from './components/Layout';
 
 
@@ -16,6 +17,7 @@ function App() {
           <Route path="/base64" element={<Base64EncodeDecode />} />
           <Route path="/url" element={<URLEncodeDecode />} />
           <Route path="/hash" element={<HashGenerator />} />
+          <Route path="/json" element={<JSONFormatter />} />
         </Routes>
       </Layout>
     </Router>
