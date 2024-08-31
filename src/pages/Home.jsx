@@ -1,21 +1,22 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Search } from 'lucide-react';
+import SEO from '../SEO';
 
 const utilities = [
-  { 
+  {
     name: 'Base64 Text Encoder / Decoder',
     description: 'Encode and decode Base64 text data',
     path: '/base64',
     icon: '64'
   },
-  { 
+  {
     name: 'URL Encoder / Decoder',
     description: 'Encode and decode URLs',
     path: '/url',
     icon: '🔗'
   },
-  { 
+  {
     name: 'Hash Generator',
     description: 'Generate hash values for various algorithms',
     path: '/hash',
@@ -32,29 +33,36 @@ export default function Home() {
   );
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">      
+    <>
+      <SEO
+        title="utils.foo - online utility toolbox"
+        description="Free, simple, fast, and clint-side only utilities ."
+        keywords="online utilities, base64, encode, decode, web tools"
+      />
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
-      <div className="mb-8">
-        <div className="relative">
-          <input
-            type="text"
-            placeholder="Search utilities..."
-            className="w-full p-2 pl-10 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-          <Search className="absolute left-3 top-2.5 text-gray-400" size={20} />
+        <div className="mb-8">
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="Search utilities..."
+              className="w-full p-2 pl-10 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+            <Search className="absolute left-3 top-2.5 text-gray-400" size={20} />
+          </div>
+        </div>
+
+        <div className="mb-8">
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {filteredUtilities.map((utility) => (
+              <UtilityCard key={utility.name} utility={utility} />
+            ))}
+          </div>
         </div>
       </div>
-
-      <div className="mb-8">
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {filteredUtilities.map((utility) => (
-            <UtilityCard key={utility.name} utility={utility} />
-          ))}
-        </div>
-      </div>
-    </div>
+    </>
   );
 }
 
