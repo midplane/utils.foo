@@ -69,7 +69,7 @@ export default function HashGenerator() {
     const params = new URLSearchParams();
     if (input) params.set('input', input);
     params.set('algorithm', algorithm);
-    setSearchParams(params);
+    setSearchParams(params, { replace: true });
   };
 
   const handleInputChange = (e) => {

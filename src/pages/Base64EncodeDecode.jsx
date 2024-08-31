@@ -34,7 +34,7 @@ export default function Base64EncodeDecode() {
     const params = new URLSearchParams();
     if (input) params.set('input', input);
     params.set('mode', mode);
-    setSearchParams(params);
+    setSearchParams(params, { replace: true });
   };
 
   const handleInputChange = (e) => {
