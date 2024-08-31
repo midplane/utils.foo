@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Copy, X, Clipboard } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 
-export default function Base64EncodeDecode() {
+export default function URLEncodeDecode() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [input, setInput] = useState(searchParams.get('input') || '');
   const [output, setOutput] = useState('');
@@ -20,12 +20,12 @@ export default function Base64EncodeDecode() {
     }
 
     if (mode === 'encode') {
-      setOutput(btoa(input));
+      setOutput(encodeURIComponent(input));
     } else {
       try {
-        setOutput(atob(input));
+        setOutput(decodeURIComponent(input));
       } catch (error) {
-        setOutput('Error: Invalid Base64 input');
+        setOutput('Error: Invalid URL encoding');
       }
     }
   };
@@ -63,7 +63,7 @@ export default function Base64EncodeDecode() {
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
       <div className="mb-6">
-        <h1 className="text-3xl font-bold">Base64 Text Encoder / Decoder</h1>
+        <h1 className="text-3xl font-bold">URL Encoder / Decoder</h1>
       </div>
 
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
@@ -98,7 +98,7 @@ export default function Base64EncodeDecode() {
             className="w-full h-64 p-2 border border-gray-300 rounded-md resize-none"
             value={input}
             onChange={handleInputChange}
-            placeholder={mode === 'encode' ? 'Enter text to encode...' : 'Enter Base64 to decode...'}
+            placeholder={mode === 'encode' ? 'Enter URL to encode...' : 'Enter encoded URL to decode...'}
           />
         </div>
 
