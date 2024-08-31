@@ -22,7 +22,7 @@ const utilities = [
     path: '/hash',
     icon: '#️⃣'
   },
-  { name: 'JSON Formatter', description: 'Format and prettify JSON data', path: '/json' },
+  { name: 'JSON Formatter', description: 'Format and prettify JSON data', path: '/json', icon: '{}' },
   // Add more utilities here as we implement them
 ];
 

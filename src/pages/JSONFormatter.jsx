@@ -63,6 +63,7 @@ export default function JSONFormatter() {
             defaultLanguage="json"
             value={output}
             options={{ ...editorOptions, readOnly: true }}
+            className='mb-4 border pt-2'
           />
         </div>
       </div>
