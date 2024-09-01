@@ -6,10 +6,10 @@ export default function Layout({ children }) {
 
   return (
     <div className="flex flex-col min-h-screen">
-      <header className="bg-gray-800 text-white p-4">
+      <header className="bg-black text-white p-4">
         <nav aria-label="Global" className="mx-auto flex max-w-7xl items-center justify-between lg:px-8">
           <div className="flex flex-1"></div>
-          <Link to="/" className="text-2xl font-mono">utils.foo</Link>
+          <Link to="/" className="text-2xl font-mono text-gray-200">utils.foo</Link>
           <div className="flex flex-1 justify-end"></div>
         </nav>
       </header>
