@@ -135,13 +135,8 @@ export default function EpochConverter() {
       />
     <div className="max-w-2xl mx-auto px-4 py-8">
       <h1 className="text-3xl font-bold mb-6">Epoch Converter</h1>
-      
       <div className="mb-4">
-        <p className="font-semibold">Current epoch time (seconds): {currentEpoch}</p>
-      </div>
-      
-      <div className="mb-4">
-        <label className="block mb-2">Epoch time (seconds)</label>
+        <label className="block mb-2 text-sm font-medium leading-6 text-gray-900">Epoch time (seconds)</label>
         <input
           type="text"
           value={epochInput}
@@ -152,7 +147,7 @@ export default function EpochConverter() {
       </div>
       
       <div className="mb-4">
-        <label className="block mb-2">Human date ({localTimezone})</label>
+        <label className="block mb-2 text-sm font-medium leading-6 text-gray-900">Human date ({localTimezone})</label>
         <div className="flex space-x-2">
           <input name="year" value={humanDate.year} onChange={handleHumanDateChange} placeholder="YYYY" className="w-20 p-2 border border-gray-300 rounded" />
           <input name="month" value={humanDate.month} onChange={handleHumanDateChange} placeholder="MM" className="w-16 p-2 border border-gray-300 rounded" />
@@ -164,7 +159,7 @@ export default function EpochConverter() {
       </div>
       
       <div className="mt-8">
-        <div className="rounded border border-gray-300 p-4">
+        <div className="rounded border border-gray-300 p-4 text-sm leading-6 shadow-sm">
           <div className="grid grid-cols-2 gap-2">
             <p className="font-medium">Timestamp in milliseconds</p>
             <p className="text-right">{readableInfo.milliseconds}</p>
