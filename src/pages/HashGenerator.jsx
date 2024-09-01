@@ -96,7 +96,7 @@ export default function HashGenerator() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8">
+    <div className="max-w-2xl mx-auto px-4 py-8">
       <div className="mb-6">
         <h1 className="text-3xl font-bold">Hash Generator</h1>
       </div>

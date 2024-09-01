@@ -31,7 +31,7 @@ export default function PivotTable() {
   };
 
   return (
-    <div className="max-w-full mx-auto">
+    <div className="max-w-full mx-auto px-4">
       <h1 className="text-3xl font-bold mb-6">Pivot Table</h1>
       
       <div className="grid grid-cols-2 gap-4 mb-4">

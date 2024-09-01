@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 
 export default function Privacy() {
   return (
-    <div className="max-w-2xl mx-auto">
+    <div className="max-w-2xl mx-auto px-4 py-8">
       <h1 className="text-3xl font-bold mb-6">Privacy Policy</h1>
       <div className="space-y-6">
         <section>
