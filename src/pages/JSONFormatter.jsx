@@ -46,7 +46,7 @@ export default function JSONFormatter() {
             className='mb-4 border pt-2'
           />
           <button
-            className="mt-4 w-full bg-blue-500 text-white p-2 rounded-md hover:bg-blue-600 transition-colors duration-300"
+            className="mt-4 w-full bg-gray-800 text-white p-2 rounded-md hover:bg-blue-600 transition-colors duration-300"
             onClick={formatJSON}
           >
             Format JSON

@@ -4,6 +4,7 @@ import { Search } from 'lucide-react';
 import SEO from '../SEO';
 
 const utilities = [
+  { name: 'Epoch Converter', description: 'Convert between epoch time and human-readable date', path: '/epoch', icon: '⌛' },
   {
     name: 'Base64 Text Encoder / Decoder',
     description: 'Encode and decode Base64 text data',

@@ -5,6 +5,7 @@ import Base64EncodeDecode from './pages/Base64EncodeDecode';
 import URLEncodeDecode from './pages/URLEncodeDecode';
 import HashGenerator from './pages/HashGenerator';
 import JSONFormatter from './pages/JSONFormatter';
+import EpochConverter from './pages/EpochConverter';
 import Layout from './components/Layout';
 
 
@@ -18,6 +19,7 @@ function App() {
           <Route path="/url" element={<URLEncodeDecode />} />
           <Route path="/hash" element={<HashGenerator />} />
           <Route path="/json-format" element={<JSONFormatter />} />
+          <Route path="/epoch" element={<EpochConverter />} />
         </Routes>
       </Layout>
     </Router>
