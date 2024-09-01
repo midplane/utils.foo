@@ -7,7 +7,9 @@ import HashGenerator from './pages/HashGenerator';
 import JSONFormatter from './pages/JSONFormatter';
 import EpochConverter from './pages/EpochConverter';
 import PivotTable from './pages/PivotTable';
+import FAQ from './pages/FAQ';
 import Layout from './components/Layout';
+import Privacy from './pages/Privacy';
 
 
 function App() {
@@ -22,6 +24,8 @@ function App() {
           <Route path="/json-format" element={<JSONFormatter />} />
           <Route path="/epoch" element={<EpochConverter />} />
           <Route path="/pivot" element={<PivotTable />} />
+          <Route path="/faq" element={<FAQ />} />
+          <Route path="/privacy" element={<Privacy />} />
         </Routes>
       </Layout>
     </Router>
