@@ -24,7 +24,7 @@ const utilities = [
     icon: '#️⃣'
   },
   { name: 'JSON Formatter', description: 'Format and prettify JSON data', path: '/json-format', icon: '{}' },
-  { name: 'Pivot Table', description: 'Create pivot tables from CSV data', path: '/pivot', icon: '🛋️' },
+  { name: 'Pivot', description: 'Create pivot tables from CSV data', path: '/pivot', icon: '🛋️' },
   // Add more utilities here as we implement them
 ];
 
@@ -49,7 +49,7 @@ export default function Home() {
             <input
               type="text"
               placeholder="Search utilities..."
-              className="w-full bg-white p-2 pl-10 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full bg-white p-2 pl-10 border border-gray-300 rounded-md shadow-sm focus-within:ring-indigo-500 focus-within:ring-offset-2 hover:border-gray-400"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -72,9 +72,9 @@ export default function Home() {
 function UtilityCard({ utility }) {
   return (
     <Link to={utility.path} className="flex h-full">
-      <div className="flex flex-col w-full p-4 bg-white rounded-lg border border-gray-300 bg-white shadow-sm focus-within:ring-indigo-500 focus-within:ring-offset-2 hover:border-gray-400">
+      <div className="flex flex-col w-full p-4 bg-white rounded-md border border-gray-300 bg-white shadow-sm focus-within:ring-indigo-500 focus-within:ring-offset-2 hover:border-gray-400">
         <div className="flex items-center space-x-4 mb-4">
-          <div className="flex-shrink-0 w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center text-xl font-bold">
+          <div className="flex-shrink-0 w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center text-xl font-bold font-mono">
             {utility.icon}
           </div>
           <h3 className="text-lg font-medium text-gray-900">{utility.name}</h3>
