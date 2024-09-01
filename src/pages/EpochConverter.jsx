@@ -165,18 +165,17 @@ export default function EpochConverter() {
       
       <div className="mt-8">
         <div className="rounded border border-gray-300 p-4">
-          <h2 className="text-xl font-semibold mb-4">Timestamp Information</h2>
           <div className="grid grid-cols-2 gap-2">
-            <p className="font-medium">Timestamp in milliseconds:</p>
+            <p className="font-medium">Timestamp in milliseconds</p>
             <p className="text-right">{readableInfo.milliseconds}</p>
 
-            <p className="font-medium">Your time zone:</p>
+            <p className="font-medium">Your time zone</p>
             <p className="text-right">{readableInfo.localTime}</p>
             
-            <p className="font-medium">UTC:</p>
+            <p className="font-medium">UTC</p>
             <p className="text-right">{readableInfo.utcTime}</p>
             
-            <p className="font-medium">Relative:</p>
+            <p className="font-medium">Relative</p>
             <p className="text-right">{readableInfo.relative}</p>
           </div>
         </div>
