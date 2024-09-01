@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import SEO from '../SEO';
 
 export default function EpochConverter() {
   const [epochInput, setEpochInput] = useState('');
@@ -125,6 +126,13 @@ export default function EpochConverter() {
   };
 
   return (
+    <>
+    <SEO 
+        title="Epoch Converter | utils.foo"
+        description="Convert epoch/unix timestamps to human-readable dates and vice versa"
+        keywords="epoch convertor, time converter"
+        canonicalUrl="https://utils.foo/epoch"
+      />
     <div className="max-w-2xl mx-auto px-4 py-8">
       <h1 className="text-3xl font-bold mb-6">Epoch Converter</h1>
       
@@ -174,5 +182,6 @@ export default function EpochConverter() {
         </div>
       </div>
     </div>
+    </>
   );
 }

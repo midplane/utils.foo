@@ -11,7 +11,7 @@ export default function Layout({ children }) {
           <Link to="/" className="text-2xl font-bold">utils.foo</Link>
         </div>
       </header>
-      <main className="flex-grow container mx-auto py-8">
+      <main className="flex-grow container mx-auto py-8 px-4">
         {children}
       </main>
       <footer className="p-4 mt-8">

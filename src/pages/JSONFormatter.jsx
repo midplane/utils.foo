@@ -33,7 +33,7 @@ export default function JSONFormatter() {
   };
 
   return (
-    <div className="max-w-full mx-auto p-4">
+    <div className="max-w-full mx-auto">
       <h1 className="text-3xl font-bold mb-6">JSON Formatter</h1>
       <div className="flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-4">
         <div className="w-full md:w-1/2 flex flex-col">

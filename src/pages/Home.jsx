@@ -39,8 +39,8 @@ export default function Home() {
     <>
       <SEO
         title="utils.foo - online utility toolbox"
-        description="Free, simple, fast, and clint-side only utilities ."
-        keywords="online utilities, base64, encode, decode, web tools"
+        description="Free, simple, fast, and clint-side only utilities for developers"
+        keywords="base64 encoder, hash generator, json formatter, pivot table"
       />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
