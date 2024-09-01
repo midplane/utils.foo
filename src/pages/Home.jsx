@@ -24,6 +24,7 @@ const utilities = [
     icon: '#️⃣'
   },
   { name: 'JSON Formatter', description: 'Format and prettify JSON data', path: '/json-format', icon: '{}' },
+  { name: 'Pivot Table', description: 'Create pivot tables from CSV data', path: '/pivot', icon: '🛋️' },
   // Add more utilities here as we implement them
 ];
 

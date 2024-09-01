@@ -6,6 +6,7 @@ import URLEncodeDecode from './pages/URLEncodeDecode';
 import HashGenerator from './pages/HashGenerator';
 import JSONFormatter from './pages/JSONFormatter';
 import EpochConverter from './pages/EpochConverter';
+import PivotTable from './pages/PivotTable';
 import Layout from './components/Layout';
 
 
@@ -20,6 +21,7 @@ function App() {
           <Route path="/hash" element={<HashGenerator />} />
           <Route path="/json-format" element={<JSONFormatter />} />
           <Route path="/epoch" element={<EpochConverter />} />
+          <Route path="/pivot" element={<PivotTable />} />
         </Routes>
       </Layout>
     </Router>
