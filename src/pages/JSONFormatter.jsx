@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import Editor from '@monaco-editor/react';
+import SEO from '../SEO';
 
 export default function JSONFormatter() {
   const [input, setInput] = useState('');
@@ -33,40 +34,47 @@ export default function JSONFormatter() {
   };
 
   return (
-    <div className="max-w-full mx-auto">
-      <h1 className="text-3xl mb-6">JSON Formatter</h1>
-      <div className="flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-4">
-        <div className="w-full md:w-1/2 flex flex-col">
-          <Editor
-            height="500px"
-            defaultLanguage="json"
-            value={input}
-            onChange={handleEditorChange}
-            options={editorOptions}
-            className='mb-4 border pt-2'
-          />
-          <button
-            className="mt-4 w-full bg-gray-800 text-white p-2 rounded-md hover:bg-blue-600 transition-colors duration-300"
-            onClick={formatJSON}
-          >
-            Format JSON
-          </button>
-        </div>
-        <div className="w-full md:w-1/2">
-          {error && (
-            <div className="mb-4 p-2 bg-red-100 border border-red-400 text-red-700 rounded-md">
-              {error}
-            </div>
-          )}
-          <Editor
-            height="500px"
-            defaultLanguage="json"
-            value={output}
-            options={{ ...editorOptions, readOnly: true }}
-            className='mb-4 border pt-2'
-          />
+    <>
+      <SEO
+        title="JSON formatter | utils.foo"
+        description="format and prettify json client side"
+        keywords="json format, json beautify, json prettify"
+      />
+      <div className="max-w-full mx-auto">
+        <h1 className="text-3xl mb-6">JSON Formatter</h1>
+        <div className="flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-4">
+          <div className="w-full md:w-1/2 flex flex-col">
+            <Editor
+              height="500px"
+              defaultLanguage="json"
+              value={input}
+              onChange={handleEditorChange}
+              options={editorOptions}
+              className='mb-4 border pt-2'
+            />
+            <button
+              className="mt-4 w-full bg-gray-800 text-white p-2 rounded-md hover:bg-blue-600 transition-colors duration-300"
+              onClick={formatJSON}
+            >
+              Format JSON
+            </button>
+          </div>
+          <div className="w-full md:w-1/2">
+            {error && (
+              <div className="mb-4 p-2 bg-red-100 border border-red-400 text-red-700 rounded-md">
+                {error}
+              </div>
+            )}
+            <Editor
+              height="500px"
+              defaultLanguage="json"
+              value={output}
+              options={{ ...editorOptions, readOnly: true }}
+              className='mb-4 border pt-2'
+            />
+          </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }

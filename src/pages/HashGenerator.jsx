@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Copy, X, Clipboard } from 'lucide-react';
 import CryptoJS from 'crypto-js';
 import { useSearchParams } from 'react-router-dom';
+import SEO from '../SEO';
 
 const algorithms = [
   { name: 'MD5', value: 'MD5' },
@@ -96,61 +97,68 @@ export default function HashGenerator() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-4">
-      <div className="mb-6">
-        <h1 className="text-3xl pb-2 border-b">Hash Generator</h1>
-      </div>
-
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
-        <div className="flex items-center space-x-4">
-          <span>Algorithm</span>
-          <select
-            className="border border-gray-300 rounded-md p-1"
-            value={algorithm}
-            onChange={handleAlgorithmChange}
-          >
-            {algorithms.map((algo) => (
-              <option key={algo.value} value={algo.value}>{algo.name}</option>
-            ))}
-          </select>
+    <>
+      <SEO
+        title="Hash Generator | utils.foo"
+        description="generate hash via md5, sha-1, sha-256, sha-384, sha-512"
+        keywords="hash generator, md5, sha-1, sha-256, sha-384, sha-512"
+      />
+      <div className="max-w-4xl mx-auto px-4 py-4">
+        <div className="mb-6">
+          <h1 className="text-3xl pb-2 border-b">Hash Generator</h1>
         </div>
-      </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
-        <div>
-          <div className="flex justify-between items-center mb-2">
-            <h2 className="text-xl">Input</h2>
-            <div className="flex space-x-2">
-              <button className="p-1 text-gray-500 hover:text-blue-500" onClick={handlePaste} title="Paste">
-                <Clipboard size={20} />
-              </button>
-              <button className="p-1 text-gray-500 hover:text-red-500" onClick={handleClearInput} title="Clear">
-                <X size={20} />
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
+          <div className="flex items-center space-x-4">
+            <span>Algorithm</span>
+            <select
+              className="border border-gray-300 rounded-md p-1"
+              value={algorithm}
+              onChange={handleAlgorithmChange}
+            >
+              {algorithms.map((algo) => (
+                <option key={algo.value} value={algo.value}>{algo.name}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        <div className="grid gap-6 md:grid-cols-2">
+          <div>
+            <div className="flex justify-between items-center mb-2">
+              <h2 className="text-xl">Input</h2>
+              <div className="flex space-x-2">
+                <button className="p-1 text-gray-500 hover:text-blue-500" onClick={handlePaste} title="Paste">
+                  <Clipboard size={20} />
+                </button>
+                <button className="p-1 text-gray-500 hover:text-red-500" onClick={handleClearInput} title="Clear">
+                  <X size={20} />
+                </button>
+              </div>
+            </div>
+            <textarea
+              className="w-full h-64 p-2 border border-gray-300 rounded-md resize-none"
+              value={input}
+              onChange={handleInputChange}
+              placeholder="Enter text to hash..."
+            />
+          </div>
+
+          <div>
+            <div className="flex justify-between items-center mb-2">
+              <h2 className="text-xl">Output ({algorithms.find(a => a.value === algorithm).name})</h2>
+              <button className="p-1 text-gray-500 hover:text-blue-500" onClick={() => navigator.clipboard.writeText(output)} title="Copy">
+                <Copy size={20} />
               </button>
             </div>
+            <textarea
+              className="w-full h-64 p-2 border border-gray-300 rounded-md resize-none font-mono"
+              value={output}
+              readOnly
+            />
           </div>
-          <textarea
-            className="w-full h-64 p-2 border border-gray-300 rounded-md resize-none"
-            value={input}
-            onChange={handleInputChange}
-            placeholder="Enter text to hash..."
-          />
-        </div>
-
-        <div>
-          <div className="flex justify-between items-center mb-2">
-            <h2 className="text-xl">Output ({algorithms.find(a => a.value === algorithm).name})</h2>
-            <button className="p-1 text-gray-500 hover:text-blue-500" onClick={() => navigator.clipboard.writeText(output)} title="Copy">
-              <Copy size={20} />
-            </button>
-          </div>
-          <textarea
-            className="w-full h-64 p-2 border border-gray-300 rounded-md resize-none font-mono"
-            value={output}
-            readOnly
-          />
         </div>
       </div>
-    </div>
+    </>
   );
 }

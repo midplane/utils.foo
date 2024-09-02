@@ -131,7 +131,6 @@ export default function EpochConverter() {
         title="Epoch Converter | utils.foo"
         description="Convert epoch/unix timestamps to human-readable dates and vice versa"
         keywords="epoch convertor, time converter"
-        canonicalUrl="https://utils.foo/epoch"
       />
     <div className="max-w-2xl mx-auto px-4 py-8">
       <h1 className="text-3xl border-b pb-2 mb-6">Epoch Converter</h1>
