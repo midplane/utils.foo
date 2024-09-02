@@ -14,12 +14,12 @@ const faqs = [
 export default function FAQ() {
     return (
         <div className="max-w-4xl mx-auto px-4 py-8">
-            <h1 className="text-3xl font-bold mb-6">Frequently Asked Questions</h1>
+            <h1 className="text-3xl mb-6">Frequently Asked Questions</h1>
             <div className="space-y-6">
                 {faqs.map((faq, index) => (
                     <div key={index} className="bg-white border overflow-hidden sm:rounded-lg">
                         <div className="px-4 py-5 sm:px-6">
-                            <h3 className="leading-6 font-medium text-gray-900">{faq.question}</h3>
+                            <h3 className="leading-6 text-gray-900">{faq.question}</h3>
                         </div>
                         <div className="border-t border-gray-200">
                             <div className="px-4 py-5 sm:p-6">

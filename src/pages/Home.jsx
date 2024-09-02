@@ -26,7 +26,7 @@ const utilities = [
   { name: 'JSON Formatter', description: 'Format and prettify JSON data', path: '/json-format', icon: '{}' },
   { name: 'Pivot', description: 'Create pivot tables from CSV data', path: '/pivot', icon: '🛋️' },
   { name: 'Compute Diff', description: 'Compare two text or code snippets', path: '/diff', icon: '➕' },
-  { name: 'Compute JSON Diff', description: 'Compare two JSON snippets', path: '/diff?lang=json', icon: '{}' },
+  { name: 'Compute JSON Diff', description: 'Compare two JSON snippets', path: '/diff?lang=json', icon: '{-}' },
   // Add more utilities here as we implement them
 ];
 
