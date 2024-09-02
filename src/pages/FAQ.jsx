@@ -9,6 +9,10 @@ const faqs = [
     {
         question: "Is my data safe?",
         answer: "Absolutely! Your data never leaves your browser. The application is completely client-side that you can verify by inspecting the network logs."
+    },
+    {
+        question: "What's next?",
+        answer: "Get to top 20 utils. Make those utils feature-rich. Reduce the page size. Open-source."
     }
 ];
 
