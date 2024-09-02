@@ -134,7 +134,7 @@ export default function EpochConverter() {
         canonicalUrl="https://utils.foo/epoch"
       />
     <div className="max-w-2xl mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-6">Epoch Converter</h1>
+      <h1 className="text-3xl border-b pb-2 mb-6">Epoch Converter</h1>
       <div className="mb-4">
         <label className="block mb-2 text-sm font-medium leading-6 text-gray-900">Epoch time (seconds)</label>
         <input

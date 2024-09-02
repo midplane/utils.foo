@@ -68,17 +68,16 @@ export default function Base64EncodeDecode() {
         description="Convert text to Base64 and vice versa. Encode or decode Base64 strings."
         keywords="base64 encode, base64 decode"
       />
-      <div className="max-w-4xl mx-auto px-4 py-8">
+      <div className="max-w-4xl mx-auto px-4 py-4">
         <div className="mb-6">
-          <h1 className="text-3xl font-bold">Base64 Text Encoder / Decoder</h1>
+          <h1 className="text-3xl pb-2 border-b">Base64 Text Encoder & Decoder</h1>
         </div>
 
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
-          <h2 className="text-xl font-semibold mb-4">Configuration</h2>
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
           <div className="flex items-center space-x-4">
-            <span className="font-medium">Conversion</span>
+            <span className="">Conversion</span>
             <select
-              className="border border-gray-300 rounded-md p-2"
+              className="border border-gray-300 rounded-md p-1"
               value={mode}
               onChange={handleModeChange}
             >
@@ -91,7 +90,7 @@ export default function Base64EncodeDecode() {
         <div className="grid gap-6 md:grid-cols-2">
           <div>
             <div className="flex justify-between items-center mb-2">
-              <h2 className="text-xl font-semibold">Input</h2>
+              <h2 className="text-xl">Input</h2>
               <div className="flex space-x-2">
                 <button className="p-1 text-gray-500 hover:text-blue-500" onClick={handlePaste} title="Paste">
                   <Clipboard size={20} />
@@ -111,7 +110,7 @@ export default function Base64EncodeDecode() {
 
           <div>
             <div className="flex justify-between items-center mb-2">
-              <h2 className="text-xl font-semibold">Output</h2>
+              <h2 className="text-xl">Output</h2>
               <button className="p-1 text-gray-500 hover:text-blue-500" onClick={() => navigator.clipboard.writeText(output)} title="Copy">
                 <Copy size={20} />
               </button>
