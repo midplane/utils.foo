@@ -27,6 +27,7 @@ const utilities = [
   { name: 'Pivot', description: 'Create pivot tables from CSV data', path: '/pivot', icon: '🛋️' },
   { name: 'Compute Diff', description: 'Compare two text or code snippets', path: '/diff', icon: '➕' },
   { name: 'Compute JSON Diff', description: 'Compare two JSON snippets', path: '/diff?lang=json', icon: '{-}' },
+  { name: 'Tree', description: 'tree.nathanfriend.io is an online tree-like utility for generating ASCII folder structure diagrams.', path: 'https://tree.nathanfriend.io/', icon: '🌲' },
   // Add more utilities here as we implement them
 ];
 
@@ -73,7 +74,7 @@ export default function Home() {
 
 function UtilityCard({ utility }) {
   return (
-    <Link to={utility.path} className="flex h-full">
+    <Link to={utility.path} className="flex h-full" target='_blank'>
       <div className="flex flex-col w-full p-4 bg-white rounded-md border border-gray-300 bg-white shadow-sm focus-within:ring-indigo-500 focus-within:ring-offset-2 hover:border-gray-400">
         <div className="flex items-center space-x-4 mb-4">
           <div className="flex-shrink-0 w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center text-xl font-bold font-mono">
