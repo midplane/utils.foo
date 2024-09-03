@@ -23,6 +23,54 @@ export default function JSONFormatter() {
     }
   };
 
+  const minifyJSON = () => {
+    try {
+      const parsedJSON = JSON.parse(input);
+      const minifiedJSON = JSON.stringify(parsedJSON);
+      setOutput(minifiedJSON);
+      setError('');
+    } catch (err) {
+      setError('Invalid JSON: ' + err.message);
+      setOutput('');
+    }
+  };
+
+  const escapeJSON = () => {
+    try {
+      const escapedJSON = input.replace(/[\\]/g, '\\\\')
+                               .replace(/[\"]/g, '\\"')
+                               .replace(/[\/]/g, '\\/')
+                               .replace(/[\b]/g, '\\b')
+                               .replace(/[\f]/g, '\\f')
+                               .replace(/[\n]/g, '\\n')
+                               .replace(/[\r]/g, '\\r')
+                               .replace(/[\t]/g, '\\t');
+      setOutput(escapedJSON);
+      setError('');
+    } catch (err) {
+      setError('Error escaping JSON: ' + err.message);
+      setOutput('');
+    }
+  };
+
+  const unescapeJSON = () => {
+    try {
+      const unescapedJSON = input.replace(/\\\\/g, '\\')
+                                 .replace(/\\"/g, '"')
+                                 .replace(/\\\//g, '/')
+                                 .replace(/\\b/g, '\b')
+                                 .replace(/\\f/g, '\f')
+                                 .replace(/\\n/g, '\n')
+                                 .replace(/\\r/g, '\r')
+                                 .replace(/\\t/g, '\t');
+      setOutput(unescapedJSON);
+      setError('');
+    } catch (err) {
+      setError('Error unescaping JSON: ' + err.message);
+      setOutput('');
+    }
+  };
+
   const editorOptions = {
     minimap: { enabled: false },
     lineNumbers: 'on',
@@ -37,8 +85,8 @@ export default function JSONFormatter() {
     <>
       <SEO
         title="JSON formatter | utils.foo"
-        description="format and prettify json client side"
-        keywords="json format, json beautify, json prettify"
+        description="format, prettify, minify, escape, and unescape json client side"
+        keywords="json format, json beautify, json prettify, json minify, json escape, json unescape"
       />
       <div className="max-w-full mx-auto">
         <h1 className="text-3xl mb-6">JSON Formatter</h1>
@@ -53,11 +101,31 @@ export default function JSONFormatter() {
               className='mb-4 border pt-2'
             />
             <button
-              className="mt-4 w-full bg-gray-800 text-white p-2 rounded-md hover:bg-blue-600 transition-colors duration-300"
-              onClick={formatJSON}
-            >
-              Format JSON
-            </button>
+                className="mt-4 w-full bg-gray-800 text-white p-2 rounded-md hover:bg-green-600 transition-colors duration-200"
+                onClick={formatJSON}
+              >
+                Format JSON
+              </button>
+            <div className="grid grid-cols-3 gap-2">
+              <button
+                className="mt-4 w-full bg-gray-800 text-white p-2 rounded-md hover:bg-green-600 transition-colors duration-200"
+                onClick={minifyJSON}
+              >
+                Minify JSON
+              </button>
+              <button
+                className="mt-4 w-full bg-gray-800 text-white p-2 rounded-md hover:bg-green-600 transition-colors duration-200"
+                onClick={escapeJSON}
+              >
+                Escape JSON
+              </button>
+              <button
+                className="mt-4 w-full bg-gray-800 text-white p-2 rounded-md hover:bg-green-600 transition-colors duration-200"
+                onClick={unescapeJSON}
+              >
+                Unescape JSON
+              </button>
+            </div>
           </div>
           <div className="w-full md:w-1/2">
             {error && (

@@ -23,7 +23,7 @@ const utilities = [
     path: '/hash',
     icon: '#️⃣'
   },
-  { name: 'JSON Formatter', description: 'Format and prettify JSON data', path: '/json-format', icon: '{}' },
+  { name: 'JSON Formatter', description: 'Prettify, minify, escape, unescape JSON', path: '/json-format', icon: '{}' },
   { name: 'Pivot', description: 'Create pivot tables from CSV data', path: '/pivot', icon: '🛋️' },
   { name: 'Compute Diff', description: 'Compare two text or code snippets', path: '/diff', icon: '➕' },
   { name: 'Compute JSON Diff', description: 'Compare two JSON snippets', path: '/diff?lang=json', icon: '{-}' },
