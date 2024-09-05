@@ -37,7 +37,7 @@ export default function EpochConverter() {
   }, []);
 
   const updateHumanDateFromEpoch = (epoch) => {
-    const date = new Date(epoch * 1000);
+    const date = new Date(epoch * (epoch > 1e12 ? 1 : 1000));
     setHumanDate({
       year: date.getFullYear(),
       month: (date.getMonth() + 1).toString().padStart(2, '0'),
@@ -79,7 +79,8 @@ export default function EpochConverter() {
   };
 
   const updateReadableInfo = (epoch) => {
-    const date = new Date(epoch * 1000);
+    const isMilliseconds = epoch > 1e12;
+    const date = new Date(isMilliseconds ? epoch : epoch * 1000);
     const options = {
       timeZone: localTimezone,
       year: 'numeric',
@@ -100,12 +101,14 @@ export default function EpochConverter() {
     const relative = formatRelativeTime(diffInSeconds);
     
     setReadableInfo({
-      milliseconds: epoch * 1000,
+      milliseconds: isMilliseconds ? epoch : epoch * 1000,
+      seconds: isMilliseconds ? Math.floor(epoch / 1000) : epoch,
       localTime: localDate,
       utcTime: utcDate,
       relative: relative
     });
   };
+
   const formatRelativeTime = (seconds) => {
     const units = [
       { name: 'year', seconds: 31536000 },
@@ -135,12 +138,12 @@ export default function EpochConverter() {
     <div className="max-w-2xl mx-auto px-8 py-8 shadow-md bg-white rounded-lg bg-opacity-75">
       <h1 className="text-3xl border-b pb-2 mb-6">Epoch Converter</h1>
       <div className="mb-4">
-        <label className="block mb-2 text-sm font-medium leading-6 text-gray-900">Epoch time (seconds)</label>
+        <label className="block mb-2 text-sm font-medium leading-6 text-gray-900">Epoch time (seconds or milliseconds)</label>
         <input
           type="text"
           value={epochInput}
           onChange={handleEpochChange}
-          placeholder="Enter epoch time (seconds)"
+          placeholder="Enter epoch time (seconds or milliseconds)"
           className="w-full p-2 border border-gray-300 rounded"
         />
       </div>
@@ -162,6 +165,9 @@ export default function EpochConverter() {
           <div className="grid grid-cols-2 gap-2">
             <p className="font-medium">Timestamp in milliseconds</p>
             <p className="text-right">{readableInfo.milliseconds}</p>
+
+            <p className="font-medium">Timestamp in seconds</p>
+            <p className="text-right">{readableInfo.seconds}</p>
 
             <p className="font-medium">Your time zone</p>
             <p className="text-right">{readableInfo.localTime}</p>
