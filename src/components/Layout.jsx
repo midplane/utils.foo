@@ -6,7 +6,7 @@ export default function Layout({ children }) {
 
   return (
     <div className="flex flex-col min-h-screen" style={{ background: 'radial-gradient(circle at 18.7% 37.8%, rgb(250, 250, 250) 0%, rgb(225, 234, 238) 90%)'}}>
-      <header className="bg-black text-white p-4">
+      <header className="bg-black text-white p-4 shadow-lg">
         <nav aria-label="Global" className="mx-auto flex max-w-7xl items-center justify-between lg:px-8">
           <div className="flex flex-1"></div>
           <Link to="/" className="text-2xl font-mono text-gray-100">~ utils.foo</Link>
