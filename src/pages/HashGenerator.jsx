@@ -103,7 +103,7 @@ export default function HashGenerator() {
         description="generate hash via md5, sha-1, sha-256, sha-384, sha-512"
         keywords="hash generator, md5, sha-1, sha-256, sha-384, sha-512"
       />
-      <div className="max-w-4xl mx-auto px-4 py-4">
+    <div className="max-w-4xl mx-auto px-8 py-8 shadow-md bg-white rounded-lg">
         <div className="mb-6">
           <h1 className="text-3xl pb-2 border-b">Hash Generator</h1>
         </div>

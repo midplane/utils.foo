@@ -82,7 +82,7 @@ export default function TextDiff() {
         keywords="json diff, code diff, text diff, json compare, code compare, text compare"
       />
 
-      <div className="max-w-full mx-auto" ref={containerRef}>
+      <div className="max-w-full mx-auto mx-auto px-8 py-8 shadow-md bg-white rounded-lg" ref={containerRef}>
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl">Compute Diff</h1>
           <div className="flex items-center">

@@ -68,7 +68,7 @@ export default function Base64EncodeDecode() {
         description="Convert text to Base64 and vice versa. Encode or decode Base64 strings."
         keywords="base64 encode, base64 decode"
       />
-      <div className="max-w-4xl mx-auto px-4 py-4">
+      <div className="max-w-4xl mx-auto px-8 py-8 shadow-md bg-white rounded-lg">
         <div className="mb-6">
           <h1 className="text-3xl pb-2 border-b">Base64 Text Encoder & Decoder</h1>
         </div>

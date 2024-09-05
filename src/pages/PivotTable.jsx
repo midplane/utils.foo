@@ -39,7 +39,7 @@ export default function PivotTable() {
         keywords="pivot csv"
       />
 
-      <div className="max-w-full mx-auto px-4">
+      <div className="max-w-full mx-auto px-8 py-8 shadow-md bg-white rounded-lg">
         <h1 className="text-3xl mb-6">Pivot Table</h1>
 
         <div className="grid grid-cols-2 gap-4 mb-4">

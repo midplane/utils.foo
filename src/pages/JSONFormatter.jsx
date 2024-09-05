@@ -88,7 +88,7 @@ export default function JSONFormatter() {
         description="format, prettify, minify, escape, and unescape json client side"
         keywords="json format, json beautify, json prettify, json minify, json escape, json unescape"
       />
-      <div className="max-w-full mx-auto">
+      <div className="max-w-full mx-auto px-8 py-8 shadow-md bg-white rounded-lg">
         <h1 className="text-3xl mb-6">JSON Formatter</h1>
         <div className="flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-4">
           <div className="w-full md:w-1/2 flex flex-col">

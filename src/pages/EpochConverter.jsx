@@ -132,7 +132,7 @@ export default function EpochConverter() {
         description="Convert epoch/unix timestamps to human-readable dates and vice versa"
         keywords="epoch convertor, time converter"
       />
-    <div className="max-w-2xl mx-auto px-4 py-8">
+    <div className="max-w-2xl mx-auto px-8 py-8 shadow-md bg-white rounded-lg bg-opacity-75">
       <h1 className="text-3xl border-b pb-2 mb-6">Epoch Converter</h1>
       <div className="mb-4">
         <label className="block mb-2 text-sm font-medium leading-6 text-gray-900">Epoch time (seconds)</label>

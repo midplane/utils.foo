@@ -53,7 +53,7 @@ export default function Home() {
             <input
               type="text"
               placeholder="Search utilities..."
-              className="w-full bg-white p-2 pl-10 border border-gray-300 rounded-md shadow-sm focus-within:ring-indigo-500 focus-within:ring-offset-2 hover:border-gray-400"
+              className="w-full bg-white p-2 pl-10 border border-gray-300 rounded-md shadow-md focus-within:ring-indigo-500 focus-within:ring-offset-2 hover:border-gray-400"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -76,7 +76,7 @@ export default function Home() {
 function UtilityCard({ utility }) {
   return (
     <Link to={utility.path} className="flex h-full" target={utility.external ? '_blank' : '_self'}>
-      <div className="flex flex-col w-full p-4 bg-white rounded-md border border-gray-300 bg-white shadow-sm focus-within:ring-indigo-500 focus-within:ring-offset-2 hover:border-gray-400">
+      <div className="flex flex-col w-full p-4 bg-white rounded-md border border-gray-100 shadow-md focus-within:ring-indigo-500 focus-within:ring-offset-2 hover:border-gray-200 hover:shadow-lg">
         <div className="flex items-center space-x-4 mb-4">
           <div className="flex-shrink-0 w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center text-xl font-mono">
             {utility.icon}
