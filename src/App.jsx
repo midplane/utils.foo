@@ -11,6 +11,7 @@ import TextDiff from './pages/TextDiff';
 import FAQ from './pages/FAQ';
 import Layout from './components/Layout';
 import Privacy from './pages/Privacy';
+import QRCodeGenerator from './pages/QRCodeGenerator';
 import { initGA, logPageView } from './analytics';
 
 const GA_MEASUREMENT_ID = 'G-3SJ4VQ0EMN';
@@ -48,6 +49,7 @@ function AppContent() {
           <Route path="/diff" element={<TextDiff />} />
           <Route path="/faq" element={<FAQ />} />
           <Route path="/privacy" element={<Privacy />} />
+          <Route path="/qr" element={<QRCodeGenerator />} />
     </Routes>
   );
 }

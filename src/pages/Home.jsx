@@ -23,6 +23,7 @@ const utilities = [
     path: '/hash',
     icon: '#️⃣'
   },
+  { name: 'QR Code Generator', description: 'Generate and download QR codes in SVG or PNG format', path: '/qr', icon: '📱' },
   { name: 'JSON Formatter', description: 'Prettify, minify, escape, unescape JSON', path: '/json-format', icon: '{}' },
   { name: 'Pivot', description: 'Create pivot tables from CSV data', path: '/pivot', icon: '🛋️' },
   { name: 'Compute Diff', description: 'Compare two text or code snippets', path: '/diff', icon: '➕' },
