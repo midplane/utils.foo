@@ -93,7 +93,7 @@ const QRCodeDecoder = () => {
         {decodedText && (
           <div className="mt-6">
             <h2 className="text-xl font-semibold mb-2">Decoded Content</h2>
-            <p className="p-4 bg-gray-100 rounded">{decodedText}</p>
+            <p className="p-4 bg-gray-100 rounded break-all">{decodedText}</p>
           </div>
         )}
       </div>
