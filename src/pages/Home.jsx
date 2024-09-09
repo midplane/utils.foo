@@ -23,11 +23,12 @@ const utilities = [
     path: '/hash',
     icon: '#️⃣'
   },
-  { name: 'QR Code Generator', description: 'Generate and download QR codes in SVG or PNG format', path: '/qr', icon: '📱' },
   { name: 'JSON Formatter', description: 'Prettify, minify, escape, unescape JSON', path: '/json-format', icon: '{}' },
   { name: 'Pivot', description: 'Create pivot tables from CSV data', path: '/pivot', icon: '🛋️' },
   { name: 'Compute Diff', description: 'Compare two text or code snippets', path: '/diff', icon: '➕' },
   { name: 'Compute JSON Diff', description: 'Compare two JSON snippets', path: '/diff?lang=json', icon: '{-}' },
+  { name: 'QR Code Generator', description: 'Generate QR codes as SVG/PNG', path: '/qr', icon: '📱' },
+  { name: 'QR Code Decoder', description: 'Decode QR codes', path: '/qr-decode', icon: '📱' },
   { name: 'Tree', description: 'tree.nathanfriend.io is an online tree-like utility for generating ASCII folder structure diagrams', path: 'https://tree.nathanfriend.io/', icon: '🌲', external: true },
   { name: 'Regex Tester', description: 'Test regex expressions from different languages, links to regex101.com', path: 'https://regex101.com/', icon: '^$', external: true },
   // Add more utilities here as we implement them

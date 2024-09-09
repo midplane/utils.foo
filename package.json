@@ -12,6 +12,7 @@
   "dependencies": {
     "@monaco-editor/react": "^4.6.0",
     "crypto-js": "^4.2.0",
+    "jsqr": "^1.4.0",
     "lucide-react": "^0.436.0",
     "monaco-editor": "^0.51.0",
     "papaparse": "^5.4.1",
