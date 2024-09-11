@@ -14,6 +14,7 @@ const utilities = [
   { id: 'diffjson', name: 'Compute JSON Diff', description: 'Compare two JSON snippets', path: '/diff?lang=json', icon: '{-}' },
   { id: 'qr', name: 'QR Code Generator', description: 'Generate QR codes as SVG/PNG', path: '/qr', icon: '📱' },
   { id: 'qrdecode', name: 'QR Code Decoder', description: 'Decode QR codes', path: '/qr-decode', icon: '📱' },
+  { id: 'jwt', name: 'JWT Decoder', description: 'Decode JWT', path: '/jwt', icon: '🗝️' },
   { id: 'tree', name: 'Tree', description: 'tree.nathanfriend.io is an online tree-like utility for generating ASCII folder structure diagrams', path: 'https://tree.nathanfriend.io/', icon: '🌲', external: true },
   { id: 'regex', name: 'Regex Tester', description: 'Test regex expressions from different languages, links to regex101.com', path: 'https://regex101.com/', icon: '^$', external: true },
   // Add more utilities here as we implement them

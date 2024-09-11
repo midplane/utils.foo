@@ -13,6 +13,7 @@ import Layout from './components/Layout';
 import Privacy from './pages/Privacy';
 import QRCodeGenerator from './pages/QRCodeGenerator';
 import QRCodeDecoder from './pages/QRCodeDecoder';
+import JWTDecoder from './pages/JWTDecoder';
 import { initGA, logPageView } from './analytics';
 
 const GA_MEASUREMENT_ID = 'G-3SJ4VQ0EMN';
@@ -52,6 +53,7 @@ function AppContent() {
           <Route path="/privacy" element={<Privacy />} />
           <Route path="/qr" element={<QRCodeGenerator />} />
           <Route path="/qr-decode" element={<QRCodeDecoder />} />
+          <Route path="/jwt" element={<JWTDecoder />} />
     </Routes>
   );
 }
