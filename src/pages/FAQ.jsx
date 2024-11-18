@@ -12,7 +12,7 @@ const faqs = [
     },
     {
         question: "What's next?",
-        answer: "Get to top 20 utils. Make those utils feature-rich. Reduce the page size. Open-source."
+        answer: "Get to top 20 utils. Make those utils feature-rich. Reduce the page size."
     }
 ];
 
