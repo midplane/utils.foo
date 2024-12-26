@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { Search, Star, StarOff } from 'lucide-react';
+import { Search, Star, SquareSlash } from 'lucide-react';
 import SEO from '../SEO';
 
 const utilities = [
@@ -23,6 +23,21 @@ const utilities = [
 export default function Home() {
   const [searchTerm, setSearchTerm] = useState('');
   const [favorites, setFavorites] = useState([]);
+  const searchInputRef = useRef(null);
+
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      if (event.key === '/') {
+        event.preventDefault();
+        searchInputRef.current.focus();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, []);
 
   useEffect(() => {
     const storedFavorites = JSON.parse(localStorage.getItem('favorites')) || [];
@@ -64,8 +79,10 @@ export default function Home() {
               className="w-full bg-white p-2 pl-10 border border-gray-300 rounded-md shadow-md focus-within:ring-indigo-500 focus-within:ring-offset-2 hover:border-gray-400"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
+              ref={searchInputRef}
             />
-            <Search className="absolute left-3 top-2.5 text-gray-400" size={20} />
+            <Search className="absolute left-3 top-2.5 text-gray-600" size={20} />
+            <SquareSlash className="absolute right-3 top-2.5 text-gray-600" size={20} />
           </div>
         </div>
 
