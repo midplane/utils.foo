@@ -36,12 +36,19 @@ export default function JavaThreadDumpAnalyzer() {
     const threadsTemp = {};
     const threadBlocks = content.split('\n\n');
 
+    // Check if content appears to be a valid thread dump
+    if (!content.includes('java.lang.Thread.State') && !content.includes('state=')) {
+      alert('The content does not appear to be a valid Java thread dump.');
+      return;
+    }
+
     threadBlocks.forEach((block) => {
       const lines = block.split('\n');
       const threadNameMatch = lines[0]?.match(/^"([^"]+)"/);
       if (threadNameMatch) {
         const threadName = threadNameMatch[1];
-        const stateMatch = lines[0]?.match(/state=(\w+)/);
+        // Support both common thread dump formats
+        const stateMatch = lines[0]?.match(/state=(\w+)/) || lines[0]?.match(/java\.lang\.Thread\.State: (\w+)/);
         const state = stateMatch ? stateMatch[1] : 'UNKNOWN';
 
         // Increment total number of threads
@@ -81,8 +88,10 @@ export default function JavaThreadDumpAnalyzer() {
       case 'TIMED_WAITING':
       case 'WAITING':
         return 'text-yellow-500';
+      case 'BLOCKED':
+        return 'text-red-500';
       default:
-        return 'text-white-500';
+        return 'text-gray-500';
     }
   };
 
@@ -119,9 +128,8 @@ export default function JavaThreadDumpAnalyzer() {
 
         <div
           {...getRootProps()}
-          className={`border-2 border-dashed p-4 rounded-lg text-center cursor-pointer ${
-            isDragActive ? 'border-blue-500 bg-blue-50' : 'border-gray-300'
-          }`}
+          className={`border-2 border-dashed p-4 rounded-lg text-center cursor-pointer ${isDragActive ? 'border-blue-500 bg-blue-50' : 'border-gray-300'
+            }`}
         >
           <input {...getInputProps()} />
           {isDragActive ? (
@@ -167,9 +175,8 @@ export default function JavaThreadDumpAnalyzer() {
                   return (
                     <li
                       key={threadName}
-                      className={`p-2 cursor-pointer hover:bg-gray-100 ${
-                        selectedThread === threadName ? 'bg-blue-100' : ''
-                      }`}
+                      className={`p-2 cursor-pointer hover:bg-gray-100 ${selectedThread === threadName ? 'bg-blue-100' : ''
+                        }`}
                       onClick={() => setSelectedThread(threadName)}
                     >
                       <div className="flex items-center">
@@ -185,9 +192,8 @@ export default function JavaThreadDumpAnalyzer() {
                 <button
                   onClick={handlePreviousPage}
                   disabled={currentPage === 1}
-                  className={`px-2 py-1 text-sm rounded ${
-                    currentPage === 1 ? 'bg-gray-200 text-gray-500' : 'bg-blue-500 text-white'
-                  }`}
+                  className={`px-2 py-1 text-sm rounded ${currentPage === 1 ? 'bg-gray-200 text-gray-500' : 'bg-blue-500 text-white'
+                    }`}
                 >
                   Previous
                 </button>
@@ -197,9 +203,8 @@ export default function JavaThreadDumpAnalyzer() {
                 <button
                   onClick={handleNextPage}
                   disabled={currentPage === totalPages}
-                  className={`px-2 py-1 text-sm rounded ${
-                    currentPage === totalPages ? 'bg-gray-200 text-gray-500' : 'bg-blue-500 text-white'
-                  }`}
+                  className={`px-2 py-1 text-sm rounded ${currentPage === totalPages ? 'bg-gray-200 text-gray-500' : 'bg-blue-500 text-white'
+                    }`}
                 >
                   Next
                 </button>
