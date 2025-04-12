@@ -17,7 +17,7 @@ const utilities = [
   { id: 'jwt', name: 'JWT Decoder', description: 'Decode JWT', path: '/jwt', icon: '🗝️' },
   { id: 'tree', name: 'Tree', description: 'tree.nathanfriend.io is an online tree-like utility for generating ASCII folder structure diagrams', path: 'https://tree.nathanfriend.io/', icon: '🌲', external: true },
   { id: 'regex', name: 'Regex Tester', description: 'Test regex expressions from different languages, links to regex101.com', path: 'https://regex101.com/', icon: '^$', external: true },
-  { id: 'jtdump', name: 'Java Thread Dump Analyzer', description: '', path: '/jtdump', icon: '🧵' },
+  { id: 'jtdump', name: 'Java Thread Dump Analyzer', description: 'Analyze java thread dumps with detailed stack trace viewing', path: '/jtdump', icon: '🧵' },
   // Add more utilities here as we implement them
 ];
 
