@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
-import { FaCircle } from 'react-icons/fa'; 
+import { FaCircle } from 'react-icons/fa';
 import SEO from '../SEO';
 
 export default function JavaThreadDumpAnalyzer() {
@@ -13,6 +13,12 @@ export default function JavaThreadDumpAnalyzer() {
   const totalThreadLabel = 'TOTAL';
 
   const onDrop = useCallback((acceptedFiles) => {
+    // Allow only one file
+    if (acceptedFiles.length > 1) {
+      alert('Please upload only one file.');
+      return;
+    }
+
     const file = acceptedFiles[0];
     const reader = new FileReader();
 
@@ -37,12 +43,12 @@ export default function JavaThreadDumpAnalyzer() {
         const threadName = threadNameMatch[1];
         const stateMatch = lines[0]?.match(/state=(\w+)/);
         const state = stateMatch ? stateMatch[1] : 'UNKNOWN';
-        
-        // increate total number of threads 
+
+        // Increment total number of threads
         threadCountsTemp[totalThreadLabel] = (threadCountsTemp[totalThreadLabel] || 0) + 1;
-        // increase the respective thread state counter 
+        // Increment the respective thread state counter
         threadCountsTemp[state] = (threadCountsTemp[state] || 0) + 1;
-      
+
         threadsTemp[`${threadName} [${state}]`] = { state, stackTrace: lines.slice(1).join('\n') };
       }
     });
@@ -52,6 +58,19 @@ export default function JavaThreadDumpAnalyzer() {
   };
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({ onDrop });
+
+  const handleTextAreaChange = (e) => {
+    const content = e.target.value;
+    setThreadDump(content);
+
+    // Reset counters when text area changes
+    if (content.trim() === '') {
+      setThreadCounts({});
+      setThreads({});
+    } else {
+      processAndParseThreadDump(content);
+    }
+  };
 
   const getClassBasedOnThreadState = (state) => {
     switch (state) {
@@ -68,7 +87,7 @@ export default function JavaThreadDumpAnalyzer() {
   };
 
   // Pagination logic
-  const threadNames = Object.keys(threads).sort(); 
+  const threadNames = Object.keys(threads).sort();
   const totalPages = Math.ceil(threadNames.length / threadsPerPage);
   const currentThreads = threadNames.slice(
     (currentPage - 1) * threadsPerPage,
@@ -108,17 +127,13 @@ export default function JavaThreadDumpAnalyzer() {
           {isDragActive ? (
             <p>Drop the thread dump here ...</p>
           ) : (
-            <p>Drag 'n' drop some files here, or click to select files</p>
+            <p>Drag 'n' drop file here, or click to select a file</p>
           )}
         </div>
 
         <textarea
           value={threadDump}
-          onChange={(e) => {
-            const content = e.target.value;
-            setThreadDump(content);
-            processAndParseThreadDump(content);
-          }}
+          onChange={handleTextAreaChange}
           className="w-full mt-4 p-2 border border-gray-300 rounded-lg"
           placeholder="Paste your thread dump here or upload a file"
           rows="10"
@@ -165,7 +180,7 @@ export default function JavaThreadDumpAnalyzer() {
                   );
                 })}
               </ul>
-             
+
               <div className="flex justify-between items-center p-2 border-t border-gray-300">
                 <button
                   onClick={handlePreviousPage}
