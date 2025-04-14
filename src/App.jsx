@@ -15,6 +15,7 @@ import QRCodeGenerator from './pages/QRCodeGenerator';
 import QRCodeDecoder from './pages/QRCodeDecoder';
 import JWTDecoder from './pages/JWTDecoder';
 import { initGA, logPageView } from './analytics';
+import JavaThreadDumpAnalyzer from './pages/JavaThreadDumpAnalyzer';
 
 const GA_MEASUREMENT_ID = 'G-3SJ4VQ0EMN';
 
@@ -54,6 +55,7 @@ function AppContent() {
           <Route path="/qr" element={<QRCodeGenerator />} />
           <Route path="/qr-decode" element={<QRCodeDecoder />} />
           <Route path="/jwt" element={<JWTDecoder />} />
+          <Route path="/jtdump" element={<JavaThreadDumpAnalyzer />} />
     </Routes>
   );
 }
