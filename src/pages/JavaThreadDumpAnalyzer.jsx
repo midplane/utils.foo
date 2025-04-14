@@ -171,7 +171,9 @@ export default function JavaThreadDumpAnalyzer() {
             placeholder="Paste your thread dump here..."
             value={threadDump}
             onChange={(e) => {
-              setThreadDump(e.target.value);
+              const content = e.target.value;
+              setThreadDump(content);
+              processAndParseThreadDump(content);
               if (e.target.value.trim() !== '') {
                 setFileName('Pasted');
               }
