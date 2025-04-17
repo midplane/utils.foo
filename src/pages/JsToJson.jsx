@@ -4,17 +4,22 @@ import { useSearchParams } from 'react-router-dom';
 import SEO from '../SEO';
 import JSON5 from 'json5';
 
+const VALID_JS_IDENTIFIER = /^[a-zA-Z_$][a-zA-Z0-9_$]*$/;
+const MAX_PRETTIFY_DEPTH = 10;
+
 export default function JsToJson() {
     const [searchParams, setSearchParams] = useSearchParams();
     const [input, setInput] = useState(searchParams.get('input') || '');
     const [output, setOutput] = useState('');
     const [error, setError] = useState('');
     const [copySuccess, setCopySuccess] = useState(false);
+    const [conversionSuccess, setConversionSuccess] = useState(false);
 
     const handleConversion = useCallback(() => {
         if (input === '') {
             setOutput('');
             setError('');
+            setConversionSuccess(false);
             return;
         }
 
@@ -23,14 +28,18 @@ export default function JsToJson() {
             const jsonOutput = JSON.stringify(jsObject, null, 2);
             setOutput(jsonOutput);
             setError('');
+            setConversionSuccess(true);            
+            setTimeout(() => setConversionSuccess(false), 2000);
+            
             if (input.trim() && jsonOutput.trim() !== '{}' && jsonOutput.trim() !== '[]') {
                 setSearchParams({ input });
             }
         } catch (err) {
             setError(`Error: ${err.message}`);
             setOutput('');
+            setConversionSuccess(false);
         }
-    }, [input, setSearchParams, setOutput, setError]);
+    }, [input, setSearchParams, setOutput, setError, setConversionSuccess]);
 
     useEffect(() => {
         handleConversion();
@@ -44,6 +53,7 @@ export default function JsToJson() {
         setInput('');
         setOutput('');
         setError('');
+        setConversionSuccess(false);
         setSearchParams(new URLSearchParams());
     };
 
@@ -62,8 +72,12 @@ export default function JsToJson() {
 
         try {
             const parsed = JSON5.parse(input);
-                        
-            const prettifyObject = (obj, indent = 0) => {
+            
+            const prettifyObject = (obj, indent = 0, depth = 0) => {                
+                if (depth >= MAX_PRETTIFY_DEPTH) {
+                    return JSON.stringify(obj);
+                }
+                
                 const spaces = ' '.repeat(indent * 2);
                 
                 if (obj === null) return 'null';
@@ -77,10 +91,10 @@ export default function JsToJson() {
                 if (Object.keys(obj).length === 0) return brackets.join('');
                 
                 const entries = Object.entries(obj).map(([key, value]) => {
-                    if (isArray) return `${spaces}  ${prettifyObject(value, indent + 1)}`;
-                                        
-                    const formattedKey = /^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(key) ? key : `"${key}"`;
-                    return `${spaces}  ${formattedKey}: ${prettifyObject(value, indent + 1)}`;
+                    if (isArray) return `${spaces}  ${prettifyObject(value, indent + 1, depth + 1)}`;
+                    
+                    const formattedKey = VALID_JS_IDENTIFIER.test(key) ? key : `"${key}"`;
+                    return `${spaces}  ${formattedKey}: ${prettifyObject(value, indent + 1, depth + 1)}`;
                 });
                 
                 return `${brackets[0]}\n${entries.join(',\n')}\n${spaces}${brackets[1]}`;
@@ -177,6 +191,11 @@ export default function JsToJson() {
                         {copySuccess && (
                             <div className="mt-2 text-green-500 text-sm">
                                 Copied to clipboard!
+                            </div>
+                        )}
+                        {conversionSuccess && !copySuccess && (
+                            <div className="mt-2 text-green-500 text-sm">
+                                Conversion successful!
                             </div>
                         )}
                     </div>
