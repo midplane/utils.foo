@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Copy, X, Clipboard, Code } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import SEO from '../SEO';
@@ -9,8 +9,9 @@ export default function JsToJson() {
     const [input, setInput] = useState(searchParams.get('input') || '');
     const [output, setOutput] = useState('');
     const [error, setError] = useState('');
+    const [copySuccess, setCopySuccess] = useState(false);
 
-    const handleConversion = () => {
+    const handleConversion = useCallback(() => {
         if (input === '') {
             setOutput('');
             setError('');
@@ -29,11 +30,11 @@ export default function JsToJson() {
             setError(`Error: ${err.message}`);
             setOutput('');
         }
-    };
+    }, [input, setSearchParams]);
 
     useEffect(() => {
         handleConversion();
-    }, [input, handleConversion]);
+    }, [handleConversion]);
 
     const handleInputChange = (e) => {
         setInput(e.target.value);
@@ -60,23 +61,32 @@ export default function JsToJson() {
         if (!input.trim()) return;
 
         try {
-            const jsObject = new Function(`return ${input}`)();
-            const jsonStr = JSON.stringify(jsObject, null, 2);
-
-            // More robust prettification that handles nested structures better
+            const parsed = JSON5.parse(input);
+            const jsonStr = JSON.stringify(parsed, null, 2);
+            
             let prettifiedJs = jsonStr
-                // Remove quotes from property keys
-                .replace(/"([^"]+)":/g, (match, key) => {
-                    // Keep quotes for keys with special characters
+                .replace(/"([^"]+)":/g, (match, key) => {                    
                     return /[^a-zA-Z0-9_$]/.test(key) ? match : `${key}:`;
-                })
-                // Keep string values quoted
+                })                
                 .replace(/: "([^"]*)"/g, ': "$1"');
 
             setInput(prettifiedJs);
         } catch (err) {
             setError(`Cannot prettify: ${err.message}`);
         }
+    };
+
+    const copyShareableLink = () => {
+        const url = new URL(window.location.href);
+        url.searchParams.set('input', input);
+        navigator.clipboard.writeText(url.toString())
+            .then(() => {
+                setCopySuccess(true);
+                setTimeout(() => setCopySuccess(false), 2000);
+            })
+            .catch(err => {
+                setError(`Failed to copy link: ${err.message}`);
+            });
     };
 
     return (
@@ -102,6 +112,12 @@ export default function JsToJson() {
                                 <button className="p-1 text-gray-500 hover:text-blue-500" onClick={handlePaste} title="Paste">
                                     <Clipboard size={20} />
                                 </button>
+                                <button className="p-1 text-gray-500 hover:text-purple-500" onClick={copyShareableLink} title="Copy Shareable Link">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+                                        <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+                                    </svg>
+                                </button>
                                 <button className="p-1 text-gray-500 hover:text-red-500" onClick={handleClearInput} title="Clear">
                                     <X size={20} />
                                 </button>
@@ -112,9 +128,11 @@ export default function JsToJson() {
                             value={input}
                             onChange={handleInputChange}
                             placeholder="Enter JavaScript object like {key: 'value'}"
+                            aria-label="JavaScript input"
+                            aria-describedby={error ? "error-message" : undefined}
                         />
                         {error && (
-                            <div className="mt-2 text-red-500 text-sm">
+                            <div id="error-message" className="mt-2 text-red-500 text-sm" role="alert">
                                 {error}
                             </div>
                         )}
@@ -128,7 +146,8 @@ export default function JsToJson() {
                                 onClick={() => {
                                     navigator.clipboard.writeText(output)
                                         .then(() => {
-                                            // Optional: Show temporary success message
+                                            setCopySuccess(true);
+                                            setTimeout(() => setCopySuccess(false), 2000);
                                         })
                                         .catch(err => {
                                             setError(`Failed to copy: ${err.message}`);
@@ -142,7 +161,13 @@ export default function JsToJson() {
                             className="w-full h-64 p-2 border border-gray-300 rounded-md resize-none"
                             value={output}
                             readOnly
+                            aria-label="JSON output"
                         />
+                        {copySuccess && (
+                            <div className="mt-2 text-green-500 text-sm">
+                                Copied to clipboard!
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>
