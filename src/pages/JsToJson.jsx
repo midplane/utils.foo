@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Copy, X, Clipboard, Code } from 'lucide-react';
+import { Copy, X, Clipboard, Code, Link } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import SEO from '../SEO';
 import JSON5 from 'json5';
@@ -30,7 +30,7 @@ export default function JsToJson() {
             setError(`Error: ${err.message}`);
             setOutput('');
         }
-    }, [input, setSearchParams]);
+    }, [input, setSearchParams, setOutput, setError]);
 
     useEffect(() => {
         handleConversion();
@@ -62,31 +62,54 @@ export default function JsToJson() {
 
         try {
             const parsed = JSON5.parse(input);
-            const jsonStr = JSON.stringify(parsed, null, 2);
+                        
+            const prettifyObject = (obj, indent = 0) => {
+                const spaces = ' '.repeat(indent * 2);
+                
+                if (obj === null) return 'null';
+                if (typeof obj !== 'object') {
+                    return typeof obj === 'string' ? `"${obj}"` : String(obj);
+                }
+                
+                const isArray = Array.isArray(obj);
+                const brackets = isArray ? ['[', ']'] : ['{', '}'];
+                
+                if (Object.keys(obj).length === 0) return brackets.join('');
+                
+                const entries = Object.entries(obj).map(([key, value]) => {
+                    if (isArray) return `${spaces}  ${prettifyObject(value, indent + 1)}`;
+                                        
+                    const formattedKey = /^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(key) ? key : `"${key}"`;
+                    return `${spaces}  ${formattedKey}: ${prettifyObject(value, indent + 1)}`;
+                });
+                
+                return `${brackets[0]}\n${entries.join(',\n')}\n${spaces}${brackets[1]}`;
+            };
             
-            let prettifiedJs = jsonStr
-                .replace(/"([^"]+)":/g, (match, key) => {                    
-                    return /[^a-zA-Z0-9_$]/.test(key) ? match : `${key}:`;
-                })                
-                .replace(/: "([^"]*)"/g, ': "$1"');
-
+            let prettifiedJs = prettifyObject(parsed);
+            
             setInput(prettifiedJs);
         } catch (err) {
             setError(`Cannot prettify: ${err.message}`);
         }
     };
 
+    const copyToClipboard = useCallback(async (text, errorPrefix = 'Failed to copy') => {
+        try {
+            await navigator.clipboard.writeText(text);
+            setCopySuccess(true);
+            setTimeout(() => setCopySuccess(false), 2000);
+            return true;
+        } catch (err) {
+            setError(`${errorPrefix}: ${err.message}`);
+            return false;
+        }
+    }, [setError, setCopySuccess]);
+
     const copyShareableLink = () => {
         const url = new URL(window.location.href);
         url.searchParams.set('input', input);
-        navigator.clipboard.writeText(url.toString())
-            .then(() => {
-                setCopySuccess(true);
-                setTimeout(() => setCopySuccess(false), 2000);
-            })
-            .catch(err => {
-                setError(`Failed to copy link: ${err.message}`);
-            });
+        copyToClipboard(url.toString(), 'Failed to copy link');
     };
 
     return (
@@ -113,10 +136,7 @@ export default function JsToJson() {
                                     <Clipboard size={20} />
                                 </button>
                                 <button className="p-1 text-gray-500 hover:text-purple-500" onClick={copyShareableLink} title="Copy Shareable Link">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                        <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
-                                        <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
-                                    </svg>
+                                    <Link size={20} />
                                 </button>
                                 <button className="p-1 text-gray-500 hover:text-red-500" onClick={handleClearInput} title="Clear">
                                     <X size={20} />
@@ -143,16 +163,7 @@ export default function JsToJson() {
                             <h2 className="text-xl">Output</h2>
                             <button
                                 className="p-1 text-gray-500 hover:text-blue-500"
-                                onClick={() => {
-                                    navigator.clipboard.writeText(output)
-                                        .then(() => {
-                                            setCopySuccess(true);
-                                            setTimeout(() => setCopySuccess(false), 2000);
-                                        })
-                                        .catch(err => {
-                                            setError(`Failed to copy: ${err.message}`);
-                                        });
-                                }}
+                                onClick={() => copyToClipboard(output)}
                                 title="Copy">
                                 <Copy size={20} />
                             </button>
