@@ -158,6 +158,7 @@ export default function AnomalyDetection() {
   const [customSeasonalityPeriod, setCustomSeasonalityPeriod] = useState(24);
   const [detectedPatterns, setDetectedPatterns] = useState([]);
   const [showDataPreview, setShowDataPreview] = useState(false);
+  const [anomalyDirection, setAnomalyDirection] = useState("both");
   
   // Refs for file input
   const fileInputRef = useRef(null);
@@ -322,7 +323,8 @@ export default function AnomalyDetection() {
       return data.map(item => ({ 
         ...item, 
         isAnomaly: false, 
-        deviation: 0, 
+        deviation: 0,
+        signedDeviation: 0, 
         mean: item.value, 
         stdDev: 0 
       }));
@@ -355,22 +357,34 @@ export default function AnomalyDetection() {
       const stats = seasonalStats.get(seasonalKey);
       
       if (!stats) {
-        return { ...item, isAnomaly: false, deviation: 0, mean: item.value, stdDev: 0 };
+        return { ...item, isAnomaly: false, deviation: 0, signedDeviation: 0, mean: item.value, stdDev: 0 };
       }
       
-      const deviation = stats.stdDev > 0 ? Math.abs((item.value - stats.mean) / stats.stdDev) : 0;
-      const isAnomaly = deviation > sensitivityThreshold;
+      const signedDeviation = stats.stdDev > 0 ? (item.value - stats.mean) / stats.stdDev : 0;
+      const deviation = Math.abs(signedDeviation);
+      
+      let isAnomaly = false;
+      if (deviation > sensitivityThreshold) {
+        if (anomalyDirection === "both") {
+          isAnomaly = true;
+        } else if (anomalyDirection === "positive" && signedDeviation > 0) {
+          isAnomaly = true;
+        } else if (anomalyDirection === "negative" && signedDeviation < 0) {
+          isAnomaly = true;
+        }
+      }
       
       return {
         ...item,
         mean: stats.mean,
         stdDev: stats.stdDev,
         deviation: deviation,
+        signedDeviation: signedDeviation,
         isAnomaly,
         seasonalPosition: seasonalKey
       };
     });
-  }, [getSeasonalityPeriod, sensitivityThreshold]);
+  }, [getSeasonalityPeriod, sensitivityThreshold, anomalyDirection]);
 
   // Memoize processed data to avoid unnecessary recalculations
   const parsedData = useMemo(() => {
@@ -587,12 +601,12 @@ export default function AnomalyDetection() {
           const data = parsedData.find(d => Math.abs(d.timestamp.getTime() - point.value[0]) < 1000);
           const actual = point.value[1].toFixed(2);
           const expected = data ? data.mean.toFixed(2) : 'N/A';
-          const deviation = data ? data.deviation.toFixed(2) : 'N/A';
+          const signedDeviation = data ? (data.signedDeviation >= 0 ? '+' : '') + data.signedDeviation.toFixed(2) : 'N/A';
           return `
             <div style="font-weight: 600; margin-bottom: 8px;">${DateUtils.formatDate(timestamp)}</div>
             <div style="margin-bottom: 4px;">📈 Actual: <strong>${actual}</strong></div>
             <div style="margin-bottom: 4px;">📊 Expected: <strong>${expected}</strong></div>
-            <div style="margin-bottom: 4px;">📏 Deviation: <strong>${deviation}σ</strong></div>
+            <div style="margin-bottom: 4px;">📏 Deviation: <strong>${signedDeviation}σ</strong></div>
             ${data && data.isAnomaly ? '<div style="color: #ef4444; font-weight: 600;">⚠️ Anomaly Detected</div>' : '<div style="color: #10b981;">✅ Normal</div>'}
           `;
         },
@@ -901,7 +915,7 @@ export default function AnomalyDetection() {
               </div>
             )}
 
-            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid md:grid-cols-2 lg:grid-cols-5 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Aggregation Level</label>
                 <select
@@ -929,6 +943,29 @@ export default function AnomalyDetection() {
                   <option value="max">Maximum</option>
                   <option value="count">Count</option>
                 </select>
+                {aggregationLevel === "raw" && (
+                  <div className="text-xs text-gray-500 mt-1">
+                    Not applicable for raw data
+                  </div>
+                )}
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Anomaly Direction</label>
+                <select
+                  value={anomalyDirection}
+                  onChange={(e) => setAnomalyDirection(e.target.value)}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="both">Both Directions</option>
+                  <option value="positive">Only Positive (Above Expected)</option>
+                  <option value="negative">Only Negative (Below Expected)</option>
+                </select>
+                <div className="text-xs text-gray-500 mt-1">
+                  {anomalyDirection === "both" ? "Detect high and low anomalies" :
+                   anomalyDirection === "positive" ? "Only detect spikes" :
+                   "Only detect drops"}
+                </div>
               </div>
               
               <div>
@@ -1049,7 +1086,11 @@ export default function AnomalyDetection() {
                           <td className="p-3">{DateUtils.formatDate(item.timestamp)}</td>
                           <td className="p-3 font-medium">{item.value.toFixed(2)}</td>
                           <td className="p-3">{item.mean.toFixed(2)}</td>
-                          <td className="p-3">{item.deviation.toFixed(2)}</td>
+                          <td className="p-3">
+                            <span className={`font-medium ${item.signedDeviation >= 0 ? 'text-red-600' : 'text-blue-600'}`}>
+                              {item.signedDeviation >= 0 ? '+' : ''}{item.signedDeviation.toFixed(2)}
+                            </span>
+                          </td>
                           <td className="p-3">
                             <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                               item.deviation > 3.5 ? 'bg-red-100 text-red-800' :
