@@ -12,6 +12,9 @@
   "dependencies": {
     "@monaco-editor/react": "^4.6.0",
     "crypto-js": "^4.2.0",
+    "date-fns": "^4.1.0",
+    "echarts": "^5.6.0",
+    "echarts-for-react": "^3.0.2",
     "jsqr": "^1.4.0",
     "lucide-react": "^0.436.0",
     "monaco-editor": "^0.51.0",
