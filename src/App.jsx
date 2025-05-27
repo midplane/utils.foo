@@ -16,6 +16,7 @@ import QRCodeDecoder from './pages/QRCodeDecoder';
 import JWTDecoder from './pages/JWTDecoder';
 import { initGA, logPageView } from './analytics';
 import JavaThreadDumpAnalyzer from './pages/JavaThreadDumpAnalyzer';
+import JsToJson from './pages/JsToJson';
 import AnomalyDetection from './pages/AnomalyDetection';
 
 const GA_MEASUREMENT_ID = 'G-3SJ4VQ0EMN';
@@ -58,6 +59,7 @@ function AppContent() {
           <Route path="/jwt" element={<JWTDecoder />} />
           <Route path="/jtdump" element={<JavaThreadDumpAnalyzer />} />
           <Route path="/anomaly" element={<AnomalyDetection />} />
+          <Route path="/js2json" element={<JsToJson />} />
     </Routes>
   );
 }
