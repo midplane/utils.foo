@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo, useRef } from "react";
-import ReactECharts from "echarts-for-react";
+import OptimizedChart from "../components/OptimizedChart";
 
 // Utility functions extracted for better organization
 const DateUtils = {
@@ -1049,12 +1049,9 @@ export default function AnomalyDetection() {
           <div className="mt-6">
             <h2 className="text-2xl font-semibold text-gray-800 mb-4">Time Series Analysis</h2>
             <div className="bg-white border rounded-xl p-4" style={{ height: "500px" }}>
-              <ReactECharts
+              <OptimizedChart
                 option={chartOption}
                 style={{ height: "100%", width: "100%" }}
-                notMerge={true}
-                lazyUpdate={true}
-                theme="default"
               />
             </div>
           </div>

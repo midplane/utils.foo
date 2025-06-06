@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import Editor from '@monaco-editor/react';
+import OptimizedEditor from '../components/OptimizedEditor';
 import SEO from '../SEO';
 
 export default function JSONFormatter() {
@@ -92,12 +92,11 @@ export default function JSONFormatter() {
         <h1 className="text-3xl mb-6">JSON Formatter</h1>
         <div className="flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-4">
           <div className="w-full md:w-1/2 flex flex-col">
-            <Editor
+            <OptimizedEditor
               height="500px"
-              defaultLanguage="json"
+              language="json"
               value={input}
               onChange={handleEditorChange}
-              options={editorOptions}
               className='mb-4 border pt-2'
             />
             <button
@@ -133,9 +132,9 @@ export default function JSONFormatter() {
                 {error}
               </div>
             )}
-            <Editor
+            <OptimizedEditor
               height="500px"
-              defaultLanguage="json"
+              language="json"
               value={output}
               options={{ ...editorOptions, readOnly: true }}
               className='mb-4 border pt-2'
