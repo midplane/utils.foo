@@ -8,7 +8,7 @@ const utilities = [
   { id: 'base64', name: 'Base64 Text Encoder / Decoder', description: 'Encode and decode Base64 text data', path: '/base64', icon: '64' },
   { id: 'url', name: 'URL Encoder / Decoder', description: 'Encode and decode URLs', path: '/url', icon: '🔗' },
   { id: 'hash', name: 'Hash Generator', description: 'Generate hash values for various algorithms', path: '/hash', icon: '#️⃣' },
-  { id: 'json', name: 'JSON Formatter', description: 'Prettify, minify, escape, unescape JSON', path: '/json-format', icon: '{}' },
+  { id: 'json', name: 'JSON Formatter', description: 'Prettify, minify, query, escape, unescape JSON', path: '/json-format', icon: '{}' },
   { id: 'pivot', name: 'Pivot', description: 'Create pivot tables from CSV data', path: '/pivot', icon: '🛋️' },
   { id: 'diff', name: 'Compute Diff', description: 'Compare two text or code snippets', path: '/diff', icon: '➕' },
   { id: 'diffjson', name: 'Compute JSON Diff', description: 'Compare two JSON snippets', path: '/diff?lang=json', icon: '{-}' },

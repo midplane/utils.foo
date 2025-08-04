@@ -6,6 +6,7 @@ export default function JSONFormatter() {
   const [input, setInput] = useState('');
   const [output, setOutput] = useState('');
   const [error, setError] = useState('');
+  const [query, setQuery] = useState('');
 
   const handleEditorChange = (value) => {
     setInput(value);
@@ -71,6 +72,44 @@ export default function JSONFormatter() {
     }
   };
 
+  const queryJSON = () => {
+    try {
+      setError('');
+      if (query.length === 0) {
+        setOutput(input)
+        return
+      }
+      const obj = JSON.parse(input);
+      const regex = /([^[.]+)|\[(\d+)\]/g;
+      const tokens = [];
+      let match;
+      while ((match = regex.exec(query))) {
+        if (match[1]) tokens.push(match[1]);
+        if (match[2]) tokens.push(Number(match[2]));
+      }
+
+      let current = obj;
+      let parent = null;
+      let lastKey = null;
+
+      for (let token of tokens) {
+        parent = current;
+        lastKey = token;
+        current = current?.[token];
+      }
+
+      if (parent !== null && lastKey !== null && parent.hasOwnProperty(lastKey)) {
+        const result = { [lastKey]: parent[lastKey] };
+        setOutput(JSON.stringify(result, null, 2));
+      } else {
+        setOutput(JSON.stringify(current, null, 2));
+      }
+    } catch (err) {
+      setError('Error querying JSON: ' + err.message);
+      setOutput('');
+    }
+  };
+
   const editorOptions = {
     minimap: { enabled: false },
     lineNumbers: 'on',
@@ -85,8 +124,8 @@ export default function JSONFormatter() {
     <>
       <SEO
         title="JSON formatter | utils.foo"
-        description="format, prettify, minify, escape, and unescape json client side"
-        keywords="json format, json beautify, json prettify, json minify, json escape, json unescape"
+        description="format, query, prettify, minify, escape, and unescape json client side"
+        keywords="json format, json beautify, json prettify, json minify, json escape, json unescape, json query"
       />
       <div className="max-w-full mx-auto px-8 py-8 shadow-md bg-white rounded-lg">
         <h1 className="text-3xl mb-6">JSON Formatter</h1>
@@ -123,6 +162,26 @@ export default function JSONFormatter() {
                 onClick={unescapeJSON}
               >
                 Unescape JSON
+              </button>
+            </div>
+            <div className="mt-4 flex gap-2 items-stretch">
+              <input
+                type="text"
+                placeholder="Enter query path (e.g. customer.phoneNumber[0])"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    queryJSON();
+                  }
+                }}
+                className="w-3/4 p-2 border rounded-md focus:outline-none"
+              />
+              <button
+                className="w-1/4 bg-gray-800 text-white p-2 rounded-md hover:bg-green-600 transition-colors duration-200"
+                onClick={queryJSON}
+              >
+                Query JSON
               </button>
             </div>
           </div>
