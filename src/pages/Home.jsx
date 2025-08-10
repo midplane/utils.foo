@@ -83,6 +83,8 @@ export default function Home() {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               ref={searchInputRef}
+              aria-label="Search utilities"
+              role="searchbox"
             />
             <Search className="absolute left-3 top-2.5 text-gray-600" size={20} />
             <SquareSlash className="absolute right-3 top-2.5 text-gray-600" size={20} />
@@ -109,7 +111,7 @@ export default function Home() {
 function UtilityCard({ utility, isFavorite, onToggleFavorite }) {
   return (
     <div className="relative">
-      <Link to={utility.path} className="block h-full" target={utility.external ? '_blank' : '_self'}>
+      <Link to={utility.path} className="block h-full" target={utility.external ? '_blank' : '_self'} rel={utility.external ? 'noopener noreferrer' : undefined}>
         <div className="flex flex-col h-full p-4 bg-white rounded-md border border-gray-100 shadow-md focus-within:ring-indigo-500 focus-within:ring-offset-2 hover:border-gray-200 hover:shadow-lg">
           <div className="flex items-center space-x-4 mb-4">
             <div className="flex-shrink-0 w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center text-xl font-mono">
@@ -127,6 +129,8 @@ function UtilityCard({ utility, isFavorite, onToggleFavorite }) {
           onToggleFavorite(utility.id);
         }}
         className="absolute bottom-2 right-2 text-yellow-500 hover:text-yellow-600 focus:outline-none"
+        aria-label={isFavorite ? `Remove ${utility.name} from favorites` : `Add ${utility.name} to favorites`}
+        title={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
       >
         <Star size={20} fill={isFavorite ? "currentColor" : "none"} />
       </button>

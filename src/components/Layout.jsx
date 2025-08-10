@@ -22,8 +22,8 @@ export default function Layout({ children }) {
           <Link to="/" className="text-sm leading-6 text-gray-600 hover:text-gray-900">home</Link>
           <Link to="/faq" className="ml-4 text-sm leading-6 text-gray-600 hover:text-gray-900">faq</Link>
           <Link to="/privacy" className="ml-4 text-sm leading-6 text-gray-600 hover:text-gray-900">privacy</Link>
-          <Link target='_blank' to="https://github.com/midplane/utils.foo/discussions" className="ml-4 text-sm leading-6 text-gray-600 hover:text-gray-900">contact</Link>
-          <Link target='_blank' to="https://github.com/midplane/utils.foo" className="ml-4 text-sm leading-6 text-gray-600 hover:text-gray-900">code</Link>
+          <Link target='_blank' rel="noopener noreferrer" to="https://github.com/midplane/utils.foo/discussions" className="ml-4 text-sm leading-6 text-gray-600 hover:text-gray-900">contact</Link>
+          <Link target='_blank' rel="noopener noreferrer" to="https://github.com/midplane/utils.foo" className="ml-4 text-sm leading-6 text-gray-600 hover:text-gray-900">code</Link>
         </div>
       </footer>
     </div>

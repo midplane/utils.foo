@@ -2,12 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { Copy, X, Clipboard } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import SEO from '../SEO';
+import { validateStringParam, validateMode } from '../utils/urlValidator';
 
 export default function Base64EncodeDecode() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const [input, setInput] = useState(searchParams.get('input') || '');
+  const [input, setInput] = useState(validateStringParam(searchParams.get('input')) || '');
   const [output, setOutput] = useState('');
-  const [mode, setMode] = useState(searchParams.get('mode') || 'encode');
+  const [mode, setMode] = useState(validateMode(searchParams.get('mode')));
 
   useEffect(() => {
     handleConversion();
@@ -92,10 +93,10 @@ export default function Base64EncodeDecode() {
             <div className="flex justify-between items-center mb-2">
               <h2 className="text-xl">Input</h2>
               <div className="flex space-x-2">
-                <button className="p-1 text-gray-500 hover:text-blue-500" onClick={handlePaste} title="Paste">
+                <button className="p-1 text-gray-500 hover:text-blue-500" onClick={handlePaste} title="Paste" aria-label="Paste from clipboard">
                   <Clipboard size={20} />
                 </button>
-                <button className="p-1 text-gray-500 hover:text-red-500" onClick={handleClearInput} title="Clear">
+                <button className="p-1 text-gray-500 hover:text-red-500" onClick={handleClearInput} title="Clear" aria-label="Clear input">
                   <X size={20} />
                 </button>
               </div>
@@ -105,13 +106,14 @@ export default function Base64EncodeDecode() {
               value={input}
               onChange={handleInputChange}
               placeholder={mode === 'encode' ? 'Enter text to encode...' : 'Enter Base64 to decode...'}
+              aria-label={mode === 'encode' ? 'Text to encode' : 'Base64 text to decode'}
             />
           </div>
 
           <div>
             <div className="flex justify-between items-center mb-2">
               <h2 className="text-xl">Output</h2>
-              <button className="p-1 text-gray-500 hover:text-blue-500" onClick={() => navigator.clipboard.writeText(output)} title="Copy">
+              <button className="p-1 text-gray-500 hover:text-blue-500" onClick={() => navigator.clipboard.writeText(output)} title="Copy" aria-label="Copy output to clipboard">
                 <Copy size={20} />
               </button>
             </div>
@@ -119,6 +121,7 @@ export default function Base64EncodeDecode() {
               className="w-full h-64 p-2 border border-gray-300 rounded-md resize-none"
               value={output}
               readOnly
+              aria-label={mode === 'encode' ? 'Encoded Base64 output' : 'Decoded text output'}
             />
           </div>
         </div>

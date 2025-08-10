@@ -35,7 +35,7 @@ export default function JsToJson() {
                 setSearchParams({ input });
             }
         } catch (err) {
-            setError(`Error: ${err.message}`);
+            setError('Invalid JavaScript syntax. Please check your code.');
             setOutput('');
             setConversionSuccess(false);
         }
@@ -63,7 +63,7 @@ export default function JsToJson() {
             setInput(text);
         } catch (err) {
             console.error('Failed to read clipboard contents: ', err);
-            setError(`Clipboard access denied: ${err.message}. Try pasting manually.`);
+            setError('Clipboard access denied. Try pasting manually.');
         }
     };
 
@@ -104,7 +104,7 @@ export default function JsToJson() {
             
             setInput(prettifiedJs);
         } catch (err) {
-            setError(`Cannot prettify: ${err.message}`);
+            setError('Cannot format code. Please check your syntax.');
         }
     };
 
@@ -115,7 +115,7 @@ export default function JsToJson() {
             setTimeout(() => setCopySuccess(false), 2000);
             return true;
         } catch (err) {
-            setError(`${errorPrefix}: ${err.message}`);
+            setError(`${errorPrefix}. Please try again.`);
             return false;
         }
     }, [setError, setCopySuccess]);

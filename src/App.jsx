@@ -1,6 +1,7 @@
 import { useEffect, Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Route, Routes, useLocation } from 'react-router-dom';
 import Layout from './components/Layout';
+import ErrorBoundary from './components/ErrorBoundary';
 import { initGA, logPageView } from './analytics';
 
 const Home = lazy(() => import('./pages/Home'));
@@ -20,7 +21,7 @@ const JavaThreadDumpAnalyzer = lazy(() => import('./pages/JavaThreadDumpAnalyzer
 const JsToJson = lazy(() => import('./pages/JsToJson'));
 const AnomalyDetection = lazy(() => import('./pages/AnomalyDetection'));
 
-const GA_MEASUREMENT_ID = 'G-3SJ4VQ0EMN';
+const GA_MEASUREMENT_ID = import.meta.env.VITE_GA_MEASUREMENT_ID || 'G-3SJ4VQ0EMN';
 
 function App() {
   useEffect(() => {
@@ -28,11 +29,13 @@ function App() {
   }, []);
 
   return (
-    <Router>
-      <Layout>
-        <AppContent />
-      </Layout>
-    </Router>
+    <ErrorBoundary>
+      <Router>
+        <Layout>
+          <AppContent />
+        </Layout>
+      </Router>
+    </ErrorBoundary>
   );
 }
 

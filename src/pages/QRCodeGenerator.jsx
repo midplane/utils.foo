@@ -43,7 +43,9 @@ const QRCodeGenerator = () => {
           downloadBlob(blob, 'qrcode.png');
         });
       };
-      img.src = URL.createObjectURL(svgBlob);
+      const imgUrl = URL.createObjectURL(svgBlob);
+      img.src = imgUrl;
+      img.onload = () => URL.revokeObjectURL(imgUrl);
     }
   };
 

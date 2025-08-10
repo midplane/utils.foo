@@ -19,7 +19,7 @@ export default function JSONFormatter() {
       setOutput(formattedJSON);
       setError('');
     } catch (err) {
-      setError('Invalid JSON: ' + err.message);
+      setError('Invalid JSON format. Please check your syntax.');
       setOutput('');
     }
   };
@@ -31,7 +31,7 @@ export default function JSONFormatter() {
       setOutput(minifiedJSON);
       setError('');
     } catch (err) {
-      setError('Invalid JSON: ' + err.message);
+      setError('Invalid JSON format. Please check your syntax.');
       setOutput('');
     }
   };
@@ -49,7 +49,7 @@ export default function JSONFormatter() {
       setOutput(escapedJSON);
       setError('');
     } catch (err) {
-      setError('Error escaping JSON: ' + err.message);
+      setError('Error escaping JSON. Please check your input format.');
       setOutput('');
     }
   };
@@ -67,7 +67,7 @@ export default function JSONFormatter() {
       setOutput(unescapedJSON);
       setError('');
     } catch (err) {
-      setError('Error unescaping JSON: ' + err.message);
+      setError('Error unescaping JSON. Please check your input format.');
       setOutput('');
     }
   };
@@ -105,7 +105,7 @@ export default function JSONFormatter() {
         setOutput(JSON.stringify(current, null, 2));
       }
     } catch (err) {
-      setError('Error querying JSON: ' + err.message);
+      setError('Error querying JSON. Please check your JSONPath expression.');
       setOutput('');
     }
   };

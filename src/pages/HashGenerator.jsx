@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Copy, X, Clipboard } from 'lucide-react';
-import CryptoJS from 'crypto-js';
+import { MD5, SHA1, SHA256, SHA384, SHA512, SHA3, RIPEMD160 } from 'crypto-js';
 import { useSearchParams } from 'react-router-dom';
 import SEO from '../SEO';
+import { validateStringParam, validateAlgorithm } from '../utils/urlValidator';
 
 const algorithms = [
   { name: 'MD5', value: 'MD5' },
@@ -16,9 +17,9 @@ const algorithms = [
 
 export default function HashGenerator() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const [input, setInput] = useState(searchParams.get('input') || '');
+  const [input, setInput] = useState(validateStringParam(searchParams.get('input')) || '');
   const [output, setOutput] = useState('');
-  const [algorithm, setAlgorithm] = useState(searchParams.get('algorithm') || 'SHA256');
+  const [algorithm, setAlgorithm] = useState(validateAlgorithm(searchParams.get('algorithm')));
 
   useEffect(() => {
     handleHash();
@@ -36,25 +37,25 @@ export default function HashGenerator() {
 
       switch (algorithm) {
         case 'MD5':
-          hashedOutput = CryptoJS.MD5(input);
+          hashedOutput = MD5(input);
           break;
         case 'SHA1':
-          hashedOutput = CryptoJS.SHA1(input);
+          hashedOutput = SHA1(input);
           break;
         case 'SHA256':
-          hashedOutput = CryptoJS.SHA256(input);
+          hashedOutput = SHA256(input);
           break;
         case 'SHA384':
-          hashedOutput = CryptoJS.SHA384(input);
+          hashedOutput = SHA384(input);
           break;
         case 'SHA512':
-          hashedOutput = CryptoJS.SHA512(input);
+          hashedOutput = SHA512(input);
           break;
         case 'SHA3':
-          hashedOutput = CryptoJS.SHA3(input);
+          hashedOutput = SHA3(input);
           break;
         case 'RIPEMD160':
-          hashedOutput = CryptoJS.RIPEMD160(input);
+          hashedOutput = RIPEMD160(input);
           break;
         default:
           throw new Error('Unsupported algorithm');

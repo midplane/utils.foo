@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, useRef } from "react";
+import React, { useState, useCallback, useMemo, useRef } from "react";
 import OptimizedChart from "../components/OptimizedChart";
 
 // Utility functions extracted for better organization
@@ -145,7 +145,7 @@ const CsvUtils = {
 };
 
 // Main component
-export default function AnomalyDetection() {
+const AnomalyDetection = React.memo(() => {
   // State management
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
@@ -1139,4 +1139,8 @@ export default function AnomalyDetection() {
       </div>
     </div>
   );
-}
+});
+
+AnomalyDetection.displayName = 'AnomalyDetection';
+
+export default AnomalyDetection;
