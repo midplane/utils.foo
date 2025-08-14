@@ -1,0 +1,59 @@
+.mermaid {
+  width: 100%;
+  min-height: 300px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.mermaid svg {
+  max-width: 100%;
+  height: auto !important;
+  min-height: 300px;
+  width: auto !important;
+  transition: all 0.3s ease;
+}
+
+.mermaid-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: #fafafa;
+  transition: all 0.3s ease;
+}
+
+/* Full screen mode styles */
+.mermaid-container.fixed {
+  background-color: #ffffff;
+  z-index: 9999;
+  padding: 2rem;
+  overflow: auto;
+}
+
+/* Ensure the diagram is centered and properly sized in full screen */
+.mermaid-container.fixed .mermaid {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 80vh;
+}
+
+/* Make SVG larger in full screen mode */
+.mermaid-container.fixed .mermaid svg {
+  max-width: 90%;
+  min-height: 70vh;
+  transform: scale(1.1);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .mermaid svg {
+    min-height: 250px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .mermaid svg {
+    min-height: 350px;
+  }
+}

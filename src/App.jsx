@@ -20,6 +20,7 @@ const JWTDecoder = lazy(() => import('./pages/JWTDecoder'));
 const JavaThreadDumpAnalyzer = lazy(() => import('./pages/JavaThreadDumpAnalyzer'));
 const JsToJson = lazy(() => import('./pages/JsToJson'));
 const AnomalyDetection = lazy(() => import('./pages/AnomalyDetection'));
+const Mermaid = lazy(() => import('./pages/Mermaid'));
 
 const GA_MEASUREMENT_ID = import.meta.env.VITE_GA_MEASUREMENT_ID || 'G-3SJ4VQ0EMN';
 
@@ -69,6 +70,7 @@ function AppContent() {
         <Route path="/jtdump" element={<JavaThreadDumpAnalyzer />} />
         <Route path="/anomaly" element={<AnomalyDetection />} />
         <Route path="/js2json" element={<JsToJson />} />
+        <Route path="/mermaid" element={<Mermaid />} />
       </Routes>
     </Suspense>
   );
