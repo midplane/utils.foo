@@ -1,5 +1,6 @@
-import React from 'react';
 import { Helmet } from 'react-helmet-async';
+
+import PropTypes from 'prop-types';
 
 const SEO = ({ title, description, keywords }) => {
   return (
@@ -13,6 +14,12 @@ const SEO = ({ title, description, keywords }) => {
       <meta name="twitter:description" content={description} />
     </Helmet>
   );
+};
+
+SEO.propTypes = {
+  title: PropTypes.string.isRequired,
+  description: PropTypes.string.isRequired,
+  keywords: PropTypes.string.isRequired,
 };
 
 export default SEO;

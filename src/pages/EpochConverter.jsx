@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import SEO from '../SEO';
 
 export default function EpochConverter() {
@@ -11,10 +11,43 @@ export default function EpochConverter() {
     minutes: '',
     seconds: ''
   });
-  const [currentEpoch, setCurrentEpoch] = useState(Math.floor(Date.now() / 1000));
+  const [, setCurrentEpoch] = useState(Math.floor(Date.now() / 1000));
   const [readableInfo, setReadableInfo] = useState({});
 
   const localTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+  const getRelativeTime = useCallback((date) => {
+    const now = new Date();
+    const diffMs = now - date;
+    const diffSecs = Math.floor(diffMs / 1000);
+    const diffMins = Math.floor(diffSecs / 60);
+    const diffHours = Math.floor(diffMins / 60);
+    const diffDays = Math.floor(diffHours / 24);
+
+    if (diffSecs < 60) return `${diffSecs} seconds ago`;
+    if (diffMins < 60) return `${diffMins} minutes ago`;
+    if (diffHours < 24) return `${diffHours} hours ago`;
+    return `${diffDays} days ago`;
+  }, []);
+
+  const updateHumanDateFromEpoch = useCallback((epoch) => {
+    const date = new Date(epoch * (epoch > 1e12 ? 1 : 1000));
+    setHumanDate({
+      year: date.getFullYear().toString(),
+      month: (date.getMonth() + 1).toString().padStart(2, '0'),
+      day: date.getDate().toString().padStart(2, '0'),
+      hours: date.getHours().toString().padStart(2, '0'),
+      minutes: date.getMinutes().toString().padStart(2, '0'),
+      seconds: date.getSeconds().toString().padStart(2, '0')
+    });
+
+    setReadableInfo({
+      localTime: date.toLocaleString(),
+      utcTime: date.toUTCString(),
+      isoString: date.toISOString(),
+      relativeTime: getRelativeTime(date)
+    });
+  }, [getRelativeTime]);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -27,27 +60,15 @@ export default function EpochConverter() {
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [epochInput]);
+  }, [epochInput, updateHumanDateFromEpoch]);
 
   useEffect(() => {
     // Initialize with current epoch time
     const now = Math.floor(Date.now() / 1000);
     setEpochInput(now.toString());
     updateHumanDateFromEpoch(now);
-  }, []);
+  }, [updateHumanDateFromEpoch]);
 
-  const updateHumanDateFromEpoch = (epoch) => {
-    const date = new Date(epoch * (epoch > 1e12 ? 1 : 1000));
-    setHumanDate({
-      year: date.getFullYear(),
-      month: (date.getMonth() + 1).toString().padStart(2, '0'),
-      day: date.getDate().toString().padStart(2, '0'),
-      hours: date.getHours().toString().padStart(2, '0'),
-      minutes: date.getMinutes().toString().padStart(2, '0'),
-      seconds: date.getSeconds().toString().padStart(2, '0')
-    });
-    updateReadableInfo(epoch);
-  };
 
   const handleEpochChange = (e) => {
     const value = e.target.value;

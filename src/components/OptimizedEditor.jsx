@@ -1,4 +1,5 @@
 import { lazy, Suspense } from 'react';
+import PropTypes from 'prop-types';
 
 const Editor = lazy(() => import('@monaco-editor/react'));
 
@@ -29,3 +30,10 @@ export default function OptimizedEditor({ value, onChange, language = 'json', ..
     </Suspense>
   );
 }
+
+OptimizedEditor.propTypes = {
+  value: PropTypes.string.isRequired,
+  onChange: PropTypes.func.isRequired,
+  language: PropTypes.string,
+  options: PropTypes.object,
+};

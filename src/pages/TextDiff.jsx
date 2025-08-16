@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { DiffEditor } from '@monaco-editor/react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import SEO from '../SEO';

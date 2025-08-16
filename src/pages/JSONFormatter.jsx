@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import OptimizedEditor from '../components/OptimizedEditor';
 import SEO from '../SEO';
 
@@ -18,7 +18,7 @@ export default function JSONFormatter() {
       const formattedJSON = JSON.stringify(parsedJSON, null, 2);
       setOutput(formattedJSON);
       setError('');
-    } catch (err) {
+    } catch {
       setError('Invalid JSON format. Please check your syntax.');
       setOutput('');
     }
@@ -30,7 +30,7 @@ export default function JSONFormatter() {
       const minifiedJSON = JSON.stringify(parsedJSON);
       setOutput(minifiedJSON);
       setError('');
-    } catch (err) {
+    } catch {
       setError('Invalid JSON format. Please check your syntax.');
       setOutput('');
     }
@@ -39,8 +39,7 @@ export default function JSONFormatter() {
   const escapeJSON = () => {
     try {
       const escapedJSON = input.replace(/[\\]/g, '\\\\')
-                               .replace(/[\"]/g, '\\"')
-                               .replace(/[\/]/g, '\\/')
+                               .replace(/["/]/g, (match) => '\\' + match)
                                .replace(/[\b]/g, '\\b')
                                .replace(/[\f]/g, '\\f')
                                .replace(/[\n]/g, '\\n')
@@ -48,7 +47,7 @@ export default function JSONFormatter() {
                                .replace(/[\t]/g, '\\t');
       setOutput(escapedJSON);
       setError('');
-    } catch (err) {
+    } catch {
       setError('Error escaping JSON. Please check your input format.');
       setOutput('');
     }
@@ -66,7 +65,7 @@ export default function JSONFormatter() {
                                  .replace(/\\t/g, '\t');
       setOutput(unescapedJSON);
       setError('');
-    } catch (err) {
+    } catch {
       setError('Error unescaping JSON. Please check your input format.');
       setOutput('');
     }
@@ -98,13 +97,13 @@ export default function JSONFormatter() {
         current = current?.[token];
       }
 
-      if (parent !== null && lastKey !== null && parent.hasOwnProperty(lastKey)) {
+      if (parent !== null && lastKey !== null && Object.prototype.hasOwnProperty.call(parent, lastKey)) {
         const result = { [lastKey]: parent[lastKey] };
         setOutput(JSON.stringify(result, null, 2));
       } else {
         setOutput(JSON.stringify(current, null, 2));
       }
-    } catch (err) {
+    } catch {
       setError('Error querying JSON. Please check your JSONPath expression.');
       setOutput('');
     }

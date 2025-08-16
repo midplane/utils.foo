@@ -1,4 +1,5 @@
 import { lazy, Suspense } from 'react';
+import PropTypes from 'prop-types';
 
 const ReactECharts = lazy(() => import('echarts-for-react'));
 
@@ -19,3 +20,8 @@ export default function OptimizedChart({ option, style, ...props }) {
     </Suspense>
   );
 }
+
+OptimizedChart.propTypes = {
+  option: PropTypes.object.isRequired,
+  style: PropTypes.object,
+};

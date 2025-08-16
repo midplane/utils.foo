@@ -34,7 +34,7 @@ export default function JsToJson() {
             if (input.trim() && jsonOutput.trim() !== '{}' && jsonOutput.trim() !== '[]') {
                 setSearchParams({ input });
             }
-        } catch (err) {
+        } catch {
             setError('Invalid JavaScript syntax. Please check your code.');
             setOutput('');
             setConversionSuccess(false);
@@ -103,7 +103,7 @@ export default function JsToJson() {
             let prettifiedJs = prettifyObject(parsed);
             
             setInput(prettifiedJs);
-        } catch (err) {
+        } catch {
             setError('Cannot format code. Please check your syntax.');
         }
     };
@@ -114,7 +114,7 @@ export default function JsToJson() {
             setCopySuccess(true);
             setTimeout(() => setCopySuccess(false), 2000);
             return true;
-        } catch (err) {
+        } catch {
             setError(`${errorPrefix}. Please try again.`);
             return false;
         }

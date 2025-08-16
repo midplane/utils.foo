@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Copy, X, Clipboard } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import SEO from '../SEO';
@@ -9,12 +9,7 @@ export default function URLEncodeDecode() {
   const [output, setOutput] = useState('');
   const [mode, setMode] = useState(searchParams.get('mode') || 'encode');
 
-  useEffect(() => {
-    handleConversion();
-    updateURL();
-  }, [input, mode]);
-
-  const handleConversion = () => {
+  const handleConversion = useCallback(() => {
     if (input === '') {
       setOutput('');
       return;
@@ -25,18 +20,23 @@ export default function URLEncodeDecode() {
     } else {
       try {
         setOutput(decodeURIComponent(input));
-      } catch (error) {
+      } catch {
         setOutput('Error: Invalid URL encoding');
       }
     }
-  };
+  }, [input, mode]);
 
-  const updateURL = () => {
+  const updateURL = useCallback(() => {
     const params = new URLSearchParams();
     if (input) params.set('input', input);
     params.set('mode', mode);
     setSearchParams(params, { replace: true });
-  };
+  }, [input, mode, setSearchParams]);
+
+  useEffect(() => {
+    handleConversion();
+    updateURL();
+  }, [handleConversion, updateURL]);
 
   const handleInputChange = (e) => {
     setInput(e.target.value);

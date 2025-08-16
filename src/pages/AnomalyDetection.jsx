@@ -134,7 +134,7 @@ const CsvUtils = {
           row[header] = values[idx] || '';
         });
         return row;
-      } catch (error) {
+      } catch {
         console.warn(`Error parsing line ${index + 2}: ${line}`);
         return null;
       }

@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { FaCircle, FaPaperclip, FaFileUpload } from 'react-icons/fa';
 import SEO from '../SEO';
@@ -15,7 +15,7 @@ export default function JavaThreadDumpAnalyzer() {
   const [activeTab, setActiveTab] = useState('Thread Viewer'); // State for active tab
   const threadsPerPage = 15;
   const totalThreadLabel = 'TOTAL';
-  const threadKnownStates = ['NEW', 'RUNNABLE', 'TIMED_WAITING', 'WAITING', 'BLOCKED', 'TERMINATED'];
+  const threadKnownStates = useMemo(() => ['NEW', 'RUNNABLE', 'TIMED_WAITING', 'WAITING', 'BLOCKED', 'TERMINATED'], []);
 
   const onDrop = useCallback((acceptedFiles) => {
     if (acceptedFiles.length > 1) {
@@ -34,9 +34,9 @@ export default function JavaThreadDumpAnalyzer() {
     };
 
     reader.readAsText(file);
-  }, []);
+  }, [processAndParseThreadDump]);
 
-  const processAndParseThreadDump = (content) => {
+  const processAndParseThreadDump = useCallback((content) => {
     const threadCountsTemp = {};
     const threadsTemp = {};
     const threadBlocks = content.split('\n\n');
@@ -70,20 +70,10 @@ export default function JavaThreadDumpAnalyzer() {
     });
     setThreadCounts(threadCountsTemp);
     setThreads(threadsTemp);
-  };
+  }, [threadKnownStates]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({ onDrop });
 
-  const handleTextAreaChange = (e) => {
-    const content = e.target.value;
-    setThreadDump(content);
-    if (content.trim() === '') {
-      setThreadCounts({});
-      setThreads({});
-    } else {
-      processAndParseThreadDump(content);
-    }
-  };
 
   const getClassBasedOnThreadState = (state) => {
     switch (state) {
@@ -161,7 +151,7 @@ export default function JavaThreadDumpAnalyzer() {
                 </p>
               ) : (
                 <p className="text-gray-500 font-medium flex items-center justify-center">
-                  <FaFileUpload className="mr-2 text-blue-500" /> Drag 'n' drop file here or click to upload a file
+                  <FaFileUpload className="mr-2 text-blue-500" /> Drag &apos;n&apos; drop file here or click to upload a file
                 </p>
               )}
             </div>

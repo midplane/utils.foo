@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import { useState, useRef } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import SEO from '../SEO';
 

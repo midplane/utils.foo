@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import SEO from '../SEO';
 
 export default function JWTDecoder() {
   const [jwtInput, setJwtInput] = useState('eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c');
   const [decodedJWT, setDecodedJWT] = useState(null);
 
-  const decodeJWT = (token) => {
+  const decodeJWT = useCallback((token) => {
     try {
       const parts = token.split('.');
       if (parts.length !== 3) {
@@ -22,7 +22,7 @@ export default function JWTDecoder() {
     } catch (error) {
       setDecodedJWT({ error: error.message });
     }
-  };
+  }, []);
 
   const handleInputChange = (e) => {
     const value = e.target.value;
@@ -36,7 +36,7 @@ export default function JWTDecoder() {
 
   useEffect(() => {
     decodeJWT(jwtInput);
-  }, []);
+  }, [jwtInput, decodeJWT]);
 
   return (
     <>

@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { Search, Star, SquareSlash } from 'lucide-react';
+import PropTypes from 'prop-types';
 import SEO from '../SEO';
 
 const utilities = [
@@ -138,3 +139,16 @@ function UtilityCard({ utility, isFavorite, onToggleFavorite }) {
     </div>
   );
 }
+
+UtilityCard.propTypes = {
+  utility: PropTypes.shape({
+    id: PropTypes.string.isRequired,
+    name: PropTypes.string.isRequired,
+    description: PropTypes.string.isRequired,
+    path: PropTypes.string.isRequired,
+    icon: PropTypes.string.isRequired,
+    external: PropTypes.bool,
+  }).isRequired,
+  isFavorite: PropTypes.bool.isRequired,
+  onToggleFavorite: PropTypes.func.isRequired,
+};

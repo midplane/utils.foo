@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Copy, X, Clipboard } from 'lucide-react';
 import { MD5, SHA1, SHA256, SHA384, SHA512, SHA3, RIPEMD160 } from 'crypto-js';
 import { useSearchParams } from 'react-router-dom';
@@ -21,12 +21,7 @@ export default function HashGenerator() {
   const [output, setOutput] = useState('');
   const [algorithm, setAlgorithm] = useState(validateAlgorithm(searchParams.get('algorithm')));
 
-  useEffect(() => {
-    handleHash();
-    updateURL();
-  }, [input, algorithm]);
-
-  const handleHash = () => {
+  const handleHash = useCallback(() => {
     if (input === '') {
       setOutput('');
       return;
@@ -62,17 +57,22 @@ export default function HashGenerator() {
       }
 
       setOutput(hashedOutput.toString());
-    } catch (error) {
+    } catch {
       setOutput('Error: Unable to generate hash');
     }
-  };
+  }, [input, algorithm]);
 
-  const updateURL = () => {
+  const updateURL = useCallback(() => {
     const params = new URLSearchParams();
     if (input) params.set('input', input);
     params.set('algorithm', algorithm);
     setSearchParams(params, { replace: true });
-  };
+  }, [input, algorithm, setSearchParams]);
+
+  useEffect(() => {
+    handleHash();
+    updateURL();
+  }, [handleHash, updateURL]);
 
   const handleInputChange = (e) => {
     setInput(e.target.value);

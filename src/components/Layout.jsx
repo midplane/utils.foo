@@ -1,8 +1,7 @@
-import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link } from 'react-router-dom';
+import PropTypes from 'prop-types';
 
 export default function Layout({ children }) {
-  const location = useLocation();
 
   return (
     <div className="flex flex-col min-h-screen" style={{ background: 'radial-gradient(circle at 18.7% 37.8%, rgb(250, 250, 250) 0%, rgb(225, 234, 238) 90%)'}}>
@@ -29,3 +28,7 @@ export default function Layout({ children }) {
     </div>
   );
 }
+
+Layout.propTypes = {
+  children: PropTypes.node.isRequired,
+};
