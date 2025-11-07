@@ -2,66 +2,122 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useLocation } from 'react-router-dom';
 import OptimizedEditor from '../components/OptimizedEditor';
 import SEO from '../SEO';
-import mermaid from 'mermaid';
-import './Mermaid.css';
+import './D2.css';
 import { Maximize2, Minimize2, Download } from 'lucide-react';
 import { encodeDiagram, decodeDiagram } from '../utils/diagramEncoding';
 
-export default function Mermaid() {
+let d2Instance = null;
+
+// Lazy load D2 module only when needed
+const initD2 = async () => {
+  if (d2Instance) return d2Instance;
+  try {
+    const { D2 } = await import('@terrastruct/d2');
+    d2Instance = new D2();
+    return d2Instance;
+  } catch (err) {
+    throw new Error(`Failed to initialize D2: ${err.message}`);
+  }
+};
+
+export default function D2Diagram() {
   const location = useLocation();
-  const [input, setInput] = useState('graph TD\n    A[Start] --> B{Is it working?}\n    B -->|Yes| C[Great!]\n    B -->|No| D[Debug]\n    D --> B');
+  const [input, setInput] = useState(`vars: {
+  d2-config: {
+    theme-id: 3
+    sketch: true
+    layout-engine: elk
+  }
+  colors: {
+    c2: "#C7F1FF"
+    c3: "#B5AFF6"
+    c4: "#DEE1EB"
+    c5: "#88DCF7"
+    c6: "#E4DBFE"
+  }
+}
+
+LangUnits: {
+  style.fill: \${colors.c6}
+  RegexVal: {
+    ds
+  }
+  SQLSelect: {
+    ds
+  }
+  PythonTr: {
+    ds
+  }
+  langunit ₙ: {
+    style.multiple: true
+    style.stroke-dash: 10
+    style.stroke: black
+    style.animated: 1
+    "... ds"
+  }
+}
+
+LangUnits <- ExperimentHost.Dataset: "load dataset"
+Dataset UI -> LangUnits: "manage datasets"
+
+Dataset UI: {
+  style.fill: \${colors.c4}
+}
+
+ExperimentHost: {
+  style.fill: \${colors.c4}
+  Experiment: {
+    style.multiple: true
+  }
+  Dataset
+}
+ExperimentHost.Experiment -> Experiment
+
+Experiment.ModelConfigurations: {
+  style.multiple: true
+}
+Experiment.LangUnit
+
+Experiment.ModelConfigurations -> ModelConfiguration
+
+ModelConfiguration.Prompting
+ModelConfiguration.Model
+ModelConfiguration.LangUnit`);
   const [error, setError] = useState('');
   const [svgContent, setSvgContent] = useState('');
   const [notification, setNotification] = useState('');
   const [isFullScreen, setIsFullScreen] = useState(false);
-  const mermaidRef = useRef(null);
+  const [isRendering, setIsRendering] = useState(false);
+  const d2Ref = useRef(null);
 
-  const renderDiagram = useCallback(() => {
-    if (!mermaidRef.current) return;
+  const renderDiagram = useCallback(async () => {
+    setIsRendering(true);
 
     try {
-      // Clear previous content
-      mermaidRef.current.innerHTML = '';
       setError('');
       setSvgContent('');
 
-      // Create a unique ID for the diagram
-      const id = `mermaid-diagram-${Date.now()}`;
-      
-      // Create a div for the diagram
-      const container = document.createElement('div');
-      container.id = id;
-      container.className = 'mermaid';
-      container.textContent = input;
-      
-      // Append the div to the container
-      mermaidRef.current.appendChild(container);
-      
-      // Render the diagram
-      mermaid.run({
-        nodes: [container],
-        suppressErrors: true,
-      }).then(() => {
-        // Store the SVG content for download
-        const svgElement = mermaidRef.current.querySelector('svg');
-        if (svgElement) {
-          setSvgContent(svgElement.outerHTML);
-        }
-      }).catch(err => {
-        setError(`Error rendering diagram: ${err.message}`);
-      });
+      // Initialize and get D2 instance
+      const d2 = await initD2();
+
+      // Compile the D2 code
+      const result = await d2.compile(input);
+
+      // Render to SVG
+      const svg = await d2.render(result.diagram, result.renderOptions);
+
+      // Store the SVG content
+      setSvgContent(svg);
     } catch (err) {
-      setError(`Error rendering diagram: ${err.message}`);
+      console.error('D2 Error:', err);
+      setError(`Error: ${err.message || 'Failed to render diagram'}`);
+      setSvgContent('');
+    } finally {
+      setIsRendering(false);
     }
   }, [input]);
 
   useEffect(() => {
-    mermaid.initialize({
-      startOnLoad: true,
-      theme: 'default',
-      securityLevel: 'loose',
-    });
-    
     // Check if there's a diagram in the URL
     const params = new URLSearchParams(location.search);
     const diagramFromUrl = params.get('diagram');
@@ -109,7 +165,7 @@ export default function Mermaid() {
   const copyAsUrl = () => {
     try {
       const encodedDiagram = encodeDiagram(input);
-      const url = `${window.location.origin}/mermaid?diagram=${encodedDiagram}`;
+      const url = `${window.location.origin}/d2?diagram=${encodedDiagram}`;
 
       navigator.clipboard.writeText(url)
         .then(() => {
@@ -142,7 +198,7 @@ export default function Mermaid() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = 'mermaid-diagram.svg';
+      a.download = 'd2-diagram.svg';
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -153,23 +209,10 @@ export default function Mermaid() {
     }
   };
 
-
   const toggleFullScreen = () => {
     setIsFullScreen(!isFullScreen);
   };
 
-  const examples = {
-    flowchart: 'graph TD\n    A[Start] --> B{Is it working?}\n    B -->|Yes| C[Great!]\n    B -->|No| D[Debug]\n    D --> B',
-    sequence: 'sequenceDiagram\n    participant Alice\n    participant Bob\n    Alice->>John: Hello John, how are you?\n    loop Healthcheck\n        John->>John: Fight against hypochondria\n    end\n    Note right of John: Rational thoughts <br/>prevail!\n    John-->>Alice: Great!\n    John->>Bob: How about you?\n    Bob-->>John: Jolly good!',
-    classDiagram: 'classDiagram\n    Animal <|-- Duck\n    Animal <|-- Fish\n    Animal <|-- Zebra\n    Animal : +int age\n    Animal : +String gender\n    Animal: +isMammal()\n    Animal: +mate()\n    class Duck{\n        +String beakColor\n        +swim()\n        +quack()\n    }\n    class Fish{\n        -int sizeInFeet\n        -canEat()\n    }\n    class Zebra{\n        +bool is_wild\n        +run()\n    }',
-    stateDiagram: 'stateDiagram-v2\n    [*] --> Still\n    Still --> [*]\n    Still --> Moving\n    Moving --> Still\n    Moving --> Crash\n    Crash --> [*]',
-    pie: 'pie title Pets adopted by volunteers\n    "Dogs" : 386\n    "Cats" : 85\n    "Rats" : 15',
-    er: 'erDiagram\n    CUSTOMER ||--o{ ORDER : places\n    ORDER ||--|{ LINE-ITEM : contains\n    CUSTOMER }|..|{ DELIVERY-ADDRESS : uses'
-  };
-
-  const loadExample = (type) => {
-    setInput(examples[type]);
-  };
 
   const editorOptions = {
     minimap: { enabled: false },
@@ -184,61 +227,21 @@ export default function Mermaid() {
   return (
     <>
       <SEO
-        title="Mermaid Diagram Generator | utils.foo"
-        description="Create and visualize diagrams using Mermaid syntax"
-        keywords="mermaid, diagram, flowchart, sequence diagram, class diagram, state diagram, gantt chart, pie chart, er diagram"
+        title="D2 Diagram Generator | utils.foo"
+        description="Create and visualize diagrams using D2 syntax"
+        keywords="d2, diagram, flowchart, visualization, text-to-diagram, d2lang"
       />
-      <div className="max-w-full mx-auto px-8 py-8 shadow-md bg-white rounded-lg relative">
+      <div className="mx-auto py-8 bg-white relative" style={{ width: 'calc(100vw - 32px)', marginLeft: 'calc(-50vw + 50% + 16px)' }}>
         {notification && (
           <div className="absolute top-4 right-4 bg-green-500 text-white px-4 py-2 rounded-md shadow-md transition-opacity duration-300">
             {notification}
           </div>
         )}
-        <h1 className="text-3xl mb-6">Mermaid Diagram Generator</h1>
-        <div className="mb-4">
-          <div className="flex flex-wrap gap-2">
-            <button
-              className="px-3 py-1 bg-gray-200 rounded-md hover:bg-gray-300 text-sm"
-              onClick={() => loadExample('flowchart')}
-            >
-              Flowchart
-            </button>
-            <button
-              className="px-3 py-1 bg-gray-200 rounded-md hover:bg-gray-300 text-sm"
-              onClick={() => loadExample('sequence')}
-            >
-              Sequence
-            </button>
-            <button
-              className="px-3 py-1 bg-gray-200 rounded-md hover:bg-gray-300 text-sm"
-              onClick={() => loadExample('classDiagram')}
-            >
-              Class
-            </button>
-            <button
-              className="px-3 py-1 bg-gray-200 rounded-md hover:bg-gray-300 text-sm"
-              onClick={() => loadExample('stateDiagram')}
-            >
-              State
-            </button>
-            <button
-              className="px-3 py-1 bg-gray-200 rounded-md hover:bg-gray-300 text-sm"
-              onClick={() => loadExample('pie')}
-            >
-              Pie
-            </button>
-            <button
-              className="px-3 py-1 bg-gray-200 rounded-md hover:bg-gray-300 text-sm"
-              onClick={() => loadExample('er')}
-            >
-              ER
-            </button>
-          </div>
-        </div>
+        <div className="px-8">
         {/* Mobile: Stack with diagram on top, Tablet/Desktop: Side-by-side with wider diagram */}
         <div className="flex flex-col-reverse md:flex-row space-y-4 space-y-reverse md:space-y-0 md:space-x-4">
-          <div className="w-full md:w-2/5 lg:w-1/3 flex flex-col">
-            <h3 className="text-lg font-medium text-gray-700 mb-2">Mermaid Code</h3>
+          <div className="w-full md:w-1/2 lg:w-1/2 flex flex-col">
+            <h3 className="text-lg font-medium text-gray-700 mb-2">D2 Code</h3>
             <OptimizedEditor
               height="500px"
               language="text"
@@ -263,11 +266,16 @@ export default function Mermaid() {
               </button>
             </div>
           </div>
-          <div className="w-full md:w-3/5 lg:w-2/3">
+          <div className="w-full md:w-2/3 lg:w-3/4">
             <h3 className="text-lg font-medium text-gray-700 mb-2">Diagram Preview</h3>
             {error && (
               <div className="mb-4 p-2 bg-red-100 border border-red-400 text-red-700 rounded-md">
                 {error}
+              </div>
+            )}
+            {isRendering && (
+              <div className="mb-4 p-2 bg-blue-100 border border-blue-400 text-blue-700 rounded-md">
+                Rendering diagram...
               </div>
             )}
             <div className="relative">
@@ -279,18 +287,22 @@ export default function Mermaid() {
               >
                 {isFullScreen ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
               </button>
-              <div 
-                ref={mermaidRef} 
+              <div
+                ref={d2Ref}
                 className={`
-                  w-full border-2 border-gray-200 rounded-md p-4 overflow-auto bg-white flex items-center justify-center mermaid-container shadow-sm
-                  ${isFullScreen ? 'fixed inset-0 z-50 h-screen w-screen rounded-none border-0' : 'h-[400px] md:h-[500px] lg:h-[600px]'}
-                  ${isFullScreen ? 'fixed' : ''}
+                  w-full border-2 border-gray-200 rounded-md p-4 overflow-auto bg-white flex items-center justify-center d2-container shadow-sm
+                  ${isFullScreen ? 'fixed inset-0 z-50 h-screen w-screen rounded-none border-0 p-0' : 'h-[400px] md:h-[500px] lg:h-[600px]'}
                 `}
               >
-                <div className="text-gray-500">Diagram will render here</div>
+                {svgContent ? (
+                  <div dangerouslySetInnerHTML={{ __html: svgContent }} className="w-full h-full flex items-center justify-center" />
+                ) : (
+                  <div className="text-gray-500">Diagram will render here</div>
+                )}
               </div>
             </div>
           </div>
+        </div>
         </div>
       </div>
     </>

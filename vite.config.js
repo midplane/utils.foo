@@ -11,6 +11,7 @@ export default defineConfig({
           vendor: ['react', 'react-dom', 'react-router-dom'],
           editor: ['@monaco-editor/react', 'monaco-editor'],
           charts: ['echarts', 'echarts-for-react'],
+          diagrams: ['mermaid', '@terrastruct/d2'],
           pivot: ['react-pivottable', 'papaparse'],
           crypto: ['crypto-js'],
           icons: ['lucide-react', 'react-icons'],

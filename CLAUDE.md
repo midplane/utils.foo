@@ -21,13 +21,14 @@ This is a React SPA built with Vite that provides client-side utility tools with
 - **Error Handling**: `src/components/ErrorBoundary.jsx` catches React errors gracefully
 
 ### Directory Organization
-- **`src/pages/`**: Individual utility tool components (18 total, lazy-loaded for optimal bundle size)
+- **`src/pages/`**: Individual utility tool components (19 total, lazy-loaded for optimal bundle size)
   - Base64, URL, Hash, JSON formatting utilities
   - Epoch converter, Pivot tables, Text diff
   - QR code generator/decoder
   - JWT decoder, Java thread dump analyzer
   - JavaScript to JSON converter, Anomaly detection
-  - Mermaid diagram renderer, FAQ, Privacy pages
+  - Mermaid diagram renderer, D2 diagram renderer
+  - FAQ, Privacy pages
 - **`src/components/`**: Reusable components (Layout, ErrorBoundary, Monaco editor wrapper, ECharts wrapper, theme toggle)
 - **`src/utils/`**: Utility functions and helpers (e.g., URL validation)
 
@@ -37,7 +38,9 @@ This is a React SPA built with Vite that provides client-side utility tools with
 - **QR Codes**: qrcode.react and jsqr
 - **Cryptography**: crypto-js for hashing utilities
 - **CSV/Tables**: PapaParse and react-pivottable
-- **Diagrams**: Mermaid 11.12.1
+- **Diagrams**:
+  - Mermaid 11.12.1 (flowcharts, sequence diagrams, class diagrams, etc.)
+  - @terrastruct/d2 (D2 diagram language with WASM-based rendering)
 - **Icons**: Lucide React and react-icons
 - **File Upload**: react-dropzone (for certain utilities)
 - **Styling**: Tailwind CSS 3.4.10 with custom gradient backgrounds
@@ -45,10 +48,12 @@ This is a React SPA built with Vite that provides client-side utility tools with
 
 ### Build Optimization
 Vite configuration uses manual chunk splitting to optimize code splitting:
-- Separate chunks: vendor, editor, charts, pivot, crypto, icons, utils, analytics
+- Separate chunks: vendor, editor, charts, diagrams, pivot, crypto, icons, utils, analytics
+- Diagram libraries (Mermaid + D2) share a chunk since both are diagram-focused features
 - All page routes are lazy-loaded for reduced initial bundle size
 - Source maps disabled in production builds
 - Chunk size warning threshold: 1000KB
+- Note: @terrastruct/d2 includes WASM binary (~1-2MB), loaded only when navigating to /d2
 
 ### Adding New Utility Tools
 To add a new utility:

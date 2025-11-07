@@ -7,6 +7,7 @@ import SEO from '../SEO';
 const utilities = [
   { id: 'epoch', name: 'Epoch Converter', description: 'Convert between epoch time and human-readable date', path: '/epoch', icon: '⌛' },
   { id: 'mermaid', name: 'Mermaid Diagrams', description: 'Create and visualize diagrams using Mermaid', path: '/mermaid', icon: '🧜‍♀️' },
+  { id: 'd2', name: 'd2 Diagrams', description: 'Create and visualize diagrams using d2', path: '/d2', icon: 'd2' },
   { id: 'base64', name: 'Base64 Text Encoder / Decoder', description: 'Encode and decode Base64 text data', path: '/base64', icon: '64' },
   { id: 'url', name: 'URL Encoder / Decoder', description: 'Encode and decode URLs', path: '/url', icon: '🔗' },
   { id: 'hash', name: 'Hash Generator', description: 'Generate hash values for various algorithms', path: '/hash', icon: '#️⃣' },
