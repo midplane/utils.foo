@@ -17,25 +17,6 @@ export default function JavaThreadDumpAnalyzer() {
   const totalThreadLabel = 'TOTAL';
   const threadKnownStates = useMemo(() => ['NEW', 'RUNNABLE', 'TIMED_WAITING', 'WAITING', 'BLOCKED', 'TERMINATED'], []);
 
-  const onDrop = useCallback((acceptedFiles) => {
-    if (acceptedFiles.length > 1) {
-      alert('Please upload only one file.');
-      return;
-    }
-
-    const file = acceptedFiles[0];
-    setFileName(file.name); // Set the file name in state
-    const reader = new FileReader();
-
-    reader.onload = (event) => {
-      const content = event.target.result;
-      setThreadDump(content);
-      processAndParseThreadDump(content);
-    };
-
-    reader.readAsText(file);
-  }, [processAndParseThreadDump]);
-
   const processAndParseThreadDump = useCallback((content) => {
     const threadCountsTemp = {};
     const threadsTemp = {};
@@ -71,6 +52,25 @@ export default function JavaThreadDumpAnalyzer() {
     setThreadCounts(threadCountsTemp);
     setThreads(threadsTemp);
   }, [threadKnownStates]);
+
+  const onDrop = useCallback((acceptedFiles) => {
+    if (acceptedFiles.length > 1) {
+      alert('Please upload only one file.');
+      return;
+    }
+
+    const file = acceptedFiles[0];
+    setFileName(file.name); // Set the file name in state
+    const reader = new FileReader();
+
+    reader.onload = (event) => {
+      const content = event.target.result;
+      setThreadDump(content);
+      processAndParseThreadDump(content);
+    };
+
+    reader.readAsText(file);
+  }, [processAndParseThreadDump]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({ onDrop });
 
