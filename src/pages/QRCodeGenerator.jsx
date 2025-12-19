@@ -41,11 +41,11 @@ const QRCodeGenerator = () => {
         ctx.drawImage(img, 0, 0, size, size);
         canvas.toBlob((blob) => {
           downloadBlob(blob, 'qrcode.png');
+          URL.revokeObjectURL(img.src);
         });
       };
       const imgUrl = URL.createObjectURL(svgBlob);
       img.src = imgUrl;
-      img.onload = () => URL.revokeObjectURL(imgUrl);
     }
   };
 
