@@ -19,6 +19,7 @@ const QRCodeDecoder = lazy(() => import('./pages/QRCodeDecoder'));
 const JWTDecoder = lazy(() => import('./pages/JWTDecoder'));
 const JavaThreadDumpAnalyzer = lazy(() => import('./pages/JavaThreadDumpAnalyzer'));
 const JsToJson = lazy(() => import('./pages/JsToJson'));
+const JsonToCsv = lazy(() => import('./pages/JsonToCsv'));
 const AnomalyDetection = lazy(() => import('./pages/AnomalyDetection'));
 const Mermaid = lazy(() => import('./pages/Mermaid'));
 const D2Diagram = lazy(() => import('./pages/D2Diagram'));
@@ -71,6 +72,7 @@ function AppContent() {
         <Route path="/jtdump" element={<JavaThreadDumpAnalyzer />} />
         <Route path="/anomaly" element={<AnomalyDetection />} />
         <Route path="/js2json" element={<JsToJson />} />
+        <Route path="/json2csv" element={<JsonToCsv />} />
         <Route path="/mermaid" element={<Mermaid />} />
         <Route path="/d2" element={<D2Diagram />} />
       </Routes>

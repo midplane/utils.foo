@@ -22,6 +22,7 @@ const utilities = [
   { id: 'regex', name: 'Regex Tester', description: 'Test regex expressions from different languages, links to regex101.com', path: 'https://regex101.com/', icon: '^$', external: true },
   { id: 'jtdump', name: 'Java Thread Dump Analyzer', description: 'Analyze java thread dumps with detailed stack trace viewing', path: '/jtdump', icon: '🧵' },
   { id: 'js2json', name: 'JS to JSON', description: 'Convert JavaScript objects to JSON format', path: '/js2json', icon: '🔄' },
+  { id: 'json2csv', name: 'JSON to CSV converter', description: 'Convert JSON to CSV format with automatic flattening and download capability', path: '/json2csv', icon: '🧩' },
   { id: 'anomaly', name: 'Anomaly Detection', description: 'Detect anomalies using statistical analysis', path: '/anomaly', icon: '⚠️' },
   // Add more utilities here as we implement them
 ];
