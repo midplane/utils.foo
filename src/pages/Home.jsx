@@ -8,6 +8,7 @@ const utilities = [
   { id: 'epoch', name: 'Epoch Converter', description: 'Convert between epoch time and human-readable date', path: '/epoch', icon: '⌛' },
   { id: 'mermaid', name: 'Mermaid Diagrams', description: 'Create and visualize diagrams using Mermaid', path: '/mermaid', icon: '🧜‍♀️' },
   { id: 'd2', name: 'd2 Diagrams', description: 'Create and visualize diagrams using d2', path: '/d2', icon: 'd2' },
+  { id: 'json2csv', name: 'JSON to CSV converter', description: 'Convert JSON to CSV format with automatic flattening and download capability', path: '/json2csv', icon: '🧩' },
   { id: 'base64', name: 'Base64 Text Encoder / Decoder', description: 'Encode and decode Base64 text data', path: '/base64', icon: '64' },
   { id: 'url', name: 'URL Encoder / Decoder', description: 'Encode and decode URLs', path: '/url', icon: '🔗' },
   { id: 'hash', name: 'Hash Generator', description: 'Generate hash values for various algorithms', path: '/hash', icon: '#️⃣' },
@@ -22,7 +23,6 @@ const utilities = [
   { id: 'regex', name: 'Regex Tester', description: 'Test regex expressions from different languages, links to regex101.com', path: 'https://regex101.com/', icon: '^$', external: true },
   { id: 'jtdump', name: 'Java Thread Dump Analyzer', description: 'Analyze java thread dumps with detailed stack trace viewing', path: '/jtdump', icon: '🧵' },
   { id: 'js2json', name: 'JS to JSON', description: 'Convert JavaScript objects to JSON format', path: '/js2json', icon: '🔄' },
-  { id: 'json2csv', name: 'JSON to CSV converter', description: 'Convert JSON to CSV format with automatic flattening and download capability', path: '/json2csv', icon: '🧩' },
   { id: 'anomaly', name: 'Anomaly Detection', description: 'Detect anomalies using statistical analysis', path: '/anomaly', icon: '⚠️' },
   // Add more utilities here as we implement them
 ];

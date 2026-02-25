@@ -8,6 +8,7 @@ const JsonToCsv = () => {
   const [error, setError] = useState('');
   const [copySuccess, setCopySuccess] = useState(false);
   const [tableData, setTableData] = useState({ headers: [], rows: [] });
+  const [isHowItWorksOpen, setIsHowItWorksOpen] = useState(false);
 
   // Improved flatten function that handles arrays by creating numbered indices
   const flattenObject = (obj, prefix = '') => {
@@ -43,7 +44,12 @@ const JsonToCsv = () => {
   const extractRows = (data) => {
     // If data is already an array, process each item
     if (Array.isArray(data)) {
-      return data.map(item => flattenObject(item));
+      return data.map(item => {
+        if (typeof item === 'object' && item !== null) {
+          return flattenObject(item);
+        }
+        return { value: item };
+      });
     }
 
     // If data is an object, check if it contains arrays that should become rows
@@ -63,17 +69,22 @@ const JsonToCsv = () => {
         // Collect non-array properties to be repeated in each row
         Object.keys(data).forEach(key => {
           if (key !== primaryArrayKey) {
-            if (!Array.isArray(data[key])) {
-              Object.assign(otherProps, flattenObject({ [key]: data[key] }));
-            }
+            Object.assign(otherProps, flattenObject({ [key]: data[key] }));
           }
         });
 
         // Create a row for each array item, combining with other props
-        return primaryArray.map(item => ({
-          ...otherProps,
-          ...flattenObject(item)
-        }));
+        return primaryArray.map(item => (
+          typeof item === 'object' && item !== null
+            ? {
+              ...otherProps,
+              ...flattenObject(item)
+            }
+            : {
+              ...otherProps,
+              value: item ?? ''
+            }
+        ));
       }
 
       // No arrays found, treat as single row
@@ -125,7 +136,52 @@ const JsonToCsv = () => {
 
     return [csvHeaders, ...csvRows].join('\n');
   };
+  // Parse full CSV text safely (handles quoted commas, escaped quotes, and newlines in fields)
+  const parseCsvText = (csvText) => {
+    const rows = [];
+    let currentRow = [];
+    let currentValue = '';
+    let inQuotes = false;
 
+    for (let i = 0; i < csvText.length; i++) {
+      const char = csvText[i];
+      const nextChar = csvText[i + 1];
+
+      if (char === '"') {
+        if (inQuotes && nextChar === '"') {
+          currentValue += '"';
+          i++;
+        } else {
+          inQuotes = !inQuotes;
+        }
+      } else if (char === ',' && !inQuotes) {
+        currentRow.push(currentValue);
+        currentValue = '';
+      } else if ((char === '\n' || char === '\r') && !inQuotes) {
+        if (char === '\r' && nextChar === '\n') {
+          i++;
+        }
+
+        currentRow.push(currentValue);
+        if (currentRow.some(cell => cell !== '')) {
+          rows.push(currentRow);
+        }
+        currentRow = [];
+        currentValue = '';
+      } else {
+        currentValue += char;
+      }
+    }
+
+    if (currentValue !== '' || currentRow.length > 0) {
+      currentRow.push(currentValue);
+      if (currentRow.some(cell => cell !== '')) {
+        rows.push(currentRow);
+      }
+    }
+
+    return rows;
+  };
   // Handle conversion
   const handleConvert = useCallback(() => {
     if (!input.trim()) {
@@ -136,14 +192,14 @@ const JsonToCsv = () => {
     }
 
     // Validate JSON first - just try to parse it
-    try {
-      JSON.parse(input);
-    } catch (e) {
-      setError('Invalid JSON format. please check your input');
-      setOutput('');
-      setTableData({ headers: [], rows: [] });
-      return;
-    }
+    // try {
+    //   JSON.parse(input);
+    // } catch (e) {
+    //   setError('Invalid JSON format. please check your input');
+    //   setOutput('');
+    //   setTableData({ headers: [], rows: [] });
+    //   return;
+    // }
     
     try {
       const csv = jsonToCsv(input);
@@ -151,36 +207,11 @@ const JsonToCsv = () => {
       setError('');
 
       // Parse CSV for table display
-      const lines = csv.split('\n').filter(line => line.trim());
-      if (lines.length > 0) {
-        const headers = lines[0].split(',').map(h => h.replace(/^"|"$/g, ''));
-        const rows = lines.slice(1).map(line => {
-          // Simple CSV parsing (handles basic quoted fields)
-          const values = [];
-          let current = '';
-          let inQuotes = false;
+      const parsedRows = parseCsvText(csv);
+      if (parsedRows.length > 0) {
+        const headers = parsedRows[0];
+        const rows = parsedRows.slice(1);
 
-          for (let i = 0; i < line.length; i++) {
-            const char = line[i];
-            const nextChar = line[i + 1];
-
-            if (char === '"') {
-              if (inQuotes && nextChar === '"') {
-                current += '"';
-                i++; // Skip next quote
-              } else {
-                inQuotes = !inQuotes;
-              }
-            } else if (char === ',' && !inQuotes) {
-              values.push(current);
-              current = '';
-            } else {
-              current += char;
-            }
-          }
-          values.push(current); // Push last value
-          return values;
-        });
         setTableData({ headers, rows });
       }
     } catch (err) {
@@ -201,36 +232,8 @@ const JsonToCsv = () => {
 
   // Convert CSV to TSV (Tab-Separated Values) for clipboard
   const csvToTsv = (csvText) => {
-    const lines = csvText.split('\n');
-    return lines.map(line => {
-      // Parse CSV line (handles quoted fields with commas)
-      const values = [];
-      let current = '';
-      let inQuotes = false;
-
-      for (let i = 0; i < line.length; i++) {
-        const char = line[i];
-        const nextChar = line[i + 1];
-
-        if (char === '"') {
-          if (inQuotes && nextChar === '"') {
-            current += '"';
-            i++; // Skip next quote
-          } else {
-            inQuotes = !inQuotes;
-          }
-        } else if (char === ',' && !inQuotes) {
-          values.push(current);
-          current = '';
-        } else {
-          current += char;
-        }
-      }
-      values.push(current); // Push last value
-
-      // Join with tabs instead of commas
-      return values.join('\t');
-    }).join('\n');
+    const rows = parseCsvText(csvText);
+    return rows.map(row => row.join('\t')).join('\n');
   };
 
   // Copy to clipboard as TSV for proper paste in spreadsheets
@@ -301,9 +304,8 @@ const JsonToCsv = () => {
             JSON to CSV Converter
           </h1>
           <p className="text-gray-600 mb-6">
-            Convert JSON arrays to CSV format. Supports nested objects (flattened with dot notation) and automatic type handling.
+            Convert JSON arrays to CSV format. Supports nested objects (flattened with dot notation) and automatic type handling. TABULAR VIEW BELOW
           </p>
-
           <div className="grid gap-6 md:grid-cols-2">
             {/* Input Section */}
             <div>
@@ -409,14 +411,24 @@ const JsonToCsv = () => {
 
           {/* Information Section */}
           <div className="mt-6 p-4 bg-blue-50 rounded-md">
-            <h3 className="font-semibold text-gray-800 mb-2">How it works:</h3>
-            <ul className="text-sm text-gray-700 space-y-1 list-disc list-inside">
-              <li>Paste a JSON array of objects (or a single object)</li>
-              <li>Nested objects are flattened with dot notation (e.g., address.city)</li>
-              <li>Arrays within objects are stringified</li>
-              <li>The CSV output includes headers automatically</li>
-              <li>Download the result as a .csv file or copy to clipboard</li>
-            </ul>
+            <button
+              type="button"
+              onClick={() => setIsHowItWorksOpen((prev) => !prev)}
+              className="w-full flex items-center justify-between text-left font-semibold text-gray-800"
+              aria-expanded={isHowItWorksOpen}
+            >
+              <span>How it works:</span>
+              <span>{isHowItWorksOpen ? '[-]' : '[+]'}</span>
+            </button>
+            {isHowItWorksOpen && (
+              <ul className="mt-2 text-sm text-gray-700 space-y-1 list-disc list-inside">
+                <li>Paste a JSON array of objects (or a single object)</li>
+                <li>Nested objects are flattened with dot notation (e.g., address.city)</li>
+                <li>Arrays are flattened with index notation (e.g., items.0, items.1)</li>
+                <li>The CSV output includes headers automatically</li>
+                <li>Download the result as a .csv file or copy to clipboard</li>
+              </ul>
+            )}
           </div>
 
           {/* Tabular Preview Section */}
