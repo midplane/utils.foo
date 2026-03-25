@@ -23,6 +23,7 @@ const JsonToCsv = lazy(() => import('./pages/JsonToCsv'));
 const AnomalyDetection = lazy(() => import('./pages/AnomalyDetection'));
 const Mermaid = lazy(() => import('./pages/Mermaid'));
 const D2Diagram = lazy(() => import('./pages/D2Diagram'));
+const JsxVisualizer = lazy(() => import('./pages/JsxVisualizer'));
 
 const GA_MEASUREMENT_ID = import.meta.env.VITE_GA_MEASUREMENT_ID || 'G-3SJ4VQ0EMN';
 
@@ -75,6 +76,7 @@ function AppContent() {
         <Route path="/json2csv" element={<JsonToCsv />} />
         <Route path="/mermaid" element={<Mermaid />} />
         <Route path="/d2" element={<D2Diagram />} />
+        <Route path="/visualizer" element={<JsxVisualizer />} />
       </Routes>
     </Suspense>
   );

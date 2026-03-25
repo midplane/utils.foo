@@ -20,6 +20,7 @@
     "jsqr": "^1.4.0",
     "lucide-react": "^0.436.0",
     "lz-string": "^1.5.0",
+    "mathjs": "^15.1.1",
     "mermaid": "^11.12.1",
     "monaco-editor": "^0.51.0",
     "papaparse": "^5.4.1",
@@ -30,8 +31,11 @@
     "react-ga4": "^2.1.0",
     "react-helmet-async": "^2.0.5",
     "react-icons": "5.5.0",
+    "react-live": "^4.1.8",
     "react-pivottable": "^0.11.0",
-    "react-router-dom": "^6.26.1"
+    "react-router-dom": "^6.26.1",
+    "recharts": "^3.8.0",
+    "sucrase": "^3.35.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.9.0",

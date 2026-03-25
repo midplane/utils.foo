@@ -34,6 +34,7 @@ A collection of free, client-side utility tools for developers. All processing h
 
 ### Visualization
 - **Mermaid Diagrams** - Create and visualize diagrams using Mermaid syntax
+- **JSX Visualizer** - Live JSX playground with formula evaluator and variable sweep charts
 
 ### External Links
 - **Tree Generator** - Generate ASCII folder structure diagrams (tree.nathanfriend.io)

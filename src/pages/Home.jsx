@@ -24,6 +24,7 @@ const utilities = [
   { id: 'jtdump', name: 'Java Thread Dump Analyzer', description: 'Analyze java thread dumps with detailed stack trace viewing', path: '/jtdump', icon: '🧵' },
   { id: 'js2json', name: 'JS to JSON', description: 'Convert JavaScript objects to JSON format', path: '/js2json', icon: '🔄' },
   { id: 'anomaly', name: 'Anomaly Detection', description: 'Detect anomalies using statistical analysis', path: '/anomaly', icon: '⚠️' },
+  { id: 'visualizer', name: 'JSX Visualizer', description: 'Live JSX playground with formula evaluator and variable sweep charts', path: '/visualizer', icon: 'zap' },
   // Add more utilities here as we implement them
 ];
 
