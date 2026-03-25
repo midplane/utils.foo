@@ -4,21 +4,27 @@ import FormulaBar from './FormulaBar'
 import VariableControls from './VariableControls'
 import SweepChart from './SweepChart'
 
-const BUILTIN_SYMBOLS = new Set([
-  'e', 'pi', 'i', 'Infinity', 'NaN', 'true', 'false',
-  'sin', 'cos', 'tan', 'sqrt', 'abs', 'log', 'exp', 'ceil', 'floor', 'round', 'max', 'min',
-])
+const builtinCache = new Map()
+function isBuiltin(name) {
+  if (builtinCache.has(name)) return builtinCache.get(name)
+  let result = false
+  try { evaluate(name); result = true } catch {}
+  builtinCache.set(name, result)
+  return result
+}
 
 export function extractVars(formula) {
   const names = []
+  let parsed = false
   try {
     parse(formula).traverse(node => {
-      if (node.isSymbolNode && !BUILTIN_SYMBOLS.has(node.name)) {
+      if (node.isSymbolNode && !isBuiltin(node.name)) {
         names.push(node.name)
       }
     })
+    parsed = true
   } catch {}
-  return [...new Set(names)]
+  return { vars: [...new Set(names)], parsed }
 }
 
 export const DEFAULT_VAR = { value: 50, min: 0, max: 100, step: 1 }
@@ -30,8 +36,9 @@ export default function FormulaMode({ formula, onFormulaChange, vars, onVarsChan
 
   // Sync vars when formula changes
   useEffect(() => {
-    const detected = extractVars(formula)
-    if (detected.length === 0 && formula.trim() !== '') return
+    const { vars: detected, parsed } = extractVars(formula)
+    // Skip update only on actual parse failure (not valid constant formulas)
+    if (!parsed && formula.trim() !== '') return
 
     onVarsChange(prev => {
       const next = {}

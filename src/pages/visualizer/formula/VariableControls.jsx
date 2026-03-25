@@ -4,6 +4,7 @@ import { Settings2, SlidersHorizontal, Hash } from 'lucide-react'
 function VarRow({ name, config, onChange, onConfigChange }) {
   const [showConfig, setShowConfig] = useState(false)
   const [inputMode, setInputMode] = useState('slider') // 'slider' | 'input'
+  const [draft, setDraft] = useState('')
   const { value, min, max, step } = config
 
   function update(field, raw) {
@@ -11,7 +12,13 @@ function VarRow({ name, config, onChange, onConfigChange }) {
     onConfigChange(name, { ...config, [field]: num })
   }
 
+  function handleSwitchToInput() {
+    setDraft(String(value))
+    setInputMode('input')
+  }
+
   function handleDirectInput(raw) {
+    setDraft(raw)
     const num = parseFloat(raw)
     if (!isNaN(num)) onChange(name, num)
   }
@@ -31,7 +38,7 @@ function VarRow({ name, config, onChange, onConfigChange }) {
               <SlidersHorizontal size={12} />
             </button>
             <button
-              onClick={() => setInputMode('input')}
+              onClick={handleSwitchToInput}
               className={`p-1 transition-colors ${inputMode === 'input' ? 'bg-gray-700 text-indigo-400' : 'text-gray-600 hover:text-gray-400'}`}
               title="Number input"
             >
@@ -65,7 +72,7 @@ function VarRow({ name, config, onChange, onConfigChange }) {
       ) : (
         <input
           type="number"
-          value={value}
+          value={draft}
           step={step}
           onChange={e => handleDirectInput(e.target.value)}
           onFocus={e => e.target.select()}

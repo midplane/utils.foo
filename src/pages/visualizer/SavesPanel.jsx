@@ -100,7 +100,8 @@ export default function SavesPanel({ isOpen, onClose, saves, onSave, onLoad, onD
   useEffect(() => {
     if (isOpen) {
       setName('')
-      setTimeout(() => inputRef.current?.focus(), 50)
+      const id = setTimeout(() => inputRef.current?.focus(), 50)
+      return () => clearTimeout(id)
     }
   }, [isOpen])
 

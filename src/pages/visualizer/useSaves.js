@@ -15,24 +15,30 @@ export function useSaves() {
   const [saves, setSaves] = useState(loadFromStorage)
 
   function addSave(item) {
-    const next = [
-      { ...item, id: Date.now().toString(), savedAt: new Date().toISOString() },
-      ...saves,
-    ]
-    setSaves(next)
-    persist(next)
+    setSaves(prev => {
+      const next = [
+        { ...item, id: Date.now().toString(), savedAt: new Date().toISOString() },
+        ...prev,
+      ]
+      persist(next)
+      return next
+    })
   }
 
   function deleteSave(id) {
-    const next = saves.filter(s => s.id !== id)
-    setSaves(next)
-    persist(next)
+    setSaves(prev => {
+      const next = prev.filter(s => s.id !== id)
+      persist(next)
+      return next
+    })
   }
 
   function renameSave(id, name) {
-    const next = saves.map(s => s.id === id ? { ...s, name } : s)
-    setSaves(next)
-    persist(next)
+    setSaves(prev => {
+      const next = prev.map(s => s.id === id ? { ...s, name } : s)
+      persist(next)
+      return next
+    })
   }
 
   return { saves, addSave, deleteSave, renameSave }
