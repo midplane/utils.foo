@@ -182,7 +182,8 @@ interface HashResult {
 }
 
 export default function HashTool() {
-  const [input, setInput] = useState('')
+  // Easter egg: "Hello, World!" - the classic first program
+  const [input, setInput] = useState('Hello, World!')
   const [selectedAlgorithm, setSelectedAlgorithm] = useState<HashAlgorithm | 'all'>('all')
   const [hashes, setHashes] = useState<HashResult[]>([])
   const [isComputing, setIsComputing] = useState(false)

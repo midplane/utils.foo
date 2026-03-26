@@ -7,12 +7,14 @@ import { CopyButton } from '../../components/ui/CopyButton'
 import { cn } from '../../lib/utils'
 
 type Mode = 'encode' | 'decode'
+type EncodeType = 'component' | 'full'
 
-export default function Base64Tool() {
+export default function UrlEncoderTool() {
   const [mode, setMode] = useState<Mode>('encode')
-  // Easter egg: The answer to life, the universe, and everything
-  const [input, setInput] = useState('The answer is 42')
-  const [output, setOutput] = useState('VGhlIGFuc3dlciBpcyA0Mg==')
+  const [encodeType, setEncodeType] = useState<EncodeType>('component')
+  // Easter egg: The meaning of foo & bar (RFC 3092)
+  const [input, setInput] = useState('foo=bar&baz=qux quux')
+  const [output, setOutput] = useState('foo%3Dbar%26baz%3Dqux%20quux')
   const [error, setError] = useState('')
 
   const handleInputChange = (value: string) => {
@@ -26,14 +28,18 @@ export default function Base64Tool() {
 
     try {
       if (mode === 'encode') {
-        const encoded = btoa(unescape(encodeURIComponent(value)))
+        const encoded = encodeType === 'component' 
+          ? encodeURIComponent(value)
+          : encodeURI(value)
         setOutput(encoded)
       } else {
-        const decoded = decodeURIComponent(escape(atob(value)))
+        const decoded = encodeType === 'component'
+          ? decodeURIComponent(value)
+          : decodeURI(value)
         setOutput(decoded)
       }
     } catch {
-      setError(mode === 'decode' ? 'Invalid Base64 input' : 'Failed to encode')
+      setError(mode === 'decode' ? 'Invalid encoded input' : 'Failed to encode')
       setOutput('')
     }
   }
@@ -43,6 +49,13 @@ export default function Base64Tool() {
     setInput('')
     setOutput('')
     setError('')
+  }
+
+  const handleEncodeTypeChange = (newType: EncodeType) => {
+    setEncodeType(newType)
+    if (input) {
+      handleInputChange(input)
+    }
   }
 
   const handleClear = () => {
@@ -58,14 +71,18 @@ export default function Base64Tool() {
       setInput(output)
       try {
         if (newMode === 'encode') {
-          const encoded = btoa(unescape(encodeURIComponent(output)))
+          const encoded = encodeType === 'component'
+            ? encodeURIComponent(output)
+            : encodeURI(output)
           setOutput(encoded)
         } else {
-          const decoded = decodeURIComponent(escape(atob(output)))
+          const decoded = encodeType === 'component'
+            ? decodeURIComponent(output)
+            : decodeURI(output)
           setOutput(decoded)
         }
       } catch {
-        setError(newMode === 'decode' ? 'Invalid Base64 input' : 'Failed to encode')
+        setError(newMode === 'decode' ? 'Invalid encoded input' : 'Failed to encode')
         setOutput('')
       }
     }
@@ -73,7 +90,7 @@ export default function Base64Tool() {
 
   return (
     <div className="space-y-4 animate-fade-in">
-      {/* Breadcrumb & Header - Compact */}
+      {/* Breadcrumb & Header */}
       <div className="space-y-2">
         <Link 
           to="/" 
@@ -87,44 +104,72 @@ export default function Base64Tool() {
         
         <div className="flex items-center gap-2">
           <div className="w-7 h-7 rounded-lg bg-[var(--color-accent)] flex items-center justify-center text-white">
-            <CodeIcon className="w-3.5 h-3.5" />
+            <LinkIcon className="w-3.5 h-3.5" />
           </div>
           <h1 className="font-mono text-lg font-semibold text-[var(--color-ink)]">
-            Base64 <span className="text-[var(--color-accent)]">Encoder</span>
+            URL <span className="text-[var(--color-accent)]">Encoder</span>
           </h1>
         </div>
       </div>
 
-      {/* Main Card - Compact */}
+      {/* Main Card */}
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between flex-wrap gap-2">
-            {/* Mode Toggle */}
-            <div className="flex bg-[var(--color-cream-dark)] rounded-lg p-0.5 border border-[var(--color-border)]">
-              <button
-                onClick={() => handleModeChange('encode')}
-                className={cn(
-                  'px-3 py-1.5 text-xs font-medium rounded-md transition-all flex items-center gap-1.5',
-                  mode === 'encode'
-                    ? 'bg-white text-[var(--color-ink)] shadow-sm'
-                    : 'text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]'
-                )}
-              >
-                <EncodeIcon className="w-3 h-3" />
-                Encode
-              </button>
-              <button
-                onClick={() => handleModeChange('decode')}
-                className={cn(
-                  'px-3 py-1.5 text-xs font-medium rounded-md transition-all flex items-center gap-1.5',
-                  mode === 'decode'
-                    ? 'bg-white text-[var(--color-ink)] shadow-sm'
-                    : 'text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]'
-                )}
-              >
-                <DecodeIcon className="w-3 h-3" />
-                Decode
-              </button>
+            <div className="flex gap-2 flex-wrap">
+              {/* Mode Toggle */}
+              <div className="flex bg-[var(--color-cream-dark)] rounded-lg p-0.5 border border-[var(--color-border)]">
+                <button
+                  onClick={() => handleModeChange('encode')}
+                  className={cn(
+                    'px-3 py-1.5 text-xs font-medium rounded-md transition-all flex items-center gap-1.5',
+                    mode === 'encode'
+                      ? 'bg-white text-[var(--color-ink)] shadow-sm'
+                      : 'text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]'
+                  )}
+                >
+                  <EncodeIcon className="w-3 h-3" />
+                  Encode
+                </button>
+                <button
+                  onClick={() => handleModeChange('decode')}
+                  className={cn(
+                    'px-3 py-1.5 text-xs font-medium rounded-md transition-all flex items-center gap-1.5',
+                    mode === 'decode'
+                      ? 'bg-white text-[var(--color-ink)] shadow-sm'
+                      : 'text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]'
+                  )}
+                >
+                  <DecodeIcon className="w-3 h-3" />
+                  Decode
+                </button>
+              </div>
+              
+              {/* Encode Type Toggle */}
+              <div className="flex bg-[var(--color-cream-dark)] rounded-lg p-0.5 border border-[var(--color-border)]">
+                <button
+                  onClick={() => handleEncodeTypeChange('component')}
+                  className={cn(
+                    'px-2 py-1.5 text-xs font-medium rounded-md transition-all',
+                    encodeType === 'component'
+                      ? 'bg-white text-[var(--color-ink)] shadow-sm'
+                      : 'text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]'
+                  )}
+                >
+                  Component
+                </button>
+                <button
+                  onClick={() => handleEncodeTypeChange('full')}
+                  className={cn(
+                    'px-2 py-1.5 text-xs font-medium rounded-md transition-all',
+                    encodeType === 'full'
+                      ? 'bg-white text-[var(--color-ink)] shadow-sm'
+                      : 'text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]'
+                  )}
+                >
+                  Full URL
+                </button>
+              </div>
             </div>
             
             {/* Actions */}
@@ -144,8 +189,8 @@ export default function Base64Tool() {
           {/* Input */}
           <div className="space-y-1">
             <Textarea
-              label={mode === 'encode' ? 'Text to encode' : 'Base64 to decode'}
-              placeholder={mode === 'encode' ? 'Enter text to encode...' : 'Enter Base64 string to decode...'}
+              label={mode === 'encode' ? 'Text to encode' : 'URL to decode'}
+              placeholder={mode === 'encode' ? 'Enter text to encode...' : 'Enter encoded URL to decode...'}
               value={input}
               onChange={(e) => handleInputChange(e.target.value)}
               rows={4}
@@ -167,7 +212,7 @@ export default function Base64Tool() {
             </div>
           )}
 
-          {/* Arrow Divider - Compact */}
+          {/* Arrow Divider */}
           <div className="flex items-center gap-2">
             <div className="flex-1 h-px bg-[var(--color-border)]" />
             <div className={cn(
@@ -185,7 +230,7 @@ export default function Base64Tool() {
           <div className="space-y-1">
             <div className="flex items-center justify-between">
               <label className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-ink-muted)]">
-                {mode === 'encode' ? 'Base64 output' : 'Decoded text'}
+                {mode === 'encode' ? 'Encoded URL' : 'Decoded text'}
               </label>
               {output && <CopyButton text={output} />}
             </div>
@@ -209,26 +254,26 @@ export default function Base64Tool() {
         </CardContent>
       </Card>
 
-      {/* Info - Compact as single row */}
+      {/* Info */}
       <div className="grid grid-cols-2 gap-2">
         <div className="px-3 py-2 bg-[var(--color-cream-dark)] rounded-lg border border-[var(--color-border)]">
           <div className="flex gap-2 items-start">
             <InfoIcon className="w-3.5 h-3.5 text-[var(--color-accent)] flex-shrink-0 mt-0.5" />
             <div>
-              <h3 className="font-semibold text-[var(--color-ink)] text-xs">What is Base64?</h3>
+              <h3 className="font-semibold text-[var(--color-ink)] text-xs">Component Mode</h3>
               <p className="text-[10px] text-[var(--color-ink-muted)] leading-tight mt-0.5">
-                Binary-to-text encoding for URLs, emails, and data URIs.
+                Encodes all special chars including / : ? & =
               </p>
             </div>
           </div>
         </div>
         <div className="px-3 py-2 bg-[var(--color-cream-dark)] rounded-lg border border-[var(--color-border)]">
           <div className="flex gap-2 items-start">
-            <CheckIcon className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0 mt-0.5" />
+            <InfoIcon className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0 mt-0.5" />
             <div>
-              <h3 className="font-semibold text-[var(--color-ink)] text-xs">UTF-8 Support</h3>
+              <h3 className="font-semibold text-[var(--color-ink)] text-xs">Full URL Mode</h3>
               <p className="text-[10px] text-[var(--color-ink-muted)] leading-tight mt-0.5">
-                Supports special characters and emojis.
+                Preserves URL structure chars like / : ? & =
               </p>
             </div>
           </div>
@@ -238,10 +283,10 @@ export default function Base64Tool() {
   )
 }
 
-function CodeIcon({ className }: { className?: string }) {
+function LinkIcon({ className }: { className?: string }) {
   return (
     <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
     </svg>
   )
 }
@@ -298,14 +343,6 @@ function InfoIcon({ className }: { className?: string }) {
   return (
     <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-    </svg>
-  )
-}
-
-function CheckIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
     </svg>
   )
 }

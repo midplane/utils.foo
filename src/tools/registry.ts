@@ -4,11 +4,17 @@ import { Tool } from './types'
 import EpochConverter from './epoch-converter'
 import Base64Tool from './base64'
 import HashTool from './hash'
+import UrlEncoderTool from './url-encoder'
+import JwtDecoderTool from './jwt-decoder'
+import UnicodeConverterTool from './unicode-converter'
 
 // Import tool metadata
 import { meta as epochConverterMeta } from './epoch-converter/meta'
 import { meta as base64Meta } from './base64/meta'
 import { meta as hashMeta } from './hash/meta'
+import { meta as urlEncoderMeta } from './url-encoder/meta'
+import { meta as jwtDecoderMeta } from './jwt-decoder/meta'
+import { meta as unicodeConverterMeta } from './unicode-converter/meta'
 
 // Registry of all tools
 export const tools: Tool[] = [
@@ -23,6 +29,18 @@ export const tools: Tool[] = [
   {
     ...hashMeta,
     component: HashTool,
+  },
+  {
+    ...urlEncoderMeta,
+    component: UrlEncoderTool,
+  },
+  {
+    ...jwtDecoderMeta,
+    component: JwtDecoderTool,
+  },
+  {
+    ...unicodeConverterMeta,
+    component: UnicodeConverterTool,
   },
 ]
 

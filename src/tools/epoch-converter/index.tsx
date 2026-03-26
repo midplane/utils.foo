@@ -6,8 +6,9 @@ import { Button } from '../../components/ui/Button'
 import { CopyButton } from '../../components/ui/CopyButton'
 
 export default function EpochConverter() {
-  const [timestamp, setTimestamp] = useState('')
-  const [dateString, setDateString] = useState('')
+  // Initialize with current time
+  const [timestamp, setTimestamp] = useState(() => Math.floor(Date.now() / 1000).toString())
+  const [dateString, setDateString] = useState(() => new Date().toLocaleString())
   const [timezone, setTimezone] = useState('local')
   const [currentTime, setCurrentTime] = useState(() => Date.now())
 
