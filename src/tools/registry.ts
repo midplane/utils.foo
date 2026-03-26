@@ -10,6 +10,10 @@ import UnicodeConverterTool from './unicode-converter'
 import CronParserTool from './cron-parser'
 import ChmodCalculatorTool from './chmod-calculator'
 import ColorPickerTool from './color-picker'
+import UuidGeneratorTool from './uuid-generator'
+import PasswordGeneratorTool from './password-generator'
+import HmacGeneratorTool from './hmac-generator'
+import CertificateDecoderTool from './certificate-decoder'
 
 // Import tool metadata
 import { meta as epochConverterMeta } from './epoch-converter/meta'
@@ -21,18 +25,26 @@ import { meta as unicodeConverterMeta } from './unicode-converter/meta'
 import { meta as cronParserMeta } from './cron-parser/meta'
 import { meta as chmodCalculatorMeta } from './chmod-calculator/meta'
 import { meta as colorPickerMeta } from './color-picker/meta'
+import { meta as uuidGeneratorMeta } from './uuid-generator/meta'
+import { meta as passwordGeneratorMeta } from './password-generator/meta'
+import { meta as hmacGeneratorMeta } from './hmac-generator/meta'
+import { meta as certificateDecoderMeta } from './certificate-decoder/meta'
 
 // Registry of all tools
 export const tools: Tool[] = [
-  { ...epochConverterMeta,    component: EpochConverter },
-  { ...base64Meta,            component: Base64Tool },
-  { ...hashMeta,              component: HashTool },
-  { ...urlEncoderMeta,        component: UrlEncoderTool },
-  { ...jwtDecoderMeta,        component: JwtDecoderTool },
-  { ...unicodeConverterMeta,  component: UnicodeConverterTool },
-  { ...cronParserMeta,        component: CronParserTool },
-  { ...chmodCalculatorMeta,   component: ChmodCalculatorTool },
-  { ...colorPickerMeta,       component: ColorPickerTool },
+  { ...epochConverterMeta,      component: EpochConverter },
+  { ...base64Meta,              component: Base64Tool },
+  { ...hashMeta,                component: HashTool },
+  { ...urlEncoderMeta,          component: UrlEncoderTool },
+  { ...jwtDecoderMeta,          component: JwtDecoderTool },
+  { ...unicodeConverterMeta,    component: UnicodeConverterTool },
+  { ...cronParserMeta,          component: CronParserTool },
+  { ...chmodCalculatorMeta,     component: ChmodCalculatorTool },
+  { ...colorPickerMeta,         component: ColorPickerTool },
+  { ...uuidGeneratorMeta,       component: UuidGeneratorTool },
+  { ...passwordGeneratorMeta,   component: PasswordGeneratorTool },
+  { ...hmacGeneratorMeta,       component: HmacGeneratorTool },
+  { ...certificateDecoderMeta,  component: CertificateDecoderTool },
 ]
 
 // Helper to get tool by ID
