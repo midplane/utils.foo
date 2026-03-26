@@ -22,6 +22,7 @@ import TimezonePlannerTool from './timezone-planner'
 import HttpStatusCodesTool from './http-status-codes'
 import CountryCodesTool from './country-codes'
 import CurrencyCodesTool from './currency-codes'
+import ChartBuilderTool from './chart-builder'
 
 // Import tool metadata
 import { meta as epochConverterMeta } from './epoch-converter/meta'
@@ -45,6 +46,7 @@ import { meta as timezonePlannerMeta } from './timezone-planner/meta'
 import { meta as httpStatusCodesMeta } from './http-status-codes/meta'
 import { meta as countryCodesMeta } from './country-codes/meta'
 import { meta as currencyCodesMeta } from './currency-codes/meta'
+import { meta as chartBuilderMeta } from './chart-builder/meta'
 
 // Registry of all tools
 export const tools: Tool[] = [
@@ -69,6 +71,7 @@ export const tools: Tool[] = [
   { ...httpStatusCodesMeta,     component: HttpStatusCodesTool },
   { ...countryCodesMeta,        component: CountryCodesTool },
   { ...currencyCodesMeta,       component: CurrencyCodesTool },
+  { ...chartBuilderMeta,        component: ChartBuilderTool },
 ]
 
 // Helper to get tool by ID

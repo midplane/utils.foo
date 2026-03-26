@@ -26,6 +26,8 @@
     "clsx": "^2.1.1",
     "codemirror": "^6.0.2",
     "diff": "^8.0.4",
+    "echarts": "^6.0.0",
+    "echarts-for-react": "^3.0.6",
     "fast-xml-parser": "^5.5.9",
     "js-yaml": "^4.1.1",
     "lucide-react": "^1.7.0",
