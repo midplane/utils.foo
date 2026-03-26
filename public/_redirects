@@ -1,0 +1,3 @@
+/*  https://developers.cloudflare.com/pages/configuration/serving-pages/#single-page-app-spa-rendering */
+/* Catch-all redirect for SPA routing */
+/*  /index.html  200
