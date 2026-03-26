@@ -18,6 +18,7 @@ import JsonFormatterTool from './json-formatter'
 import DiffViewerTool from './diff-viewer'
 import QrGeneratorTool from './qr-generator'
 import DataConverterTool from './data-converter'
+import TimezonePlannerTool from './timezone-planner'
 
 // Import tool metadata
 import { meta as epochConverterMeta } from './epoch-converter/meta'
@@ -37,6 +38,7 @@ import { meta as jsonFormatterMeta } from './json-formatter/meta'
 import { meta as diffViewerMeta } from './diff-viewer/meta'
 import { meta as qrGeneratorMeta } from './qr-generator/meta'
 import { meta as dataConverterMeta } from './data-converter/meta'
+import { meta as timezonePlannerMeta } from './timezone-planner/meta'
 
 // Registry of all tools
 export const tools: Tool[] = [
@@ -57,6 +59,7 @@ export const tools: Tool[] = [
   { ...diffViewerMeta,          component: DiffViewerTool },
   { ...qrGeneratorMeta,         component: QrGeneratorTool },
   { ...dataConverterMeta,       component: DataConverterTool },
+  { ...timezonePlannerMeta,     component: TimezonePlannerTool },
 ]
 
 // Helper to get tool by ID
