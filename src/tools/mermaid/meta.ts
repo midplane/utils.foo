@@ -1,5 +1,5 @@
 import { ToolMeta } from '../types'
-import { GitBranch } from 'lucide-react'
+import { Workflow } from 'lucide-react'
 
 export const meta: ToolMeta = {
   id: 'mermaid',
@@ -8,5 +8,5 @@ export const meta: ToolMeta = {
   category: 'Text',
   keywords: ['mermaid', 'diagram', 'flowchart', 'sequence', 'state', 'class', 'er', 'graph', 'svg', 'chart', 'visualize'],
   path: '/mermaid',
-  icon: GitBranch,
+  icon: Workflow,
 }

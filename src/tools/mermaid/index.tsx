@@ -8,7 +8,7 @@ import { stex } from '@codemirror/legacy-modes/mode/stex'
 import { Card, CardContent, CardHeader } from '../../components/ui/Card'
 import { Button } from '../../components/ui/Button'
 import { Select } from '../../components/ui/Select'
-import { GitBranch, Trash2, Download, Maximize2, Minimize2, Code, Eye, Columns2, ZoomIn, ZoomOut, Shrink } from 'lucide-react'
+import { Workflow, Trash2, Download, Maximize2, Minimize2, Code, Eye, Columns2, ZoomIn, ZoomOut, Shrink } from 'lucide-react'
 import { cn } from '../../lib/utils'
 
 // ─── CodeMirror theme ─────────────────────────────────────────────────────────
@@ -413,7 +413,7 @@ export default function MermaidTool() {
           {!expanded && (
             <div className="flex items-center gap-2">
               <div className="w-7 h-7 rounded-lg bg-[var(--color-accent)] flex items-center justify-center text-white">
-                <GitBranch className="w-3.5 h-3.5" />
+                <Workflow className="w-3.5 h-3.5" />
               </div>
               <h1 className="font-mono text-lg font-semibold text-[var(--color-ink)]">
                 Mermaid <span className="text-[var(--color-accent)]">Diagrams</span>
