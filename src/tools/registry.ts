@@ -3,10 +3,12 @@ import { Tool } from './types'
 // Import tool components
 import EpochConverter from './epoch-converter'
 import Base64Tool from './base64'
+import HashTool from './hash'
 
 // Import tool metadata
 import { meta as epochConverterMeta } from './epoch-converter/meta'
 import { meta as base64Meta } from './base64/meta'
+import { meta as hashMeta } from './hash/meta'
 
 // Registry of all tools
 export const tools: Tool[] = [
@@ -17,6 +19,10 @@ export const tools: Tool[] = [
   {
     ...base64Meta,
     component: Base64Tool,
+  },
+  {
+    ...hashMeta,
+    component: HashTool,
   },
 ]
 
