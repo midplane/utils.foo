@@ -5,7 +5,9 @@ import { searchTools, tools } from '../tools/registry'
 
 export function Home() {
   const [searchQuery, setSearchQuery] = useState('')
-  const filteredTools = searchQuery ? searchTools(searchQuery) : tools
+  const filteredTools = (searchQuery ? searchTools(searchQuery) : tools)
+    .slice()
+    .sort((a, b) => a.name.localeCompare(b.name))
   const searchInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
