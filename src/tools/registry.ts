@@ -14,6 +14,7 @@ import UuidGeneratorTool from './uuid-generator'
 import PasswordGeneratorTool from './password-generator'
 import HmacGeneratorTool from './hmac-generator'
 import CertificateDecoderTool from './certificate-decoder'
+import JsonFormatterTool from './json-formatter'
 
 // Import tool metadata
 import { meta as epochConverterMeta } from './epoch-converter/meta'
@@ -29,6 +30,7 @@ import { meta as uuidGeneratorMeta } from './uuid-generator/meta'
 import { meta as passwordGeneratorMeta } from './password-generator/meta'
 import { meta as hmacGeneratorMeta } from './hmac-generator/meta'
 import { meta as certificateDecoderMeta } from './certificate-decoder/meta'
+import { meta as jsonFormatterMeta } from './json-formatter/meta'
 
 // Registry of all tools
 export const tools: Tool[] = [
@@ -45,6 +47,7 @@ export const tools: Tool[] = [
   { ...passwordGeneratorMeta,   component: PasswordGeneratorTool },
   { ...hmacGeneratorMeta,       component: HmacGeneratorTool },
   { ...certificateDecoderMeta,  component: CertificateDecoderTool },
+  { ...jsonFormatterMeta,       component: JsonFormatterTool },
 ]
 
 // Helper to get tool by ID
