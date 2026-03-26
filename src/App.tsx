@@ -1,3 +1,4 @@
+import { Suspense } from 'react'
 import { Routes, Route, useParams, Navigate } from 'react-router-dom'
 import { Layout } from './components/layout'
 import { Home } from './pages/Home'
@@ -13,7 +14,11 @@ function ToolPage() {
   }
 
   const ToolComponent = tool.component
-  return <ToolComponent />
+  return (
+    <Suspense fallback={null}>
+      <ToolComponent />
+    </Suspense>
+  )
 }
 
 export default function App() {

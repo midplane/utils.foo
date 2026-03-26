@@ -1,28 +1,29 @@
+import { lazy } from 'react'
 import { Tool } from './types'
 
-// Import tool components
-import EpochConverter from './epoch-converter'
-import Base64Tool from './base64'
-import HashTool from './hash'
-import UrlEncoderTool from './url-encoder'
-import JwtDecoderTool from './jwt-decoder'
-import UnicodeConverterTool from './unicode-converter'
-import CronParserTool from './cron-parser'
-import ChmodCalculatorTool from './chmod-calculator'
-import ColorPickerTool from './color-picker'
-import UuidGeneratorTool from './uuid-generator'
-import PasswordGeneratorTool from './password-generator'
-import HmacGeneratorTool from './hmac-generator'
-import CertificateDecoderTool from './certificate-decoder'
-import JsonFormatterTool from './json-formatter'
-import DiffViewerTool from './diff-viewer'
-import QrGeneratorTool from './qr-generator'
-import DataConverterTool from './data-converter'
-import TimezonePlannerTool from './timezone-planner'
-import HttpStatusCodesTool from './http-status-codes'
-import CountryCodesTool from './country-codes'
-import CurrencyCodesTool from './currency-codes'
-import ChartBuilderTool from './chart-builder'
+// Lazily loaded tool components — each tool is its own async chunk
+const EpochConverter        = lazy(() => import('./epoch-converter'))
+const Base64Tool            = lazy(() => import('./base64'))
+const HashTool              = lazy(() => import('./hash'))
+const UrlEncoderTool        = lazy(() => import('./url-encoder'))
+const JwtDecoderTool        = lazy(() => import('./jwt-decoder'))
+const UnicodeConverterTool  = lazy(() => import('./unicode-converter'))
+const CronParserTool        = lazy(() => import('./cron-parser'))
+const ChmodCalculatorTool   = lazy(() => import('./chmod-calculator'))
+const ColorPickerTool       = lazy(() => import('./color-picker'))
+const UuidGeneratorTool     = lazy(() => import('./uuid-generator'))
+const PasswordGeneratorTool = lazy(() => import('./password-generator'))
+const HmacGeneratorTool     = lazy(() => import('./hmac-generator'))
+const CertificateDecoderTool = lazy(() => import('./certificate-decoder'))
+const JsonFormatterTool     = lazy(() => import('./json-formatter'))
+const DiffViewerTool        = lazy(() => import('./diff-viewer'))
+const QrGeneratorTool       = lazy(() => import('./qr-generator'))
+const DataConverterTool     = lazy(() => import('./data-converter'))
+const TimezonePlannerTool   = lazy(() => import('./timezone-planner'))
+const HttpStatusCodesTool   = lazy(() => import('./http-status-codes'))
+const CountryCodesTool      = lazy(() => import('./country-codes'))
+const CurrencyCodesTool     = lazy(() => import('./currency-codes'))
+const ChartBuilderTool      = lazy(() => import('./chart-builder'))
 
 // Import tool metadata
 import { meta as epochConverterMeta } from './epoch-converter/meta'
