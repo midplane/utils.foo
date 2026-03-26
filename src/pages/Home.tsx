@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { Search, X } from 'lucide-react'
+import { Search } from 'lucide-react'
 import { ToolCard } from '../components/ToolCard'
 import { searchTools, tools } from '../tools/registry'
 
@@ -41,16 +41,9 @@ export function Home() {
             placeholder="Search tools..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-12 py-2 text-sm bg-white border border-[var(--color-border)] rounded-lg text-[var(--color-ink)] placeholder-[var(--color-ink-muted)] focus:outline-none focus:border-[var(--color-border-dark)] focus:ring-1 focus:ring-[var(--color-ink)]/5 transition-all"
+            className="w-full pl-9 pr-4 py-2 text-sm bg-white border border-[var(--color-border)] rounded-lg text-[var(--color-ink)] placeholder-[var(--color-ink-muted)] focus:outline-none focus:border-[var(--color-border-dark)] focus:ring-1 focus:ring-[var(--color-ink)]/5 transition-all"
           />
-          {searchQuery ? (
-            <button
-              onClick={() => setSearchQuery('')}
-              className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 hover:bg-[var(--color-cream-dark)] rounded transition-colors"
-            >
-              <X className="w-3.5 h-3.5 text-[var(--color-ink-muted)]" />
-            </button>
-          ) : (
+          {!searchQuery && (
             <kbd className="absolute right-2 top-1/2 -translate-y-1/2 px-1.5 py-0.5 text-[10px] font-mono text-[var(--color-ink-muted)] bg-[var(--color-cream-dark)] border border-[var(--color-border)] rounded">
               /
             </kbd>
@@ -77,12 +70,6 @@ export function Home() {
       ) : (
         <div className="text-center py-8 animate-fade-in">
           <p className="text-sm text-[var(--color-ink-muted)]">No tools found matching "{searchQuery}"</p>
-          <button 
-            onClick={() => setSearchQuery('')}
-            className="mt-1 text-xs text-[var(--color-accent)] hover:underline"
-          >
-            Clear search
-          </button>
         </div>
       )}
     </div>
