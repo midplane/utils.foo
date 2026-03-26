@@ -15,6 +15,7 @@ import PasswordGeneratorTool from './password-generator'
 import HmacGeneratorTool from './hmac-generator'
 import CertificateDecoderTool from './certificate-decoder'
 import JsonFormatterTool from './json-formatter'
+import DiffViewerTool from './diff-viewer'
 
 // Import tool metadata
 import { meta as epochConverterMeta } from './epoch-converter/meta'
@@ -31,6 +32,7 @@ import { meta as passwordGeneratorMeta } from './password-generator/meta'
 import { meta as hmacGeneratorMeta } from './hmac-generator/meta'
 import { meta as certificateDecoderMeta } from './certificate-decoder/meta'
 import { meta as jsonFormatterMeta } from './json-formatter/meta'
+import { meta as diffViewerMeta } from './diff-viewer/meta'
 
 // Registry of all tools
 export const tools: Tool[] = [
@@ -48,6 +50,7 @@ export const tools: Tool[] = [
   { ...hmacGeneratorMeta,       component: HmacGeneratorTool },
   { ...certificateDecoderMeta,  component: CertificateDecoderTool },
   { ...jsonFormatterMeta,       component: JsonFormatterTool },
+  { ...diffViewerMeta,          component: DiffViewerTool },
 ]
 
 // Helper to get tool by ID

@@ -187,6 +187,28 @@ body {
   font-weight: 600;
 }
 
+/* ─── @codemirror/merge MergeView height fix ───────────────────────────────── */
+/* EditorView.theme scopes to .cm-editor children, so MergeView wrapper divs
+   (which are parents of .cm-editor) need global styles here instead. */
+.cm-mergeView {
+  height: 100%;
+  overflow-y: auto;
+}
+
+/* Style MergeView's built-in revert/gutter buttons to match app theme */
+.cm-mergeRevert {
+  background: #FFF7ED;
+  border: 1px solid #E7E5E4;
+  border-radius: 4px;
+  color: #78716C;
+  cursor: pointer;
+}
+.cm-mergeRevert:hover {
+  background: #FFEEDD;
+  color: #EA580C;
+  border-color: #EA580C;
+}
+
 /* Noise texture overlay (optional, for grain effect) */
 .noise-overlay::before {
   content: '';
