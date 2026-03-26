@@ -29,6 +29,7 @@ const MarkdownPreviewTool   = lazy(() => import('./markdown-preview'))
 const MarkdownTableTool     = lazy(() => import('./markdown-table'))
 const MermaidTool           = lazy(() => import('./mermaid'))
 const LogoGeneratorTool     = lazy(() => import('./logo-generator'))
+const PivotTableTool        = lazy(() => import('./pivot-table'))
 
 // Import tool metadata
 import { meta as epochConverterMeta } from './epoch-converter/meta'
@@ -58,6 +59,7 @@ import { meta as markdownPreviewMeta } from './markdown-preview/meta'
 import { meta as markdownTableMeta } from './markdown-table/meta'
 import { meta as mermaidMeta } from './mermaid/meta'
 import { meta as logoGeneratorMeta } from './logo-generator/meta'
+import { meta as pivotTableMeta } from './pivot-table/meta'
 
 // Registry of all tools
 export const tools: Tool[] = [
@@ -88,6 +90,7 @@ export const tools: Tool[] = [
   { ...markdownTableMeta,       component: MarkdownTableTool },
   { ...mermaidMeta,             component: MermaidTool },
   { ...logoGeneratorMeta,       component: LogoGeneratorTool },
+  { ...pivotTableMeta,          component: PivotTableTool },
 ]
 
 // Helper to get tool by ID
