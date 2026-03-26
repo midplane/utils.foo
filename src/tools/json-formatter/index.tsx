@@ -1,15 +1,17 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { Braces, AlignLeft, ChevronsLeftRight, CircleCheck, RefreshCw, Trash2, Maximize2, Minimize2, ChevronLeft } from "lucide-react";
+import { Braces, AlignLeft, ChevronsLeftRight, CircleCheck, RefreshCw, Trash2, Maximize2, Minimize2, ChevronLeft, ListFilter, Play, X, HelpCircle } from "lucide-react";
 import { basicSetup } from "codemirror";
 import { EditorView } from "@codemirror/view";
 import { EditorState } from "@codemirror/state";
 import { json, jsonParseLinter } from "@codemirror/lang-json";
 import { linter, lintGutter } from "@codemirror/lint";
+import { JSONPath } from "jsonpath-plus";
 import { Card, CardContent, CardHeader } from "../../components/ui/Card";
 import { Button } from "../../components/ui/Button";
 import { CopyButton } from "../../components/ui/CopyButton";
 import { Badge } from "../../components/ui/Badge";
+import { Input } from "../../components/ui/Input";
 import { cn } from "../../lib/utils";
 
 // ─── Custom CodeMirror theme matching the app's warm palette ──────────────────
@@ -145,9 +147,29 @@ const SAMPLE_JSON = `{
   "score": 42
 }`;
 
+// ─── JSONPath cheatsheet ──────────────────────────────────────────────────────
+
+const JSONPATH_CHEATSHEET = [
+  { expr: "$",        desc: "Root element" },
+  { expr: ".key",     desc: "Child key" },
+  { expr: "..key",    desc: "Recursive / deep search" },
+  { expr: "[0]",      desc: "Array index (0-based)" },
+  { expr: "[-1]",     desc: "Last array item" },
+  { expr: "[*]",      desc: "All array items" },
+  { expr: "[0,2]",    desc: "Items at index 0 and 2" },
+  { expr: "[0:3]",    desc: "Slice: indices 0–2" },
+  { expr: ".*",       desc: "All children of an object" },
+  { expr: "[?(@.x)]", desc: "Filter: items that have key x" },
+  { expr: "[?(@>2)]", desc: "Filter: items where value > 2" },
+];
+
+// ─── Component ────────────────────────────────────────────────────────────────
+
 export default function JsonFormatterTool() {
   const editorContainerRef = useRef<HTMLDivElement>(null);
   const editorViewRef = useRef<EditorView | null>(null);
+  const resultContainerRef = useRef<HTMLDivElement>(null);
+  const resultViewRef = useRef<EditorView | null>(null);
 
   const [charCount, setCharCount] = useState(SAMPLE_JSON.length);
   const [lineCount, setLineCount] = useState(SAMPLE_JSON.split("\n").length);
@@ -157,12 +179,57 @@ export default function JsonFormatterTool() {
   const [currentText, setCurrentText] = useState(SAMPLE_JSON);
   const [expanded, setExpanded] = useState(false);
 
+  // ── Filter state ─────────────────────────────────────────────────────────────
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [filterExpr, setFilterExpr] = useState("$");
+  const [filterResult, setFilterResult] = useState("");
+  const [filterError, setFilterError] = useState("");
+  const [showCheatsheet, setShowCheatsheet] = useState(false);
+
   // Close on Escape
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setExpanded(false); };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, []);
+
+  // ── Build the result (read-only) editor on mount ────────────────────────────
+  useEffect(() => {
+    if (!resultContainerRef.current) return;
+
+    const startState = EditorState.create({
+      doc: "",
+      extensions: [
+        basicSetup,
+        json(),
+        appTheme,
+        EditorState.readOnly.of(true),
+        EditorView.editable.of(false),
+        EditorView.lineWrapping,
+      ],
+    });
+
+    const view = new EditorView({
+      state: startState,
+      parent: resultContainerRef.current,
+    });
+
+    resultViewRef.current = view;
+
+    return () => {
+      view.destroy();
+      resultViewRef.current = null;
+    };
+  }, []);
+
+  // Sync filterResult into the read-only result editor
+  useEffect(() => {
+    const view = resultViewRef.current;
+    if (!view) return;
+    view.dispatch({
+      changes: { from: 0, to: view.state.doc.length, insert: filterResult },
+    });
+  }, [filterResult]);
 
   // ── Build the editor once on mount ──────────────────────────────────────────
   useEffect(() => {
@@ -253,6 +320,28 @@ export default function JsonFormatterTool() {
     setValidState("idle");
   };
 
+  // ── Filter ───────────────────────────────────────────────────────────────────
+  const handleRunFilter = (expr?: string) => {
+    const path = (expr ?? filterExpr).trim();
+    if (!path) { setFilterResult(""); setFilterError(""); return; }
+    try {
+      const parsed = JSON.parse(currentText) as object;
+      const result = JSONPath({ path, json: parsed });
+      setFilterResult(JSON.stringify(result, null, 2));
+      setFilterError("");
+    } catch (e) {
+      setFilterError(e instanceof Error ? e.message : "Filter failed");
+      setFilterResult("");
+    }
+  };
+
+  const handleClearFilter = () => {
+    setFilterExpr("$");
+    setFilterResult("");
+    setFilterError("");
+    setShowCheatsheet(false);
+  };
+
   return (
     <>
       {/* Backdrop below the sticky header */}
@@ -306,9 +395,18 @@ export default function JsonFormatterTool() {
                   Minify
                 </Button>
                 <Button variant="secondary" size="sm" onClick={handleValidate} className="gap-1.5 text-xs h-7 px-3">
-                  <CircleCheck className="w-3 h-3" />
-                  Validate
-                </Button>
+                   <CircleCheck className="w-3 h-3" />
+                   Validate
+                 </Button>
+                 <Button
+                   variant="secondary"
+                   size="sm"
+                   onClick={() => setFilterOpen((v) => !v)}
+                   className={cn("gap-1.5 text-xs h-7 px-3", filterOpen && "text-[var(--color-accent)] border-[var(--color-accent)]")}
+                 >
+                   <ListFilter className="w-3 h-3" />
+                   Filter
+                 </Button>
 
                 {validState === "valid" && (
                   <Badge variant="success" className="text-[10px] animate-fade-in">Valid JSON</Badge>
@@ -342,29 +440,119 @@ export default function JsonFormatterTool() {
           </CardHeader>
 
           <CardContent>
-            {/* Editor — explicit pixel height so CodeMirror fills the space correctly */}
-            <div
-              ref={editorContainerRef}
-              style={{ height: expanded ? "calc(100vh - 161px)" : "560px" }}
-              className={cn(
-                "rounded-lg",
-                validState === "invalid" && "outline outline-2 outline-red-300",
-              )}
-            />
+            {/* ── Filter controls — full-width row, right column only ────── */}
+            {filterOpen && (
+              <div className="grid grid-cols-2 gap-3 mb-2 animate-fade-in">
+                {/* Left column: empty placeholder to keep alignment */}
+                <div />
 
-            {/* Stats row */}
-            <div className="flex items-center gap-4 mt-2 flex-shrink-0">
-              <span className="text-[10px] text-[var(--color-ink-muted)]">
-                {lineCount} {lineCount === 1 ? "line" : "lines"}
-              </span>
-              <span className="text-[10px] text-[var(--color-ink-muted)]">
-                {charCount} {charCount === 1 ? "char" : "chars"}
-              </span>
-              {expanded && (
-                <span className="text-[10px] text-[var(--color-ink-muted)] ml-auto">
-                  Press <kbd className="px-1 py-0.5 bg-[var(--color-cream-dark)] border border-[var(--color-border)] rounded text-[9px]">Esc</kbd> or click outside to collapse
-                </span>
-              )}
+                {/* Right column: expression input + cheatsheet */}
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-center gap-1.5">
+                    <Input
+                      value={filterExpr}
+                      onChange={(e) => setFilterExpr(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === "Enter") handleRunFilter(); }}
+                      placeholder="e.g. $.features[*]"
+                      className="font-mono text-xs h-7 flex-1 min-w-0"
+                    />
+                    <Button variant="secondary" size="sm" onClick={() => handleRunFilter()} className="gap-1 text-xs h-7 px-3 shrink-0">
+                      <Play className="w-3 h-3" />
+                      Run
+                    </Button>
+                    <button
+                      onClick={() => setShowCheatsheet((v) => !v)}
+                      title="JSONPath syntax reference"
+                      className={cn(
+                        "inline-flex items-center justify-center w-7 h-7 rounded-lg transition-colors cursor-pointer shrink-0",
+                        showCheatsheet
+                          ? "text-[var(--color-accent)] bg-orange-50"
+                          : "text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] hover:bg-[var(--color-cream-dark)]"
+                      )}
+                    >
+                      <HelpCircle className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      onClick={handleClearFilter}
+                      title="Clear filter"
+                      className="inline-flex items-center justify-center w-7 h-7 rounded-lg text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] hover:bg-[var(--color-cream-dark)] transition-colors cursor-pointer shrink-0"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+
+                  {/* Cheatsheet */}
+                  {showCheatsheet && (
+                    <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-cream-dark)] px-3 py-2 animate-fade-in">
+                      <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-ink-muted)] mb-1.5">JSONPath quick reference</p>
+                      <div className="grid grid-cols-2 gap-x-4 gap-y-0.5">
+                        {JSONPATH_CHEATSHEET.map((row) => (
+                          <div key={row.expr} className="flex items-baseline gap-2">
+                            <code className="text-[11px] font-mono text-[var(--color-accent)] shrink-0">{row.expr}</code>
+                            <span className="text-[10px] text-[var(--color-ink-muted)]">{row.desc}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Error banner */}
+                  {filterError && (
+                    <p className="text-xs text-red-600 font-mono bg-red-50 border border-red-200 rounded-lg px-3 py-2 animate-fade-in">
+                      {filterError}
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Two-pane layout when filter is open, single-pane otherwise */}
+            <div className={cn(filterOpen && "grid grid-cols-2 gap-3")}>
+
+              {/* ── Source pane ─────────────────────────────────────────────── */}
+              <div className="flex flex-col gap-1">
+                <div
+                  ref={editorContainerRef}
+                  style={{ height: expanded ? "calc(100vh - 161px)" : "560px" }}
+                  className={cn(
+                    "rounded-lg",
+                    validState === "invalid" && "outline outline-2 outline-red-300",
+                  )}
+                />
+                {/* Stats row */}
+                <div className="flex items-center gap-4 mt-1 flex-shrink-0">
+                  <span className="text-[10px] text-[var(--color-ink-muted)]">
+                    {lineCount} {lineCount === 1 ? "line" : "lines"}
+                  </span>
+                  <span className="text-[10px] text-[var(--color-ink-muted)]">
+                    {charCount} {charCount === 1 ? "char" : "chars"}
+                  </span>
+                  {expanded && (
+                    <span className="text-[10px] text-[var(--color-ink-muted)] ml-auto">
+                      Press <kbd className="px-1 py-0.5 bg-[var(--color-cream-dark)] border border-[var(--color-border)] rounded text-[9px]">Esc</kbd> or click outside to collapse
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* ── Result pane — always in DOM so the ref is stable ─────────── */}
+              <div className={cn("flex flex-col gap-2", !filterOpen && "hidden")}>
+                {/* Result editor */}
+                <div
+                  ref={resultContainerRef}
+                  style={{ height: expanded ? "calc(100vh - 161px)" : "560px" }}
+                  className="rounded-lg border border-[var(--color-border)] overflow-auto"
+                />
+                {/* Result stats + copy */}
+                <div className="flex items-center gap-4 mt-1 flex-shrink-0">
+                  {filterResult
+                    ? <span className="text-[10px] text-[var(--color-ink-muted)]">{filterResult.split("\n").length} lines</span>
+                    : <span className="text-[10px] text-[var(--color-ink-muted)] italic">Press Run to see results</span>
+                  }
+                  {filterResult && <CopyButton text={filterResult} />}
+                </div>
+              </div>
+
             </div>
           </CardContent>
         </Card>
