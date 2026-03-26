@@ -1,10 +1,9 @@
 import { useState, useCallback } from 'react'
-import { Link } from 'react-router-dom'
 import { Card, CardContent, CardHeader } from '../../components/ui/Card'
 import { Input } from '../../components/ui/Input'
 import { CopyButton } from '../../components/ui/CopyButton'
 import { cn } from '../../lib/utils'
-import { Info, Pipette, ChevronLeft } from 'lucide-react'
+import { Info, Pipette } from 'lucide-react'
 
 // ─── Color conversion helpers ─────────────────────────────────────────────────
 
@@ -178,19 +177,13 @@ export default function ColorPickerTool() {
   return (
     <div className="space-y-4 animate-fade-in">
       {/* Header */}
-      <div className="space-y-2">
-        <Link to="/" className="inline-flex items-center gap-1 text-xs text-[var(--color-ink-muted)] hover:text-[var(--color-accent)] transition-colors">
-          <ChevronLeft className="w-4 h-4" />
-          Back
-        </Link>
-        <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg bg-[var(--color-accent)] flex items-center justify-center text-white">
-            <Pipette className="w-3.5 h-3.5" />
-          </div>
-          <h1 className="font-mono text-lg font-semibold text-[var(--color-ink)]">
-            Color <span className="text-[var(--color-accent)]">Picker</span>
-          </h1>
+      <div className="flex items-center gap-2">
+        <div className="w-7 h-7 rounded-lg bg-[var(--color-accent)] flex items-center justify-center text-white">
+          <Pipette className="w-3.5 h-3.5" />
         </div>
+        <h1 className="font-mono text-lg font-semibold text-[var(--color-ink)]">
+          Color <span className="text-[var(--color-accent)]">Picker</span>
+        </h1>
       </div>
 
       {/* Preview + native picker */}

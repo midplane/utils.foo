@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Link } from "react-router-dom";
-import { Braces, AlignLeft, ChevronsLeftRight, CircleCheck, RefreshCw, Trash2, Maximize2, Minimize2, ChevronLeft, ListFilter, Play, X, HelpCircle } from "lucide-react";
+import { Braces, AlignLeft, ChevronsLeftRight, CircleCheck, RefreshCw, Trash2, Maximize2, Minimize2, ListFilter, Play, X, HelpCircle } from "lucide-react";
 import { basicSetup } from "codemirror";
 import { EditorView } from "@codemirror/view";
 import { EditorState } from "@codemirror/state";
@@ -355,15 +354,7 @@ export default function JsonFormatterTool() {
 
       <div className={cn("space-y-4 animate-fade-in", expanded && "relative z-50")}>
         {/* Breadcrumb & Header — hidden in expanded mode */}
-        {!expanded && (
-          <div className="space-y-2">
-            <Link
-              to="/"
-              className="inline-flex items-center gap-1 text-xs text-[var(--color-ink-muted)] hover:text-[var(--color-accent)] transition-colors"
-            >
-              <ChevronLeft className="w-3 h-3" />
-              Back
-            </Link>
+          {!expanded && (
             <div className="flex items-center gap-2">
               <div className="w-7 h-7 rounded-lg bg-[var(--color-accent)] flex items-center justify-center text-white">
                 <Braces className="w-3.5 h-3.5" />
@@ -372,8 +363,7 @@ export default function JsonFormatterTool() {
                 JSON <span className="text-[var(--color-accent)]">Formatter</span>
               </h1>
             </div>
-          </div>
-        )}
+          )}
 
         {/* Main Card */}
         <Card

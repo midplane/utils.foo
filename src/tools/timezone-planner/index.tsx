@@ -1,9 +1,8 @@
 import { useState, useRef, useEffect } from 'react'
-import { Link } from 'react-router-dom'
 import { Card } from '../../components/ui/Card'
 import { Button } from '../../components/ui/Button'
 import { CopyButton } from '../../components/ui/CopyButton'
-import { Calendar, CalendarClock, ChevronDown, Globe, MousePointer2, Search, Sparkles, ChevronLeft } from 'lucide-react'
+import { Calendar, CalendarClock, ChevronDown, Globe, MousePointer2, Search, Sparkles } from 'lucide-react'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -532,9 +531,6 @@ export default function TimezonePlanner() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <Link to="/" className="text-[var(--color-ink-muted)] hover:text-[var(--color-accent)] transition-colors">
-            <ChevronLeft className="w-4 h-4" />
-          </Link>
           <div className="w-6 h-6 rounded bg-[var(--color-accent)] flex items-center justify-center text-white">
             <Globe className="w-3.5 h-3.5" />
           </div>

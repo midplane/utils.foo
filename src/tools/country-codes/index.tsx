@@ -1,6 +1,5 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
-import { Flag, Search, X, ChevronLeft } from 'lucide-react'
+import { Flag, Search, X } from 'lucide-react'
 import { Card } from '../../components/ui/Card'
 
 // ─── Data ─────────────────────────────────────────────────────────────────────
@@ -255,25 +254,16 @@ export default function CountryCodesTool() {
   return (
     <div className="space-y-4 animate-fade-in">
       {/* Header */}
-      <div className="space-y-2">
-        <Link
-          to="/"
-          className="inline-flex items-center gap-1 text-xs text-[var(--color-ink-muted)] hover:text-[var(--color-accent)] transition-colors"
-        >
-          <ChevronLeft className="w-3 h-3" />
-          Back
-        </Link>
-        <div className="flex items-center justify-between flex-wrap gap-3">
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-[var(--color-accent)] flex items-center justify-center text-white">
-              <Flag className="w-3.5 h-3.5" />
-            </div>
-            <h1 className="font-mono text-lg font-semibold text-[var(--color-ink)]">
-              Country <span className="text-[var(--color-accent)]">Codes</span>
-            </h1>
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div className="flex items-center gap-2">
+          <div className="w-7 h-7 rounded-lg bg-[var(--color-accent)] flex items-center justify-center text-white">
+            <Flag className="w-3.5 h-3.5" />
           </div>
-          <SearchBox query={query} onChange={setQuery} placeholder="Search country, code or +dial…" />
+          <h1 className="font-mono text-lg font-semibold text-[var(--color-ink)]">
+            Country <span className="text-[var(--color-accent)]">Codes</span>
+          </h1>
         </div>
+        <SearchBox query={query} onChange={setQuery} placeholder="Search country, code or +dial…" />
       </div>
 
       {/* Stats */}

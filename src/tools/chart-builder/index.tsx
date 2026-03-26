@@ -1,6 +1,5 @@
 import { useState, useRef, useMemo, useCallback } from 'react'
-import { Link } from 'react-router-dom'
-import { BarChart2, ChevronLeft, Trash2, Download, X, ArrowLeftRight } from 'lucide-react'
+import { BarChart2, Trash2, Download, X, ArrowLeftRight } from 'lucide-react'
 import ReactECharts from 'echarts-for-react'
 import type { EChartsOption } from 'echarts'
 import Papa from 'papaparse'
@@ -373,22 +372,14 @@ export default function ChartBuilderTool() {
   return (
     <div className="space-y-4 animate-fade-in">
       {/* Header */}
-      <div className="space-y-2">
-        <Link
-          to="/"
-          className="inline-flex items-center gap-1 text-xs text-[var(--color-ink-muted)] hover:text-[var(--color-accent)] transition-colors"
-        >
-          <ChevronLeft className="w-3 h-3" />
-          Back
-        </Link>
-        <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg bg-[var(--color-accent)] flex items-center justify-center text-white">
-            <BarChart2 className="w-3.5 h-3.5" />
-          </div>
-          <h1 className="font-mono text-lg font-semibold text-[var(--color-ink)]">
-            Chart <span className="text-[var(--color-accent)]">Builder</span>
-          </h1>
+      {/* Header */}
+      <div className="flex items-center gap-2">
+        <div className="w-7 h-7 rounded-lg bg-[var(--color-accent)] flex items-center justify-center text-white">
+          <BarChart2 className="w-3.5 h-3.5" />
         </div>
+        <h1 className="font-mono text-lg font-semibold text-[var(--color-ink)]">
+          Chart <span className="text-[var(--color-accent)]">Builder</span>
+        </h1>
       </div>
 
       {/* Zone 1: Data input */}

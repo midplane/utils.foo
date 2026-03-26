@@ -1,6 +1,5 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
-import { Globe, Search, X, ChevronLeft } from 'lucide-react'
+import { Globe, Search, X } from 'lucide-react'
 import { Card, CardContent } from '../../components/ui/Card'
 
 // ─── Data ─────────────────────────────────────────────────────────────────────
@@ -153,25 +152,17 @@ export default function HttpStatusCodesTool() {
   return (
     <div className="space-y-4 animate-fade-in">
       {/* Header */}
-      <div className="space-y-2">
-        <Link
-          to="/"
-          className="inline-flex items-center gap-1 text-xs text-[var(--color-ink-muted)] hover:text-[var(--color-accent)] transition-colors"
-        >
-          <ChevronLeft className="w-3 h-3" />
-          Back
-        </Link>
-        <div className="flex items-center justify-between flex-wrap gap-3">
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-[var(--color-accent)] flex items-center justify-center text-white">
-              <Globe className="w-3.5 h-3.5" />
-            </div>
-            <h1 className="font-mono text-lg font-semibold text-[var(--color-ink)]">
-              HTTP <span className="text-[var(--color-accent)]">Status Codes</span>
-            </h1>
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div className="flex items-center gap-2">
+          <div className="w-7 h-7 rounded-lg bg-[var(--color-accent)] flex items-center justify-center text-white">
+            <Globe className="w-3.5 h-3.5" />
           </div>
+          <h1 className="font-mono text-lg font-semibold text-[var(--color-ink)]">
+            HTTP <span className="text-[var(--color-accent)]">Status Codes</span>
+          </h1>
+        </div>
 
-          {/* Search */}
+        {/* Search */}
           <div className="relative w-full sm:w-64">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--color-ink-muted)]" />
             <input
@@ -190,7 +181,6 @@ export default function HttpStatusCodesTool() {
               </button>
             )}
           </div>
-        </div>
       </div>
 
       {/* Search results */}

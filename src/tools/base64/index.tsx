@@ -1,11 +1,10 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
 import { Card, CardContent, CardHeader } from '../../components/ui/Card'
 import { Textarea } from '../../components/ui/Textarea'
 import { Button } from '../../components/ui/Button'
 import { CopyButton } from '../../components/ui/CopyButton'
 import { cn } from '../../lib/utils'
-import { ArrowLeftRight, Binary, Check, ChevronDown, CircleX, Info, MoveLeft, MoveRight, Trash2, ChevronLeft } from 'lucide-react'
+import { ArrowLeftRight, Binary, Check, ChevronDown, CircleX, Info, MoveLeft, MoveRight, Trash2 } from 'lucide-react'
 
 type Mode = 'encode' | 'decode'
 
@@ -74,24 +73,14 @@ export default function Base64Tool() {
 
   return (
     <div className="space-y-4 animate-fade-in">
-      {/* Breadcrumb & Header - Compact */}
-      <div className="space-y-2">
-        <Link 
-          to="/" 
-          className="inline-flex items-center gap-1 text-xs text-[var(--color-ink-muted)] hover:text-[var(--color-accent)] transition-colors"
-        >
-          <ChevronLeft className="w-4 h-4" />
-          Back
-        </Link>
-        
-        <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg bg-[var(--color-accent)] flex items-center justify-center text-white">
-            <Binary className="w-3.5 h-3.5" />
-          </div>
-          <h1 className="font-mono text-lg font-semibold text-[var(--color-ink)]">
-            Base64 <span className="text-[var(--color-accent)]">Encoder</span>
-          </h1>
+      {/* Header */}
+      <div className="flex items-center gap-2">
+        <div className="w-7 h-7 rounded-lg bg-[var(--color-accent)] flex items-center justify-center text-white">
+          <Binary className="w-3.5 h-3.5" />
         </div>
+        <h1 className="font-mono text-lg font-semibold text-[var(--color-ink)]">
+          Base64 <span className="text-[var(--color-accent)]">Encoder</span>
+        </h1>
       </div>
 
       {/* Main Card - Compact */}

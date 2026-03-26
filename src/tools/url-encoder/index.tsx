@@ -1,11 +1,10 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
 import { Card, CardContent, CardHeader } from '../../components/ui/Card'
 import { Textarea } from '../../components/ui/Textarea'
 import { Button } from '../../components/ui/Button'
 import { CopyButton } from '../../components/ui/CopyButton'
 import { cn } from '../../lib/utils'
-import { ArrowLeftRight, ChevronDown, CircleX, Info, Link2, MoveLeft, MoveRight, Trash2, ChevronLeft } from 'lucide-react'
+import { ArrowLeftRight, ChevronDown, CircleX, Info, Link2, MoveLeft, MoveRight, Trash2 } from 'lucide-react'
 
 type Mode = 'encode' | 'decode'
 type EncodeType = 'component' | 'full'
@@ -92,23 +91,13 @@ export default function UrlEncoderTool() {
   return (
     <div className="space-y-4 animate-fade-in">
       {/* Breadcrumb & Header */}
-      <div className="space-y-2">
-        <Link 
-          to="/" 
-          className="inline-flex items-center gap-1 text-xs text-[var(--color-ink-muted)] hover:text-[var(--color-accent)] transition-colors"
-        >
-          <ChevronLeft className="w-4 h-4" />
-          Back
-        </Link>
-        
-        <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg bg-[var(--color-accent)] flex items-center justify-center text-white">
-            <Link2 className="w-3.5 h-3.5" />
-          </div>
-          <h1 className="font-mono text-lg font-semibold text-[var(--color-ink)]">
-            URL <span className="text-[var(--color-accent)]">Encoder</span>
-          </h1>
+      <div className="flex items-center gap-2">
+        <div className="w-7 h-7 rounded-lg bg-[var(--color-accent)] flex items-center justify-center text-white">
+          <Link2 className="w-3.5 h-3.5" />
         </div>
+        <h1 className="font-mono text-lg font-semibold text-[var(--color-ink)]">
+          URL <span className="text-[var(--color-accent)]">Encoder</span>
+        </h1>
       </div>
 
       {/* Main Card */}

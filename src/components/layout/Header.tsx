@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 export function Header() {
   return (
     <header className="border-b border-[var(--color-border)] bg-[var(--color-cream)]/80 backdrop-blur-sm sticky top-0 z-50">
-      <div className="max-w-5xl mx-auto px-4 py-2 flex items-center justify-between">
+      <div className="max-w-5xl mx-auto px-4 py-3.5 flex items-center justify-between">
         <Link to="/" className="group flex items-center gap-2">
           <div className="relative">
             <div className="w-6 h-6 bg-[var(--color-ink)] rounded flex items-center justify-center group-hover:bg-[var(--color-accent)] transition-colors duration-300">

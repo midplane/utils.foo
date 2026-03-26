@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
-import { Link } from 'react-router-dom'
 import { MergeView } from '@codemirror/merge'
 import { basicSetup } from 'codemirror'
 import { EditorView } from '@codemirror/view'
@@ -10,7 +9,7 @@ import { Card, CardContent, CardHeader } from '../../components/ui/Card'
 import { Button } from '../../components/ui/Button'
 import { Badge } from '../../components/ui/Badge'
 import { cn } from '../../lib/utils'
-import { ArrowLeftRight, GitCompare, Maximize2, Minimize2, Sparkles, Trash2, ChevronLeft } from 'lucide-react'
+import { ArrowLeftRight, GitCompare, Maximize2, Minimize2, Sparkles, Trash2 } from 'lucide-react'
 
 // ─── Language list (curated subset shown in dropdown) ────────────────────────
 
@@ -331,15 +330,7 @@ export default function DiffViewerTool() {
 
       <div className={cn('space-y-4 animate-fade-in', expanded && 'relative z-50')}>
         {/* Breadcrumb & Header */}
-        {!expanded && (
-          <div className="space-y-2">
-            <Link
-              to="/"
-              className="inline-flex items-center gap-1 text-xs text-[var(--color-ink-muted)] hover:text-[var(--color-accent)] transition-colors"
-            >
-              <ChevronLeft className="w-4 h-4" />
-              Back
-            </Link>
+          {!expanded && (
             <div className="flex items-center gap-2">
               <div className="w-7 h-7 rounded-lg bg-[var(--color-accent)] flex items-center justify-center text-white">
                 <GitCompare className="w-3.5 h-3.5" />
@@ -348,8 +339,7 @@ export default function DiffViewerTool() {
                 Diff <span className="text-[var(--color-accent)]">Viewer</span>
               </h1>
             </div>
-          </div>
-        )}
+          )}
 
         {/* Main Card */}
         <Card
