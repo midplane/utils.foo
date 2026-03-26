@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader } from '../../components/ui/Card'
 import { Button } from '../../components/ui/Button'
 import { Badge } from '../../components/ui/Badge'
 import { cn } from '../../lib/utils'
+import { ArrowLeftRight, GitCompare, Maximize2, Minimize2, Sparkles, Trash2, ChevronLeft } from 'lucide-react'
 
 // ─── Language list (curated subset shown in dropdown) ────────────────────────
 
@@ -336,14 +337,12 @@ export default function DiffViewerTool() {
               to="/"
               className="inline-flex items-center gap-1 text-xs text-[var(--color-ink-muted)] hover:text-[var(--color-accent)] transition-colors"
             >
-              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
+              <ChevronLeft className="w-4 h-4" />
               Back
             </Link>
             <div className="flex items-center gap-2">
               <div className="w-7 h-7 rounded-lg bg-[var(--color-accent)] flex items-center justify-center text-white">
-                <DiffIcon className="w-3.5 h-3.5" />
+                <GitCompare className="w-3.5 h-3.5" />
               </div>
               <h1 className="font-mono text-lg font-semibold text-[var(--color-ink)]">
                 Diff <span className="text-[var(--color-accent)]">Viewer</span>
@@ -394,15 +393,15 @@ export default function DiffViewerTool() {
               {/* Actions */}
               <div className="flex items-center gap-1">
                 <Button variant="ghost" size="sm" onClick={handleSample} className="gap-1 text-xs h-7 px-2">
-                  <SampleIcon className="w-3 h-3" />
+                  <Sparkles className="w-3 h-3" />
                   Sample
                 </Button>
                 <Button variant="ghost" size="sm" onClick={handleSwap} disabled={!leftText && !rightText} className="gap-1 text-xs h-7 px-2">
-                  <SwapIcon className="w-3 h-3" />
+                  <ArrowLeftRight className="w-3 h-3" />
                   Swap
                 </Button>
                 <Button variant="ghost" size="sm" onClick={handleClear} className="gap-1 text-xs h-7 px-2">
-                  <TrashIcon className="w-3 h-3" />
+                  <Trash2 className="w-3 h-3" />
                   Clear
                 </Button>
                 <button
@@ -410,7 +409,7 @@ export default function DiffViewerTool() {
                   title={expanded ? 'Collapse' : 'Expand'}
                   className="inline-flex items-center justify-center w-7 h-7 rounded-lg text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] hover:bg-[var(--color-cream-dark)] transition-colors cursor-pointer"
                 >
-                  {expanded ? <CollapseIcon className="w-3.5 h-3.5" /> : <ExpandIcon className="w-3.5 h-3.5" />}
+                  {expanded ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
                 </button>
               </div>
             </div>
@@ -438,50 +437,3 @@ export default function DiffViewerTool() {
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
 
-function DiffIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
-    </svg>
-  )
-}
-
-function SwapIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
-    </svg>
-  )
-}
-
-function TrashIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-    </svg>
-  )
-}
-
-function SampleIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-    </svg>
-  )
-}
-
-function ExpandIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5v-4m0 4h-4m4 0l-5-5" />
-    </svg>
-  )
-}
-
-function CollapseIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 9L4 4m0 0h4M4 4v4m11-4l5 5m0-5h-4m4 0v4M9 15l-5 5m0 0h4m-4 0v-4m11 4l5-5m0 5h-4m4 0v-4" />
-    </svg>
-  )
-}

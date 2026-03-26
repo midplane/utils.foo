@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { Search, X } from 'lucide-react'
 import { ToolCard } from '../components/ToolCard'
 import { searchTools, tools } from '../tools/registry'
 
@@ -33,7 +34,7 @@ export function Home() {
         
         {/* Search */}
         <div className="relative w-full md:w-72">
-          <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-ink-muted)]" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-ink-muted)]" />
           <input
             ref={searchInputRef}
             type="search"
@@ -47,7 +48,7 @@ export function Home() {
               onClick={() => setSearchQuery('')}
               className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 hover:bg-[var(--color-cream-dark)] rounded transition-colors"
             >
-              <XIcon className="w-3.5 h-3.5 text-[var(--color-ink-muted)]" />
+              <X className="w-3.5 h-3.5 text-[var(--color-ink-muted)]" />
             </button>
           ) : (
             <kbd className="absolute right-2 top-1/2 -translate-y-1/2 px-1.5 py-0.5 text-[10px] font-mono text-[var(--color-ink-muted)] bg-[var(--color-cream-dark)] border border-[var(--color-border)] rounded">
@@ -88,18 +89,4 @@ export function Home() {
   )
 }
 
-function SearchIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-    </svg>
-  )
-}
 
-function XIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-    </svg>
-  )
-}

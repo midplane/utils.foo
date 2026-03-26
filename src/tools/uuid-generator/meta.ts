@@ -1,4 +1,5 @@
 import { ToolMeta } from '../types'
+import { Dices } from 'lucide-react'
 
 export const meta: ToolMeta = {
   id: 'uuid-generator',
@@ -7,4 +8,5 @@ export const meta: ToolMeta = {
   category: 'Crypto / Security',
   keywords: ['uuid', 'guid', 'random', 'v4', 'v5', 'v7', 'unique', 'identifier', 'namespace'],
   path: '/uuid',
+  icon: Dices,
 }

@@ -1,4 +1,5 @@
 import { ToolMeta } from '../types'
+import { QrCode } from 'lucide-react'
 
 export const meta: ToolMeta = {
   id: 'qr-generator',
@@ -7,4 +8,5 @@ export const meta: ToolMeta = {
   category: 'Generators',
   keywords: ['qr', 'qrcode', 'barcode', 'generate', 'url', 'link', 'encode', 'scan'],
   path: '/qr',
+  icon: QrCode,
 }

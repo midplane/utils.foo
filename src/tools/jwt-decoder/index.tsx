@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader } from '../../components/ui/Card'
 import { Textarea } from '../../components/ui/Textarea'
 import { Button } from '../../components/ui/Button'
 import { CopyButton } from '../../components/ui/CopyButton'
-
+import { CircleX, ClipboardList, Info, LockKeyhole, ShieldCheck, Trash2, TriangleAlert, ChevronLeft } from 'lucide-react'
 
 interface JWTPayload {
   [key: string]: unknown
@@ -139,15 +139,13 @@ export default function JwtDecoderTool() {
           to="/" 
           className="inline-flex items-center gap-1 text-xs text-[var(--color-ink-muted)] hover:text-[var(--color-accent)] transition-colors"
         >
-          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-          </svg>
+          <ChevronLeft className="w-4 h-4" />
           Back
         </Link>
         
         <div className="flex items-center gap-2">
           <div className="w-7 h-7 rounded-lg bg-[var(--color-accent)] flex items-center justify-center text-white">
-            <KeyIcon className="w-3.5 h-3.5" />
+            <LockKeyhole className="w-3.5 h-3.5" />
           </div>
           <h1 className="font-mono text-lg font-semibold text-[var(--color-ink)]">
             JWT <span className="text-[var(--color-accent)]">Decoder</span>
@@ -166,11 +164,11 @@ export default function JwtDecoderTool() {
             {/* Actions */}
             <div className="flex gap-1">
               <Button variant="ghost" size="sm" onClick={handlePaste} className="gap-1 text-xs h-7 px-2">
-                <ClipboardIcon className="w-3 h-3" />
+                <ClipboardList className="w-3 h-3" />
                 Paste
               </Button>
               <Button variant="ghost" size="sm" onClick={handleClear} className="gap-1 text-xs h-7 px-2">
-                <TrashIcon className="w-3 h-3" />
+                <Trash2 className="w-3 h-3" />
                 Clear
               </Button>
             </div>
@@ -193,7 +191,7 @@ export default function JwtDecoderTool() {
           {/* Error */}
           {error && (
             <div className="flex items-center gap-2 px-2.5 py-1.5 bg-red-50 border border-red-200 rounded-lg text-red-700">
-              <ErrorIcon className="w-3 h-3 text-red-500 flex-shrink-0" />
+              <CircleX className="w-3 h-3 text-red-500 flex-shrink-0" />
               <span className="text-xs font-medium">{error}</span>
             </div>
           )}
@@ -204,7 +202,7 @@ export default function JwtDecoderTool() {
               {/* Expiration Warning */}
               {expired && (
                 <div className="flex items-center gap-2 px-2.5 py-1.5 bg-amber-50 border border-amber-200 rounded-lg text-amber-700">
-                  <WarningIcon className="w-3 h-3 text-amber-500 flex-shrink-0" />
+                  <TriangleAlert className="w-3 h-3 text-amber-500 flex-shrink-0" />
                   <span className="text-xs font-medium">This token has expired</span>
                 </div>
               )}
@@ -286,7 +284,7 @@ export default function JwtDecoderTool() {
       <div className="grid grid-cols-2 gap-2">
         <div className="px-3 py-2 bg-[var(--color-cream-dark)] rounded-lg border border-[var(--color-border)]">
           <div className="flex gap-2 items-start">
-            <InfoIcon className="w-3.5 h-3.5 text-[var(--color-accent)] flex-shrink-0 mt-0.5" />
+            <Info className="w-3.5 h-3.5 text-[var(--color-accent)] flex-shrink-0 mt-0.5" />
             <div>
               <h3 className="font-semibold text-[var(--color-ink)] text-xs">What is JWT?</h3>
               <p className="text-[10px] text-[var(--color-ink-muted)] leading-tight mt-0.5">
@@ -297,7 +295,7 @@ export default function JwtDecoderTool() {
         </div>
         <div className="px-3 py-2 bg-[var(--color-cream-dark)] rounded-lg border border-[var(--color-border)]">
           <div className="flex gap-2 items-start">
-            <ShieldIcon className="w-3.5 h-3.5 text-amber-600 flex-shrink-0 mt-0.5" />
+            <ShieldCheck className="w-3.5 h-3.5 text-amber-600 flex-shrink-0 mt-0.5" />
             <div>
               <h3 className="font-semibold text-[var(--color-ink)] text-xs">Security Note</h3>
               <p className="text-[10px] text-[var(--color-ink-muted)] leading-tight mt-0.5">
@@ -311,58 +309,3 @@ export default function JwtDecoderTool() {
   )
 }
 
-function KeyIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
-    </svg>
-  )
-}
-
-function ClipboardIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
-    </svg>
-  )
-}
-
-function TrashIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-    </svg>
-  )
-}
-
-function ErrorIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-    </svg>
-  )
-}
-
-function WarningIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-    </svg>
-  )
-}
-
-function InfoIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-    </svg>
-  )
-}
-
-function ShieldIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-    </svg>
-  )
-}

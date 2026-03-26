@@ -1,4 +1,5 @@
 import { ToolMeta } from '../types'
+import { KeyRound } from 'lucide-react'
 
 export const meta: ToolMeta = {
   id: 'hmac-generator',
@@ -7,4 +8,5 @@ export const meta: ToolMeta = {
   category: 'Crypto / Security',
   keywords: ['hmac', 'sha256', 'sha512', 'mac', 'message authentication', 'secret', 'signature', 'hash'],
   path: '/hmac',
+  icon: KeyRound,
 }

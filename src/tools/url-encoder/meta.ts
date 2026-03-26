@@ -1,4 +1,5 @@
 import { ToolMeta } from '../types'
+import { Link2 } from 'lucide-react'
 
 export const meta: ToolMeta = {
   id: 'url-encoder',
@@ -7,4 +8,5 @@ export const meta: ToolMeta = {
   category: 'Encoding',
   keywords: ['url', 'encode', 'decode', 'percent', 'uri', 'escape', 'unescape', 'query'],
   path: '/url',
+  icon: Link2,
 }

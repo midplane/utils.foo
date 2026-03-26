@@ -1,4 +1,5 @@
 import { ToolMeta } from '../types'
+import { LockKeyhole } from 'lucide-react'
 
 export const meta: ToolMeta = {
   id: 'password-generator',
@@ -7,4 +8,5 @@ export const meta: ToolMeta = {
   category: 'Crypto / Security',
   keywords: ['password', 'random', 'secure', 'entropy', 'generator', 'passphrase', 'credentials'],
   path: '/password',
+  icon: LockKeyhole,
 }

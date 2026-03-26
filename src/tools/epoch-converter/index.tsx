@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
+import { Clock, ArrowUpDown, Lightbulb, ChevronLeft } from 'lucide-react'
 import { Card, CardContent, CardHeader } from '../../components/ui/Card'
 import { Input } from '../../components/ui/Input'
 import { Button } from '../../components/ui/Button'
@@ -62,12 +63,10 @@ export default function EpochConverter() {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Link to="/" className="text-[var(--color-ink-muted)] hover:text-[var(--color-accent)] transition-colors">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
+            <ChevronLeft className="w-4 h-4" />
           </Link>
           <div className="w-6 h-6 rounded bg-[var(--color-accent)] flex items-center justify-center text-white">
-            <ClockIcon className="w-3.5 h-3.5" />
+            <Clock className="w-3.5 h-3.5" />
           </div>
           <h1 className="font-mono text-lg font-semibold text-[var(--color-ink)]">
             Epoch <span className="text-[var(--color-accent)]">Converter</span>
@@ -175,7 +174,7 @@ export default function EpochConverter() {
 
             <div className="flex justify-center pt-1">
               <Button onClick={handleNow} variant="primary" size="sm" className="gap-1.5">
-                <ClockIcon className="w-3 h-3" />
+                <Clock className="w-3 h-3" />
                 Now
               </Button>
             </div>
@@ -185,33 +184,10 @@ export default function EpochConverter() {
 
       {/* Compact Tip */}
       <div className="flex items-center gap-2 px-2 py-1.5 bg-[var(--color-cream-dark)] rounded border border-[var(--color-border)] text-[10px] text-[var(--color-ink-muted)]">
-        <LightbulbIcon className="w-3 h-3 text-[var(--color-accent)]" />
+        <Lightbulb className="w-3 h-3 text-[var(--color-accent)]" />
         <span>Auto-detects seconds (10 digits) vs milliseconds (13 digits)</span>
       </div>
     </div>
   )
 }
 
-function ClockIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-    </svg>
-  )
-}
-
-function ArrowUpDown({ className }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
-    </svg>
-  )
-}
-
-function LightbulbIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-    </svg>
-  )
-}

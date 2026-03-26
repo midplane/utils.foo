@@ -1,4 +1,5 @@
 import { ToolMeta } from '../types'
+import { Globe } from 'lucide-react'
 
 export const meta: ToolMeta = {
   id: 'timezone-planner',
@@ -7,4 +8,5 @@ export const meta: ToolMeta = {
   category: 'Utilities',
   keywords: ['timezone', 'meeting', 'time', 'schedule', 'overlap', 'world clock', 'international', 'teams', 'calendar', 'convert'],
   path: '/meeting',
+  icon: Globe,
 }

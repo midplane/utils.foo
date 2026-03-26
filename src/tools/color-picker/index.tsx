@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader } from '../../components/ui/Card'
 import { Input } from '../../components/ui/Input'
 import { CopyButton } from '../../components/ui/CopyButton'
 import { cn } from '../../lib/utils'
+import { Info, Pipette, ChevronLeft } from 'lucide-react'
 
 // ─── Color conversion helpers ─────────────────────────────────────────────────
 
@@ -179,14 +180,12 @@ export default function ColorPickerTool() {
       {/* Header */}
       <div className="space-y-2">
         <Link to="/" className="inline-flex items-center gap-1 text-xs text-[var(--color-ink-muted)] hover:text-[var(--color-accent)] transition-colors">
-          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-          </svg>
+          <ChevronLeft className="w-4 h-4" />
           Back
         </Link>
         <div className="flex items-center gap-2">
           <div className="w-7 h-7 rounded-lg bg-[var(--color-accent)] flex items-center justify-center text-white">
-            <PaletteIcon className="w-3.5 h-3.5" />
+            <Pipette className="w-3.5 h-3.5" />
           </div>
           <h1 className="font-mono text-lg font-semibold text-[var(--color-ink)]">
             Color <span className="text-[var(--color-accent)]">Picker</span>
@@ -309,7 +308,7 @@ export default function ColorPickerTool() {
       <div className="grid grid-cols-2 gap-2">
         <div className="px-3 py-2 bg-[var(--color-cream-dark)] rounded-lg border border-[var(--color-border)]">
           <div className="flex gap-2 items-start">
-            <InfoIcon className="w-3.5 h-3.5 text-[var(--color-accent)] flex-shrink-0 mt-0.5" />
+            <Info className="w-3.5 h-3.5 text-[var(--color-accent)] flex-shrink-0 mt-0.5" />
             <div>
               <h3 className="font-semibold text-[var(--color-ink)] text-xs">Click the preview</h3>
               <p className="text-[10px] text-[var(--color-ink-muted)] leading-tight mt-0.5">
@@ -320,7 +319,7 @@ export default function ColorPickerTool() {
         </div>
         <div className="px-3 py-2 bg-[var(--color-cream-dark)] rounded-lg border border-[var(--color-border)]">
           <div className="flex gap-2 items-start">
-            <InfoIcon className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0 mt-0.5" />
+            <Info className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0 mt-0.5" />
             <div>
               <h3 className="font-semibold text-[var(--color-ink)] text-xs">rebeccapurple</h3>
               <p className="text-[10px] text-[var(--color-ink-muted)] leading-tight mt-0.5">
@@ -334,18 +333,3 @@ export default function ColorPickerTool() {
   )
 }
 
-function PaletteIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
-    </svg>
-  )
-}
-
-function InfoIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-    </svg>
-  )
-}

@@ -1,4 +1,5 @@
 import { ToolMeta } from '../types'
+import { Pipette } from 'lucide-react'
 
 export const meta: ToolMeta = {
   id: 'color-picker',
@@ -7,4 +8,5 @@ export const meta: ToolMeta = {
   category: 'Developer Tools',
   keywords: ['color', 'picker', 'hex', 'rgb', 'hsl', 'palette', 'css', 'design', 'convert'],
   path: '/color',
+  icon: Pipette,
 }

@@ -1,4 +1,5 @@
 import { ToolMeta } from '../types'
+import { Clock } from 'lucide-react'
 
 export const meta: ToolMeta = {
   id: 'epoch',
@@ -7,4 +8,5 @@ export const meta: ToolMeta = {
   category: 'Time',
   keywords: ['unix', 'timestamp', 'date', 'time', 'epoch', 'milliseconds', 'seconds'],
   path: '/epoch',
+  icon: Clock,
 }

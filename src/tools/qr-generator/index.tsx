@@ -6,6 +6,7 @@ import { Button } from '../../components/ui/Button'
 import { Badge } from '../../components/ui/Badge'
 import { Textarea } from '../../components/ui/Textarea'
 import { cn } from '../../lib/utils'
+import { Check, Copy, Download, QrCode, ChevronLeft } from 'lucide-react'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -119,14 +120,12 @@ export default function QrGeneratorTool() {
       {/* Header */}
       <div className="space-y-2">
         <Link to="/" className="inline-flex items-center gap-1 text-xs text-[var(--color-ink-muted)] hover:text-[var(--color-accent)] transition-colors">
-          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-          </svg>
+          <ChevronLeft className="w-4 h-4" />
           Back
         </Link>
         <div className="flex items-center gap-2">
           <div className="w-7 h-7 rounded-lg bg-[var(--color-accent)] flex items-center justify-center text-white">
-            <QrIcon className="w-3.5 h-3.5" />
+            <QrCode className="w-3.5 h-3.5" />
           </div>
           <h1 className="font-mono text-lg font-semibold text-[var(--color-ink)]">
             QR <span className="text-[var(--color-accent)]">Generator</span>
@@ -326,7 +325,7 @@ export default function QrGeneratorTool() {
                   />
                 ) : (
                   <div className="flex flex-col items-center gap-2 text-[var(--color-ink-muted)]">
-                    <QrIcon className="w-12 h-12 opacity-20" />
+                    <QrCode className="w-12 h-12 opacity-20" />
                     <span className="text-[10px]">Enter content above</span>
                   </div>
                 )}
@@ -358,7 +357,7 @@ export default function QrGeneratorTool() {
                       className="w-full gap-1.5 justify-center"
                       size="sm"
                     >
-                      <DownloadIcon className="w-3.5 h-3.5" />
+                      <Download className="w-3.5 h-3.5" />
                       Download {format.toUpperCase()}
                     </Button>
                     <Button
@@ -367,7 +366,7 @@ export default function QrGeneratorTool() {
                       className="w-full gap-1.5 justify-center text-xs h-7"
                       size="sm"
                     >
-                      {copied ? <CheckIcon className="w-3.5 h-3.5 text-emerald-600" /> : <CopyIcon className="w-3.5 h-3.5" />}
+                      {copied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
                       {copied ? 'Copied!' : 'Copy SVG'}
                     </Button>
                   </div>
@@ -386,35 +385,3 @@ export default function QrGeneratorTool() {
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
 
-function QrIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-        d="M12 4h.01M8 4H5a1 1 0 00-1 1v3a1 1 0 001 1h3a1 1 0 001-1V5a1 1 0 00-1-1zm0 10H5a1 1 0 00-1 1v3a1 1 0 001 1h3a1 1 0 001-1v-3a1 1 0 00-1-1zm9-10h-3a1 1 0 00-1 1v3a1 1 0 001 1h3a1 1 0 001-1V5a1 1 0 00-1-1zm-5 5h.01M16 12h.01M12 16h.01M16 16h.01M20 12h.01M20 16h.01M20 20h.01M16 20h.01M12 20h.01" />
-    </svg>
-  )
-}
-
-function DownloadIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-    </svg>
-  )
-}
-
-function CopyIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-    </svg>
-  )
-}
-
-function CheckIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-    </svg>
-  )
-}

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { Card } from '../../components/ui/Card'
 import { Button } from '../../components/ui/Button'
 import { CopyButton } from '../../components/ui/CopyButton'
+import { Calendar, CalendarClock, ChevronDown, Globe, MousePointer2, Search, Sparkles, ChevronLeft } from 'lucide-react'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -234,7 +235,7 @@ function SearchDropdown({
   return (
     <div ref={ref} className="relative">
       <div className="flex items-center gap-1 bg-white border border-[var(--color-border)] rounded-lg px-2.5 py-1.5 focus-within:border-[var(--color-border-dark)]">
-        <SearchIcon className="w-3.5 h-3.5 text-[var(--color-ink-muted)] shrink-0" />
+        <Search className="w-3.5 h-3.5 text-[var(--color-ink-muted)] shrink-0" />
         <input
           ref={inputRef}
           type="text"
@@ -532,12 +533,10 @@ export default function TimezonePlanner() {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Link to="/" className="text-[var(--color-ink-muted)] hover:text-[var(--color-accent)] transition-colors">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
+            <ChevronLeft className="w-4 h-4" />
           </Link>
           <div className="w-6 h-6 rounded bg-[var(--color-accent)] flex items-center justify-center text-white">
-            <GlobeIcon className="w-3.5 h-3.5" />
+            <Globe className="w-3.5 h-3.5" />
           </div>
           <h1 className="font-mono text-lg font-semibold text-[var(--color-ink)]">
             Meeting <span className="text-[var(--color-accent)]">Planner</span>
@@ -560,9 +559,9 @@ export default function TimezonePlanner() {
             onClick={() => setShowAddPreset(v => !v)}
             className="gap-1"
           >
-            <SparkleIcon className="w-3 h-3" />
+            <Sparkles className="w-3 h-3" />
             Presets
-            <ChevronIcon className={`w-3 h-3 transition-transform ${showAddPreset ? 'rotate-180' : ''}`} />
+            <ChevronDown className={`w-3 h-3 transition-transform ${showAddPreset ? 'rotate-180' : ''}`} />
           </Button>
           {showAddPreset && (
             <div className="absolute top-full mt-1 left-0 bg-white border border-[var(--color-border)] rounded-lg shadow-[var(--shadow-medium)] z-50 overflow-hidden min-w-[160px]">
@@ -588,7 +587,7 @@ export default function TimezonePlanner() {
             onClick={() => setShowWorkSettings(v => !v)}
             className="gap-1"
           >
-            <ClockIcon className="w-3 h-3" />
+            <CalendarClock className="w-3 h-3" />
             Work hours: {formatHour(workStart)}–{formatHour(workEnd)}
           </Button>
           {showWorkSettings && (
@@ -695,7 +694,7 @@ export default function TimezonePlanner() {
           <div className="px-3 py-2.5 flex items-center justify-between gap-4 flex-wrap">
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-1.5">
-                <CalendarIcon className="w-4 h-4 text-[var(--color-accent)]" />
+                <Calendar className="w-4 h-4 text-[var(--color-accent)]" />
                 <span className="text-xs font-semibold text-[var(--color-ink)]">{rangeLength}h slot selected</span>
               </div>
               <div className="flex items-center gap-2">
@@ -752,7 +751,7 @@ export default function TimezonePlanner() {
       {/* Drag hint */}
       {!selectedRange && zones.length > 1 && (
         <div className="flex items-center gap-2 px-2 py-1.5 bg-[var(--color-cream-dark)] rounded border border-[var(--color-border)] text-[10px] text-[var(--color-ink-muted)]">
-          <MouseIcon className="w-3 h-3 text-[var(--color-accent)] shrink-0" />
+          <MousePointer2 className="w-3 h-3 text-[var(--color-accent)] shrink-0" />
           <span>Hover to see times across all zones · Click and drag to select a meeting slot</span>
         </div>
       )}
@@ -857,22 +856,6 @@ function LegendDot({ color, label }: { color: string; label: string }) {
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
 
-function GlobeIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-    </svg>
-  )
-}
-
-function SearchIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-    </svg>
-  )
-}
-
 function XIcon({ className }: { className?: string }) {
   return (
     <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -881,42 +864,3 @@ function XIcon({ className }: { className?: string }) {
   )
 }
 
-function ClockIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-    </svg>
-  )
-}
-
-function SparkleIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
-    </svg>
-  )
-}
-
-function ChevronIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-    </svg>
-  )
-}
-
-function CalendarIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-    </svg>
-  )
-}
-
-function MouseIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 3H7a2 2 0 00-2 2v14a2 2 0 002 2h10a2 2 0 002-2V5a2 2 0 00-2-2h-2M9 3a2 2 0 002 2h2a2 2 0 002-2M9 3a2 2 0 012-2h2a2 2 0 012 2m-3 7v4" />
-    </svg>
-  )
-}

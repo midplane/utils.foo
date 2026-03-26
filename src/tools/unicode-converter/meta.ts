@@ -1,4 +1,5 @@
 import { ToolMeta } from '../types'
+import { Languages } from 'lucide-react'
 
 export const meta: ToolMeta = {
   id: 'unicode-converter',
@@ -7,4 +8,5 @@ export const meta: ToolMeta = {
   category: 'Encoding',
   keywords: ['unicode', 'hex', 'decimal', 'character', 'codepoint', 'utf8', 'utf16', 'ascii', 'emoji'],
   path: '/unicode',
+  icon: Languages,
 }

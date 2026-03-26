@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader } from '../../components/ui/Card'
 import { Input } from '../../components/ui/Input'
 import { CopyButton } from '../../components/ui/CopyButton'
 import { cn } from '../../lib/utils'
+import { FileLock2, Info, ChevronLeft } from 'lucide-react'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -189,14 +190,12 @@ export default function ChmodCalculatorTool() {
       {/* Header */}
       <div className="space-y-2">
         <Link to="/" className="inline-flex items-center gap-1 text-xs text-[var(--color-ink-muted)] hover:text-[var(--color-accent)] transition-colors">
-          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-          </svg>
+          <ChevronLeft className="w-4 h-4" />
           Back
         </Link>
         <div className="flex items-center gap-2">
           <div className="w-7 h-7 rounded-lg bg-[var(--color-accent)] flex items-center justify-center text-white">
-            <LockIcon className="w-3.5 h-3.5" />
+            <FileLock2 className="w-3.5 h-3.5" />
           </div>
           <h1 className="font-mono text-lg font-semibold text-[var(--color-ink)]">
             Chmod <span className="text-[var(--color-accent)]">Calculator</span>
@@ -303,7 +302,7 @@ export default function ChmodCalculatorTool() {
       <div className="grid grid-cols-2 gap-2">
         <div className="px-3 py-2 bg-[var(--color-cream-dark)] rounded-lg border border-[var(--color-border)]">
           <div className="flex gap-2 items-start">
-            <InfoIcon className="w-3.5 h-3.5 text-[var(--color-accent)] flex-shrink-0 mt-0.5" />
+            <Info className="w-3.5 h-3.5 text-[var(--color-accent)] flex-shrink-0 mt-0.5" />
             <div>
               <h3 className="font-semibold text-[var(--color-ink)] text-xs">Octal values</h3>
               <p className="text-[10px] text-[var(--color-ink-muted)] leading-tight mt-0.5 font-mono">
@@ -314,7 +313,7 @@ export default function ChmodCalculatorTool() {
         </div>
         <div className="px-3 py-2 bg-[var(--color-cream-dark)] rounded-lg border border-[var(--color-border)]">
           <div className="flex gap-2 items-start">
-            <InfoIcon className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0 mt-0.5" />
+            <Info className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0 mt-0.5" />
             <div>
               <h3 className="font-semibold text-[var(--color-ink)] text-xs">Who is who</h3>
               <p className="text-[10px] text-[var(--color-ink-muted)] leading-tight mt-0.5">
@@ -328,18 +327,3 @@ export default function ChmodCalculatorTool() {
   )
 }
 
-function LockIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-    </svg>
-  )
-}
-
-function InfoIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-    </svg>
-  )
-}

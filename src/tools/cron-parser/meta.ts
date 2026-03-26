@@ -1,4 +1,5 @@
 import { ToolMeta } from '../types'
+import { CalendarClock } from 'lucide-react'
 
 export const meta: ToolMeta = {
   id: 'cron-parser',
@@ -7,4 +8,5 @@ export const meta: ToolMeta = {
   category: 'Developer Tools',
   keywords: ['cron', 'schedule', 'expression', 'parser', 'jobs', 'tasks', 'interval', 'crontab'],
   path: '/cron',
+  icon: CalendarClock,
 }

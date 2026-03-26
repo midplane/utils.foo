@@ -1,4 +1,5 @@
 import { ToolMeta } from '../types'
+import { Braces } from 'lucide-react'
 
 export const meta: ToolMeta = {
   id: 'json-formatter',
@@ -7,4 +8,5 @@ export const meta: ToolMeta = {
   category: 'Formatting',
   keywords: ['json', 'format', 'prettify', 'minify', 'validate', 'lint', 'formatter', 'beautify', 'parse'],
   path: '/json',
+  icon: Braces,
 }

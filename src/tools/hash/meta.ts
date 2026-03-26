@@ -1,4 +1,5 @@
 import { ToolMeta } from '../types'
+import { Fingerprint } from 'lucide-react'
 
 export const meta: ToolMeta = {
   id: 'hash',
@@ -7,4 +8,5 @@ export const meta: ToolMeta = {
   category: 'Encoding',
   keywords: ['hash', 'md5', 'sha1', 'sha256', 'sha512', 'checksum', 'digest', 'crypto'],
   path: '/hash',
+  icon: Fingerprint,
 }

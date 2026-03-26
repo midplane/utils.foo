@@ -5,6 +5,7 @@ import { Textarea } from '../../components/ui/Textarea'
 import { Button } from '../../components/ui/Button'
 import { CopyButton } from '../../components/ui/CopyButton'
 import { cn } from '../../lib/utils'
+import { ChevronDown, Fingerprint, Info, Loader2, ShieldCheck, Trash2, ChevronLeft } from 'lucide-react'
 
 type HashAlgorithm = 'MD5' | 'SHA-1' | 'SHA-256' | 'SHA-512'
 
@@ -225,15 +226,13 @@ export default function HashTool() {
           to="/" 
           className="inline-flex items-center gap-1 text-xs text-[var(--color-ink-muted)] hover:text-[var(--color-accent)] transition-colors"
         >
-          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-          </svg>
+          <ChevronLeft className="w-4 h-4" />
           Back
         </Link>
         
         <div className="flex items-center gap-2">
           <div className="w-7 h-7 rounded-lg bg-[var(--color-accent)] flex items-center justify-center text-white">
-            <HashIcon className="w-3.5 h-3.5" />
+            <Fingerprint className="w-3.5 h-3.5" />
           </div>
           <h1 className="font-mono text-lg font-semibold text-[var(--color-ink)]">
             Hash <span className="text-[var(--color-accent)]">Generator</span>
@@ -277,7 +276,7 @@ export default function HashTool() {
             {/* Actions */}
             <div className="flex gap-1">
               <Button variant="ghost" size="sm" onClick={handleClear} className="gap-1 text-xs h-7 px-2">
-                <TrashIcon className="w-3 h-3" />
+                <Trash2 className="w-3 h-3" />
                 Clear
               </Button>
             </div>
@@ -312,9 +311,9 @@ export default function HashTool() {
                 : "bg-[var(--color-cream-dark)] border-[var(--color-border)] text-[var(--color-ink-muted)]"
             )}>
               {isComputing ? (
-                <SpinnerIcon className="w-3 h-3 animate-spin" />
+                <Loader2 className="w-3 h-3 animate-spin" />
               ) : (
-                <ArrowDownIcon className="w-3 h-3" />
+                <ChevronDown className="w-3 h-3" />
               )}
             </div>
             <div className="flex-1 h-px bg-[var(--color-border)]" />
@@ -360,7 +359,7 @@ export default function HashTool() {
       <div className="grid grid-cols-2 gap-2">
         <div className="px-3 py-2 bg-[var(--color-cream-dark)] rounded-lg border border-[var(--color-border)]">
           <div className="flex gap-2 items-start">
-            <InfoIcon className="w-3.5 h-3.5 text-[var(--color-accent)] flex-shrink-0 mt-0.5" />
+            <Info className="w-3.5 h-3.5 text-[var(--color-accent)] flex-shrink-0 mt-0.5" />
             <div>
               <h3 className="font-semibold text-[var(--color-ink)] text-xs">What is hashing?</h3>
               <p className="text-[10px] text-[var(--color-ink-muted)] leading-tight mt-0.5">
@@ -371,7 +370,7 @@ export default function HashTool() {
         </div>
         <div className="px-3 py-2 bg-[var(--color-cream-dark)] rounded-lg border border-[var(--color-border)]">
           <div className="flex gap-2 items-start">
-            <ShieldIcon className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0 mt-0.5" />
+            <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0 mt-0.5" />
             <div>
               <h3 className="font-semibold text-[var(--color-ink)] text-xs">Security Note</h3>
               <p className="text-[10px] text-[var(--color-ink-muted)] leading-tight mt-0.5">
@@ -385,50 +384,3 @@ export default function HashTool() {
   )
 }
 
-function HashIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14" />
-    </svg>
-  )
-}
-
-function TrashIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-    </svg>
-  )
-}
-
-function ArrowDownIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-    </svg>
-  )
-}
-
-function SpinnerIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-    </svg>
-  )
-}
-
-function InfoIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-    </svg>
-  )
-}
-
-function ShieldIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-    </svg>
-  )
-}

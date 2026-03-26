@@ -1,4 +1,5 @@
 import { ToolMeta } from '../types'
+import { ShieldCheck } from 'lucide-react'
 
 export const meta: ToolMeta = {
   id: 'certificate-decoder',
@@ -7,4 +8,5 @@ export const meta: ToolMeta = {
   category: 'Crypto / Security',
   keywords: ['certificate', 'x509', 'pem', 'ssl', 'tls', 'san', 'public key', 'issuer', 'subject', 'expiry'],
   path: '/certificate',
+  icon: ShieldCheck,
 }

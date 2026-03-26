@@ -1,4 +1,5 @@
 import { ToolMeta } from '../types'
+import { Binary } from 'lucide-react'
 
 export const meta: ToolMeta = {
   id: 'base64',
@@ -7,4 +8,5 @@ export const meta: ToolMeta = {
   category: 'Encoding',
   keywords: ['base64', 'encode', 'decode', 'encoding', 'text', 'binary'],
   path: '/base64',
+  icon: Binary,
 }

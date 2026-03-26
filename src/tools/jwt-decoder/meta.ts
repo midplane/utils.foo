@@ -1,4 +1,5 @@
 import { ToolMeta } from '../types'
+import { Ticket } from 'lucide-react'
 
 export const meta: ToolMeta = {
   id: 'jwt-decoder',
@@ -7,4 +8,5 @@ export const meta: ToolMeta = {
   category: 'Encoding',
   keywords: ['jwt', 'json', 'web', 'token', 'decode', 'parse', 'auth', 'authentication', 'bearer'],
   path: '/jwt',
+  icon: Ticket,
 }
