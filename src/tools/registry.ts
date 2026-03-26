@@ -28,6 +28,7 @@ const DnsLookupTool         = lazy(() => import('./dns-lookup'))
 const MarkdownPreviewTool   = lazy(() => import('./markdown-preview'))
 const MarkdownTableTool     = lazy(() => import('./markdown-table'))
 const MermaidTool           = lazy(() => import('./mermaid'))
+const LogoGeneratorTool     = lazy(() => import('./logo-generator'))
 
 // Import tool metadata
 import { meta as epochConverterMeta } from './epoch-converter/meta'
@@ -56,6 +57,7 @@ import { meta as dnsLookupMeta } from './dns-lookup/meta'
 import { meta as markdownPreviewMeta } from './markdown-preview/meta'
 import { meta as markdownTableMeta } from './markdown-table/meta'
 import { meta as mermaidMeta } from './mermaid/meta'
+import { meta as logoGeneratorMeta } from './logo-generator/meta'
 
 // Registry of all tools
 export const tools: Tool[] = [
@@ -85,6 +87,7 @@ export const tools: Tool[] = [
   { ...markdownPreviewMeta,     component: MarkdownPreviewTool },
   { ...markdownTableMeta,       component: MarkdownTableTool },
   { ...mermaidMeta,             component: MermaidTool },
+  { ...logoGeneratorMeta,       component: LogoGeneratorTool },
 ]
 
 // Helper to get tool by ID
