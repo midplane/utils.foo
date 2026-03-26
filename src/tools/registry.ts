@@ -25,6 +25,7 @@ const CountryCodesTool      = lazy(() => import('./country-codes'))
 const CurrencyCodesTool     = lazy(() => import('./currency-codes'))
 const ChartBuilderTool      = lazy(() => import('./chart-builder'))
 const DnsLookupTool         = lazy(() => import('./dns-lookup'))
+const MarkdownPreviewTool   = lazy(() => import('./markdown-preview'))
 
 // Import tool metadata
 import { meta as epochConverterMeta } from './epoch-converter/meta'
@@ -50,6 +51,7 @@ import { meta as countryCodesMeta } from './country-codes/meta'
 import { meta as currencyCodesMeta } from './currency-codes/meta'
 import { meta as chartBuilderMeta } from './chart-builder/meta'
 import { meta as dnsLookupMeta } from './dns-lookup/meta'
+import { meta as markdownPreviewMeta } from './markdown-preview/meta'
 
 // Registry of all tools
 export const tools: Tool[] = [
@@ -76,6 +78,7 @@ export const tools: Tool[] = [
   { ...currencyCodesMeta,       component: CurrencyCodesTool },
   { ...chartBuilderMeta,        component: ChartBuilderTool },
   { ...dnsLookupMeta,           component: DnsLookupTool },
+  { ...markdownPreviewMeta,     component: MarkdownPreviewTool },
 ]
 
 // Helper to get tool by ID
