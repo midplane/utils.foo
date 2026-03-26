@@ -19,6 +19,7 @@ import DiffViewerTool from './diff-viewer'
 import QrGeneratorTool from './qr-generator'
 import DataConverterTool from './data-converter'
 import TimezonePlannerTool from './timezone-planner'
+import HttpStatusCodesTool from './http-status-codes'
 
 // Import tool metadata
 import { meta as epochConverterMeta } from './epoch-converter/meta'
@@ -39,6 +40,7 @@ import { meta as diffViewerMeta } from './diff-viewer/meta'
 import { meta as qrGeneratorMeta } from './qr-generator/meta'
 import { meta as dataConverterMeta } from './data-converter/meta'
 import { meta as timezonePlannerMeta } from './timezone-planner/meta'
+import { meta as httpStatusCodesMeta } from './http-status-codes/meta'
 
 // Registry of all tools
 export const tools: Tool[] = [
@@ -60,6 +62,7 @@ export const tools: Tool[] = [
   { ...qrGeneratorMeta,         component: QrGeneratorTool },
   { ...dataConverterMeta,       component: DataConverterTool },
   { ...timezonePlannerMeta,     component: TimezonePlannerTool },
+  { ...httpStatusCodesMeta,     component: HttpStatusCodesTool },
 ]
 
 // Helper to get tool by ID
