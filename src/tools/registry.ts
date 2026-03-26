@@ -20,6 +20,8 @@ import QrGeneratorTool from './qr-generator'
 import DataConverterTool from './data-converter'
 import TimezonePlannerTool from './timezone-planner'
 import HttpStatusCodesTool from './http-status-codes'
+import CountryCodesTool from './country-codes'
+import CurrencyCodesTool from './currency-codes'
 
 // Import tool metadata
 import { meta as epochConverterMeta } from './epoch-converter/meta'
@@ -41,6 +43,8 @@ import { meta as qrGeneratorMeta } from './qr-generator/meta'
 import { meta as dataConverterMeta } from './data-converter/meta'
 import { meta as timezonePlannerMeta } from './timezone-planner/meta'
 import { meta as httpStatusCodesMeta } from './http-status-codes/meta'
+import { meta as countryCodesMeta } from './country-codes/meta'
+import { meta as currencyCodesMeta } from './currency-codes/meta'
 
 // Registry of all tools
 export const tools: Tool[] = [
@@ -63,6 +67,8 @@ export const tools: Tool[] = [
   { ...dataConverterMeta,       component: DataConverterTool },
   { ...timezonePlannerMeta,     component: TimezonePlannerTool },
   { ...httpStatusCodesMeta,     component: HttpStatusCodesTool },
+  { ...countryCodesMeta,        component: CountryCodesTool },
+  { ...currencyCodesMeta,       component: CurrencyCodesTool },
 ]
 
 // Helper to get tool by ID
