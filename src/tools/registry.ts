@@ -17,6 +17,7 @@ import CertificateDecoderTool from './certificate-decoder'
 import JsonFormatterTool from './json-formatter'
 import DiffViewerTool from './diff-viewer'
 import QrGeneratorTool from './qr-generator'
+import DataConverterTool from './data-converter'
 
 // Import tool metadata
 import { meta as epochConverterMeta } from './epoch-converter/meta'
@@ -35,6 +36,7 @@ import { meta as certificateDecoderMeta } from './certificate-decoder/meta'
 import { meta as jsonFormatterMeta } from './json-formatter/meta'
 import { meta as diffViewerMeta } from './diff-viewer/meta'
 import { meta as qrGeneratorMeta } from './qr-generator/meta'
+import { meta as dataConverterMeta } from './data-converter/meta'
 
 // Registry of all tools
 export const tools: Tool[] = [
@@ -54,6 +56,7 @@ export const tools: Tool[] = [
   { ...jsonFormatterMeta,       component: JsonFormatterTool },
   { ...diffViewerMeta,          component: DiffViewerTool },
   { ...qrGeneratorMeta,         component: QrGeneratorTool },
+  { ...dataConverterMeta,       component: DataConverterTool },
 ]
 
 // Helper to get tool by ID
