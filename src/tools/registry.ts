@@ -7,6 +7,9 @@ import HashTool from './hash'
 import UrlEncoderTool from './url-encoder'
 import JwtDecoderTool from './jwt-decoder'
 import UnicodeConverterTool from './unicode-converter'
+import CronParserTool from './cron-parser'
+import ChmodCalculatorTool from './chmod-calculator'
+import ColorPickerTool from './color-picker'
 
 // Import tool metadata
 import { meta as epochConverterMeta } from './epoch-converter/meta'
@@ -15,33 +18,21 @@ import { meta as hashMeta } from './hash/meta'
 import { meta as urlEncoderMeta } from './url-encoder/meta'
 import { meta as jwtDecoderMeta } from './jwt-decoder/meta'
 import { meta as unicodeConverterMeta } from './unicode-converter/meta'
+import { meta as cronParserMeta } from './cron-parser/meta'
+import { meta as chmodCalculatorMeta } from './chmod-calculator/meta'
+import { meta as colorPickerMeta } from './color-picker/meta'
 
 // Registry of all tools
 export const tools: Tool[] = [
-  {
-    ...epochConverterMeta,
-    component: EpochConverter,
-  },
-  {
-    ...base64Meta,
-    component: Base64Tool,
-  },
-  {
-    ...hashMeta,
-    component: HashTool,
-  },
-  {
-    ...urlEncoderMeta,
-    component: UrlEncoderTool,
-  },
-  {
-    ...jwtDecoderMeta,
-    component: JwtDecoderTool,
-  },
-  {
-    ...unicodeConverterMeta,
-    component: UnicodeConverterTool,
-  },
+  { ...epochConverterMeta,    component: EpochConverter },
+  { ...base64Meta,            component: Base64Tool },
+  { ...hashMeta,              component: HashTool },
+  { ...urlEncoderMeta,        component: UrlEncoderTool },
+  { ...jwtDecoderMeta,        component: JwtDecoderTool },
+  { ...unicodeConverterMeta,  component: UnicodeConverterTool },
+  { ...cronParserMeta,        component: CronParserTool },
+  { ...chmodCalculatorMeta,   component: ChmodCalculatorTool },
+  { ...colorPickerMeta,       component: ColorPickerTool },
 ]
 
 // Helper to get tool by ID
