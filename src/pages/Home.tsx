@@ -1,14 +1,24 @@
-import { useState, useEffect, useRef } from 'react'
-import { Search } from 'lucide-react'
+import { useState, useEffect, useRef, useMemo } from 'react'
+import { Search, Star } from 'lucide-react'
 import { ToolCard } from '../components/ToolCard'
 import { searchTools, tools } from '../tools/registry'
+import { useFavorites } from '../hooks/useFavorites'
 
 export function Home() {
   const [searchQuery, setSearchQuery] = useState('')
-  const filteredTools = (searchQuery ? searchTools(searchQuery) : tools)
-    .slice()
-    .sort((a, b) => a.name.localeCompare(b.name))
+  const { isFavorite, toggleFavorite, favorites } = useFavorites()
   const searchInputRef = useRef<HTMLInputElement>(null)
+
+  const { favoriteTools, otherTools } = useMemo(() => {
+    const baseTools = searchQuery ? searchTools(searchQuery) : tools
+    const sorted = baseTools.slice().sort((a, b) => a.name.localeCompare(b.name))
+    return {
+      favoriteTools: sorted.filter(t => favorites.has(t.id)),
+      otherTools: sorted.filter(t => !favorites.has(t.id)),
+    }
+  }, [searchQuery, favorites])
+
+  const totalCount = favoriteTools.length + otherTools.length
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -41,29 +51,61 @@ export function Home() {
         )}
       </div>
 
+      {/* Favorites Section */}
+      {favoriteTools.length > 0 && (
+        <>
+          <div className="flex items-center gap-3">
+            <div className="flex-1 h-px bg-[var(--color-border)]" />
+            <span className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-[var(--color-ink-muted)]">
+              <Star className="w-3 h-3 fill-[var(--color-accent)] text-[var(--color-accent)]" />
+              {favoriteTools.length} favorite{favoriteTools.length !== 1 ? 's' : ''}
+            </span>
+            <div className="flex-1 h-px bg-[var(--color-border)]" />
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {favoriteTools.map((tool, index) => (
+              <ToolCard
+                key={tool.id}
+                tool={tool}
+                index={index}
+                isFavorite={true}
+                onToggleFavorite={toggleFavorite}
+              />
+            ))}
+          </div>
+        </>
+      )}
+
       {/* Divider with count */}
       <div className="flex items-center gap-3">
         <div className="flex-1 h-px bg-[var(--color-border)]" />
         <span className="text-[10px] uppercase tracking-wider text-[var(--color-ink-muted)]">
-          {searchQuery ? `${filteredTools.length} found` : `${tools.length} tools`}
+          {searchQuery ? `${totalCount} found` : `${tools.length} tools`}
         </span>
         <div className="flex-1 h-px bg-[var(--color-border)]" />
       </div>
 
       {/* Tool Grid - 3 columns on larger screens */}
-      {filteredTools.length > 0 ? (
+      {otherTools.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          {filteredTools.map((tool, index) => (
-            <ToolCard key={tool.id} tool={tool} index={index} />
+          {otherTools.map((tool, index) => (
+            <ToolCard
+              key={tool.id}
+              tool={tool}
+              index={index}
+              isFavorite={isFavorite(tool.id)}
+              onToggleFavorite={toggleFavorite}
+            />
           ))}
         </div>
       ) : (
-        <div className="text-center py-8 animate-fade-in">
-          <p className="text-sm text-[var(--color-ink-muted)]">No tools found matching "{searchQuery}"</p>
-        </div>
+        !favoriteTools.length && (
+          <div className="text-center py-8 animate-fade-in">
+            <p className="text-sm text-[var(--color-ink-muted)]">No tools found matching "{searchQuery}"</p>
+          </div>
+        )
       )}
     </div>
   )
 }
-
-
