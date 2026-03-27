@@ -79,12 +79,12 @@ export default function JsonFormatterTool() {
   const resultContainerRef = useRef<HTMLDivElement>(null);
   const resultViewRef = useRef<EditorView | null>(null);
 
-  const [charCount, setCharCount] = useState(SAMPLE_JSON.length);
-  const [lineCount, setLineCount] = useState(SAMPLE_JSON.split("\n").length);
+  const [charCount, setCharCount] = useState(0);
+  const [lineCount, setLineCount] = useState(0);
   const [validState, setValidState] = useState<"idle" | "valid" | "invalid">(
     "idle",
   );
-  const [currentText, setCurrentText] = useState(SAMPLE_JSON);
+  const [currentText, setCurrentText] = useState('');
   const { expanded, setExpanded } = useExpandable();
 
   // ── Filter state ─────────────────────────────────────────────────────────────
@@ -137,7 +137,7 @@ export default function JsonFormatterTool() {
     if (!editorContainerRef.current) return;
 
     const startState = EditorState.create({
-      doc: SAMPLE_JSON,
+      doc: '',
       extensions: [
         basicSetup,
         json(),

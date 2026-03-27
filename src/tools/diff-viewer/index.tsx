@@ -149,14 +149,14 @@ export default function DiffViewerTool() {
   const langCompartmentA = useRef(new Compartment())
   const langCompartmentB = useRef(new Compartment())
 
-  const [leftText, setLeftText]   = useState(SAMPLE_LEFT)
-  const [rightText, setRightText] = useState(SAMPLE_RIGHT)
+  const [leftText, setLeftText]   = useState('')
+  const [rightText, setRightText] = useState('')
   const [stats, setStats]         = useState({ added: 0, removed: 0 })
   const { expanded, setExpanded } = useExpandable()
 
   // 'auto' means follow detection; any other value is a manual override
   const [langOverride, setLangOverride] = useState<string>('auto')
-  const [detectedLang, setDetectedLang] = useState<string>(() => detectLanguage(SAMPLE_LEFT))
+  const [detectedLang, setDetectedLang] = useState<string>('plaintext')
 
   // The effective language name used for highlighting
   const activeLang = langOverride === 'auto' ? detectedLang : langOverride

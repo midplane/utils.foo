@@ -74,10 +74,8 @@ body {
   background-size: 24px 24px;
 }
 
-/* Selection */
 ::selection {
-  background-color: var(--color-accent);
-  color: white;
+  background-color: rgba(234, 88, 12, 0.2);
 }
 
 /* Animations */

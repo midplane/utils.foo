@@ -195,12 +195,9 @@ export default function DataConverterTool() {
   useEffect(() => {
     if (!inputRef.current || !outputRef.current) return
 
-    const sample = SAMPLES[conv.from] ?? ''
-    setInputText(sample)
-
     const iv = new EditorView({
       state: EditorState.create({
-        doc: sample,
+        doc: '',
         extensions: [
           basicSetup,
           EditorView.lineWrapping,
@@ -235,7 +232,6 @@ export default function DataConverterTool() {
       iv.destroy(); inputView.current = null
       ov.destroy(); outputView.current = null
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   // ── Apply language extensions when conversion changes ────────────────────────
