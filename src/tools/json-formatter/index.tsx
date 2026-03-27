@@ -1,118 +1,27 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Braces, AlignLeft, ChevronsLeftRight, CircleCheck, RefreshCw, Trash2, Maximize2, Minimize2, ListFilter, Play, X, HelpCircle } from "lucide-react";
+import { Braces, AlignLeft, ChevronsLeftRight, CircleCheck, RefreshCw, Trash2, ListFilter, Play, X, HelpCircle } from "lucide-react";
 import { basicSetup } from "codemirror";
 import { EditorView } from "@codemirror/view";
 import { EditorState } from "@codemirror/state";
 import { json, jsonParseLinter } from "@codemirror/lang-json";
 import { linter, lintGutter } from "@codemirror/lint";
 import { JSONPath } from "jsonpath-plus";
-import { Card, CardContent, CardHeader } from "../../components/ui/Card";
 import { Button } from "../../components/ui/Button";
 import { CopyButton } from "../../components/ui/CopyButton";
 import { Badge } from "../../components/ui/Badge";
 import { Input } from "../../components/ui/Input";
+import { ToolHeader } from "../../components/ui/ToolHeader";
+import { Alert } from "../../components/ui/Alert";
+import {
+  useExpandable,
+  ExpandableCard,
+  ExpandableCardHeader,
+  ExpandableCardContent,
+  ExpandToggleButton,
+  ExpandHint,
+} from "../../components/ui/ExpandableCard";
 import { cn } from "../../lib/utils";
-
-// ─── Custom CodeMirror theme matching the app's warm palette ──────────────────
-
-const appTheme = EditorView.theme(
-  {
-    "&": {
-      fontSize: "13px",
-      fontFamily: "'JetBrains Mono', ui-monospace, monospace",
-      background: "#FFFBF5",
-      color: "#1C1917",
-      border: "1px solid #E7E5E4",
-      borderRadius: "8px",
-      outline: "none",
-      height: "100%",
-    },
-    "&.cm-focused": {
-      outline: "none",
-      border: "1px solid #EA580C",
-      boxShadow: "0 0 0 3px rgba(234, 88, 12, 0.15)",
-    },
-    ".cm-scroller": {
-      overflow: "auto",
-      fontFamily: "'JetBrains Mono', ui-monospace, monospace",
-      height: "100%",
-    },
-    ".cm-content": {
-      padding: "12px 4px",
-      caretColor: "#EA580C",
-    },
-    ".cm-line": {
-      padding: "0 8px",
-    },
-    ".cm-gutters": {
-      background: "#FFF7ED",
-      borderRight: "1px solid #E7E5E4",
-      color: "#A8A29E",
-      fontSize: "11px",
-    },
-    ".cm-activeLineGutter": {
-      background: "#FEF3C7",
-    },
-    ".cm-activeLine": {
-      background: "rgba(234, 88, 12, 0.04)",
-    },
-    ".cm-selectionBackground": {
-      background: "rgba(234, 88, 12, 0.15) !important",
-    },
-    "&.cm-focused .cm-selectionBackground": {
-      background: "rgba(234, 88, 12, 0.2) !important",
-    },
-    ".cm-cursor": {
-      borderLeftColor: "#EA580C",
-    },
-    // Lint gutter
-    ".cm-gutter-lint": {
-      width: "18px",
-      background: "#FFF7ED",
-    },
-    ".cm-lint-marker-error": {
-      content: '""',
-      display: "block",
-      width: "6px",
-      height: "6px",
-      borderRadius: "50%",
-      background: "#EF4444",
-      margin: "0 auto",
-    },
-    // Diagnostic underline
-    ".cm-lintRange-error": {
-      backgroundImage:
-        "url(\"data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='6' height='3'><path d='m0 2.5 l2 -1.5 l2 1.5 l2 -1.5' stroke='%23EF4444' fill='none' stroke-width='1.2'/></svg>\")",
-      backgroundRepeat: "repeat-x",
-      backgroundPosition: "bottom",
-      paddingBottom: "2px",
-    },
-    // Tooltip
-    ".cm-tooltip": {
-      background: "#1C1917",
-      color: "#FFF7ED",
-      border: "none",
-      borderRadius: "6px",
-      fontSize: "11px",
-      padding: "4px 8px",
-      boxShadow: "0 4px 12px rgba(0,0,0,0.3)",
-    },
-    ".cm-tooltip-lint": {
-      background: "#1C1917",
-      borderRadius: "6px",
-      padding: "4px 8px",
-    },
-    // JSON syntax colours — warm palette
-    ".tok-propertyName": { color: "#C2410C", fontWeight: "500" }, // keys: deep orange
-    ".tok-string": { color: "#15803D" }, // strings: forest green
-    ".tok-number": { color: "#1D4ED8" }, // numbers: blue
-    ".tok-bool": { color: "#7C3AED" }, // booleans: purple
-    ".tok-null": { color: "#6B7280" }, // null: muted
-    ".tok-punctuation": { color: "#78716C" }, // brackets/colons: muted ink
-    ".tok-bracket": { color: "#78716C" },
-  },
-  { dark: false },
-);
+import { appTheme } from "../../lib/codemirrorTheme";
 
 // ─── Validation helpers ────────────────────────────────────────────────────────
 
@@ -176,7 +85,7 @@ export default function JsonFormatterTool() {
     "idle",
   );
   const [currentText, setCurrentText] = useState(SAMPLE_JSON);
-  const [expanded, setExpanded] = useState(false);
+  const { expanded, setExpanded } = useExpandable();
 
   // ── Filter state ─────────────────────────────────────────────────────────────
   const [filterOpen, setFilterOpen] = useState(false);
@@ -184,13 +93,6 @@ export default function JsonFormatterTool() {
   const [filterResult, setFilterResult] = useState("");
   const [filterError, setFilterError] = useState("");
   const [showCheatsheet, setShowCheatsheet] = useState(false);
-
-  // Close on Escape
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setExpanded(false); };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, []);
 
   // ── Build the result (read-only) editor on mount ────────────────────────────
   useEffect(() => {
@@ -343,36 +245,15 @@ export default function JsonFormatterTool() {
 
   return (
     <>
-      {/* Backdrop below the sticky header */}
-      {expanded && (
-        <div
-          className="fixed left-0 right-0 bottom-0 bg-black/40 z-40 backdrop-blur-sm"
-          style={{ top: "41px" }}
-          onClick={() => setExpanded(false)}
-        />
-      )}
-
       <div className={cn("space-y-4 animate-fade-in", expanded && "relative z-50")}>
         {/* Breadcrumb & Header — hidden in expanded mode */}
           {!expanded && (
-            <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-lg bg-[var(--color-accent)] flex items-center justify-center text-white">
-                <Braces className="w-3.5 h-3.5" />
-              </div>
-              <h1 className="font-mono text-lg font-semibold text-[var(--color-ink)]">
-                JSON <span className="text-[var(--color-accent)]">Formatter</span>
-              </h1>
-            </div>
+            <ToolHeader icon={<Braces />} title="JSON" accentedSuffix="Formatter" />
           )}
 
         {/* Main Card */}
-        <Card
-          className={cn(
-            expanded && "fixed left-4 right-4 bottom-4 z-50 shadow-2xl overflow-auto",
-          )}
-          style={expanded ? { top: "calc(41px + 8px)" } : undefined}
-        >
-          <CardHeader>
+        <ExpandableCard expanded={expanded} onExpandedChange={setExpanded}>
+          <ExpandableCardHeader>
             <div className="flex items-center justify-between flex-wrap gap-2">
               {/* Action buttons */}
               <div className="flex items-center gap-1.5">
@@ -418,18 +299,12 @@ export default function JsonFormatterTool() {
                   Clear
                 </Button>
                 {/* Expand / collapse */}
-                <button
-                  onClick={() => setExpanded((v) => !v)}
-                  title={expanded ? "Collapse editor" : "Expand editor"}
-                  className="inline-flex items-center justify-center w-7 h-7 rounded-lg text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] hover:bg-[var(--color-cream-dark)] transition-colors cursor-pointer"
-                >
-                  {expanded ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
-                </button>
+                <ExpandToggleButton />
               </div>
             </div>
-          </CardHeader>
+          </ExpandableCardHeader>
 
-          <CardContent>
+          <ExpandableCardContent>
             {/* ── Filter controls — full-width row, right column only ────── */}
             {filterOpen && (
               <div className="grid grid-cols-2 gap-3 mb-2 animate-fade-in">
@@ -488,9 +363,7 @@ export default function JsonFormatterTool() {
 
                   {/* Error banner */}
                   {filterError && (
-                    <p className="text-xs text-red-600 font-mono bg-red-50 border border-red-200 rounded-lg px-3 py-2 animate-fade-in">
-                      {filterError}
-                    </p>
+                    <Alert variant="error" size="sm" className="font-mono animate-fade-in">{filterError}</Alert>
                   )}
                 </div>
               </div>
@@ -517,11 +390,7 @@ export default function JsonFormatterTool() {
                   <span className="text-[10px] text-[var(--color-ink-muted)]">
                     {charCount} {charCount === 1 ? "char" : "chars"}
                   </span>
-                  {expanded && (
-                    <span className="text-[10px] text-[var(--color-ink-muted)] ml-auto">
-                      Press <kbd className="px-1 py-0.5 bg-[var(--color-cream-dark)] border border-[var(--color-border)] rounded text-[9px]">Esc</kbd> or click outside to collapse
-                    </span>
-                  )}
+                  <ExpandHint className="ml-auto" />
                 </div>
               </div>
 
@@ -544,8 +413,8 @@ export default function JsonFormatterTool() {
               </div>
 
             </div>
-          </CardContent>
-        </Card>
+          </ExpandableCardContent>
+        </ExpandableCard>
 
       </div>
     </>

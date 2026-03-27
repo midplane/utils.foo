@@ -5,6 +5,7 @@ import ReactECharts from 'echarts-for-react'
 import type { EChartsOption } from 'echarts'
 import { Card, CardContent, CardHeader } from '../../components/ui/Card'
 import { Button } from '../../components/ui/Button'
+import { ToolHeader } from '../../components/ui/ToolHeader'
 import { cn } from '../../lib/utils'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -859,14 +860,7 @@ export default function FormulaVisualizer() {
     <div className="space-y-4 animate-fade-in">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg bg-[var(--color-accent)] flex items-center justify-center text-white">
-            <Calculator className="w-3.5 h-3.5" />
-          </div>
-          <h1 className="font-mono text-lg font-semibold text-[var(--color-ink)]">
-            Formula <span className="text-[var(--color-accent)]">Visualizer</span>
-          </h1>
-        </div>
+        <ToolHeader icon={<Calculator />} title="Formula" accentedSuffix="Visualizer" />
         {hasContent && (
           <Button
             variant="ghost"

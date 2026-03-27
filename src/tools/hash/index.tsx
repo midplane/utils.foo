@@ -3,8 +3,12 @@ import { Card, CardContent, CardHeader } from '../../components/ui/Card'
 import { Textarea } from '../../components/ui/Textarea'
 import { Button } from '../../components/ui/Button'
 import { CopyButton } from '../../components/ui/CopyButton'
-import { cn } from '../../lib/utils'
-import { ChevronDown, Fingerprint, Info, Loader2, ShieldCheck, Trash2 } from 'lucide-react'
+import { InfoCard } from '../../components/ui/InfoCard'
+import { ToolHeader } from '../../components/ui/ToolHeader'
+import { FlowDivider } from '../../components/ui/FlowDivider'
+import { SectionLabel } from '../../components/ui/SectionLabel'
+import { SegmentedControl, SegmentedControlItem } from '../../components/ui/SegmentedControl'
+import { Fingerprint, Info, Loader2, ShieldCheck, Trash2 } from 'lucide-react'
 
 type HashAlgorithm = 'MD5' | 'SHA-1' | 'SHA-256' | 'SHA-512'
 
@@ -220,47 +224,23 @@ export default function HashTool() {
   return (
     <div className="space-y-4 animate-fade-in">
       {/* Breadcrumb & Header */}
-      <div className="flex items-center gap-2">
-        <div className="w-7 h-7 rounded-lg bg-[var(--color-accent)] flex items-center justify-center text-white">
-          <Fingerprint className="w-3.5 h-3.5" />
-        </div>
-        <h1 className="font-mono text-lg font-semibold text-[var(--color-ink)]">
-          Hash <span className="text-[var(--color-accent)]">Generator</span>
-        </h1>
-      </div>
+      <ToolHeader icon={<Fingerprint />} title="Hash" accentedSuffix="Generator" />
 
       {/* Main Card */}
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between flex-wrap gap-2">
             {/* Algorithm Toggle */}
-            <div className="flex bg-[var(--color-cream-dark)] rounded-lg p-0.5 border border-[var(--color-border)] flex-wrap">
-              <button
-                onClick={() => setSelectedAlgorithm('all')}
-                className={cn(
-                  'px-3 py-1.5 text-xs font-medium rounded-md transition-all',
-                  selectedAlgorithm === 'all'
-                    ? 'bg-white text-[var(--color-ink)] shadow-sm'
-                    : 'text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]'
-                )}
-              >
-                All
-              </button>
+            <SegmentedControl
+              value={selectedAlgorithm}
+              onChange={(val) => setSelectedAlgorithm(val as HashAlgorithm | 'all')}
+              className="flex-wrap"
+            >
+              <SegmentedControlItem value="all">All</SegmentedControlItem>
               {ALGORITHMS.map((algo) => (
-                <button
-                  key={algo}
-                  onClick={() => setSelectedAlgorithm(algo)}
-                  className={cn(
-                    'px-3 py-1.5 text-xs font-medium rounded-md transition-all',
-                    selectedAlgorithm === algo
-                      ? 'bg-white text-[var(--color-ink)] shadow-sm'
-                      : 'text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]'
-                  )}
-                >
-                  {algo}
-                </button>
+                <SegmentedControlItem key={algo} value={algo}>{algo}</SegmentedControlItem>
               ))}
-            </div>
+            </SegmentedControl>
             
             {/* Actions */}
             <div className="flex gap-1">
@@ -291,38 +271,26 @@ export default function HashTool() {
           </div>
 
           {/* Arrow Divider */}
-          <div className="flex items-center gap-2">
-            <div className="flex-1 h-px bg-[var(--color-border)]" />
-            <div className={cn(
-              "p-1 rounded-full border transition-colors",
-              hashes.length > 0 
-                ? "bg-emerald-50 border-emerald-200 text-emerald-600" 
-                : "bg-[var(--color-cream-dark)] border-[var(--color-border)] text-[var(--color-ink-muted)]"
-            )}>
-              {isComputing ? (
-                <Loader2 className="w-3 h-3 animate-spin" />
-              ) : (
-                <ChevronDown className="w-3 h-3" />
-              )}
-            </div>
-            <div className="flex-1 h-px bg-[var(--color-border)]" />
-          </div>
+          <FlowDivider
+            hasOutput={hashes.length > 0}
+            icon={isComputing ? <Loader2 className="animate-spin" /> : undefined}
+          />
 
           {/* Output */}
           <div className="space-y-2">
-            <label className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-ink-muted)]">
+            <SectionLabel>
               Hash output{selectedAlgorithm === 'all' ? 's' : ''}
-            </label>
+            </SectionLabel>
             
             {hashes.length > 0 ? (
               <div className="space-y-2">
                 {hashes.map(({ algorithm, hash }) => (
                   <div 
                     key={algorithm}
-                    className="p-2.5 bg-emerald-50/50 border border-emerald-200 rounded-lg"
+                    className="p-2.5 bg-[var(--color-success-bg-subtle)] border border-[var(--color-success-border)] rounded-lg"
                   >
                     <div className="flex items-center justify-between mb-1">
-                      <span className="text-[10px] font-semibold uppercase tracking-wider text-emerald-700">
+                      <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-success-text)]">
                         {algorithm}
                       </span>
                       <CopyButton text={hash} />
@@ -346,28 +314,16 @@ export default function HashTool() {
 
       {/* Info */}
       <div className="grid grid-cols-2 gap-2">
-        <div className="px-3 py-2 bg-[var(--color-cream-dark)] rounded-lg border border-[var(--color-border)]">
-          <div className="flex gap-2 items-start">
-            <Info className="w-3.5 h-3.5 text-[var(--color-accent)] flex-shrink-0 mt-0.5" />
-            <div>
-              <h3 className="font-semibold text-[var(--color-ink)] text-xs">What is hashing?</h3>
-              <p className="text-[10px] text-[var(--color-ink-muted)] leading-tight mt-0.5">
-                One-way function that converts data into a fixed-size digest.
-              </p>
-            </div>
-          </div>
-        </div>
-        <div className="px-3 py-2 bg-[var(--color-cream-dark)] rounded-lg border border-[var(--color-border)]">
-          <div className="flex gap-2 items-start">
-            <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0 mt-0.5" />
-            <div>
-              <h3 className="font-semibold text-[var(--color-ink)] text-xs">Security Note</h3>
-              <p className="text-[10px] text-[var(--color-ink-muted)] leading-tight mt-0.5">
-                Use SHA-256 or SHA-512 for security-sensitive applications.
-              </p>
-            </div>
-          </div>
-        </div>
+        <InfoCard
+          icon={<Info className="text-[var(--color-accent)]" />}
+          title="What is hashing?"
+          description="One-way function that converts data into a fixed-size digest."
+        />
+        <InfoCard
+          icon={<ShieldCheck className="text-[var(--color-success-icon)]" />}
+          title="Security Note"
+          description="Use SHA-256 or SHA-512 for security-sensitive applications."
+        />
       </div>
     </div>
   )

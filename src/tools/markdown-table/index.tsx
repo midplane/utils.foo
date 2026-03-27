@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader } from '../../components/ui/Card'
 import { Button } from '../../components/ui/Button'
 import { CopyButton } from '../../components/ui/CopyButton'
 import { Input } from '../../components/ui/Input'
+import { ToolHeader } from '../../components/ui/ToolHeader'
 import { Table, Plus, Trash2, AlignLeft, AlignCenter, AlignRight, RefreshCw } from 'lucide-react'
 import { cn } from '../../lib/utils'
 
@@ -161,14 +162,7 @@ export default function MarkdownTableTool() {
   return (
     <div className="space-y-4 animate-fade-in">
       {/* Breadcrumb & Header */}
-      <div className="flex items-center gap-2">
-        <div className="w-7 h-7 rounded-lg bg-[var(--color-accent)] flex items-center justify-center text-white">
-          <Table className="w-3.5 h-3.5" />
-        </div>
-        <h1 className="font-mono text-lg font-semibold text-[var(--color-ink)]">
-          Markdown <span className="text-[var(--color-accent)]">Table</span>
-        </h1>
-      </div>
+      <ToolHeader icon={<Table />} title="Markdown" accentedSuffix="Table" />
 
       {/* Editor card */}
       <Card>

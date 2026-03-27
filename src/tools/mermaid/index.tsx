@@ -5,52 +5,21 @@ import { EditorView } from '@codemirror/view'
 import { EditorState } from '@codemirror/state'
 import { StreamLanguage } from '@codemirror/language'
 import { stex } from '@codemirror/legacy-modes/mode/stex'
-import { Card, CardContent, CardHeader } from '../../components/ui/Card'
 import { Button } from '../../components/ui/Button'
 import { Select } from '../../components/ui/Select'
-import { Workflow, Trash2, Download, Maximize2, Minimize2, Code, Eye, Columns2, ZoomIn, ZoomOut, Shrink } from 'lucide-react'
+import { ToolHeader } from '../../components/ui/ToolHeader'
+import { SegmentedControl, SegmentedControlItem } from '../../components/ui/SegmentedControl'
+import {
+  useExpandable,
+  ExpandableCard,
+  ExpandableCardHeader,
+  ExpandableCardContent,
+  ExpandToggleButton,
+  ExpandHint,
+} from '../../components/ui/ExpandableCard'
+import { Workflow, Trash2, Download, Code, Eye, Columns2, ZoomIn, ZoomOut, Shrink } from 'lucide-react'
 import { cn } from '../../lib/utils'
-
-// ─── CodeMirror theme ─────────────────────────────────────────────────────────
-
-const appTheme = EditorView.theme(
-  {
-    '&': {
-      fontSize: '13px',
-      fontFamily: "'JetBrains Mono', ui-monospace, monospace",
-      background: '#FFFBF5',
-      color: '#1C1917',
-      border: '1px solid #E7E5E4',
-      borderRadius: '8px',
-      outline: 'none',
-      height: '100%',
-    },
-    '&.cm-focused': {
-      outline: 'none',
-      border: '1px solid #EA580C',
-      boxShadow: '0 0 0 3px rgba(234, 88, 12, 0.15)',
-    },
-    '.cm-scroller': {
-      overflow: 'auto',
-      fontFamily: "'JetBrains Mono', ui-monospace, monospace",
-      height: '100%',
-    },
-    '.cm-content': { padding: '12px 4px', caretColor: '#EA580C' },
-    '.cm-line': { padding: '0 8px' },
-    '.cm-gutters': {
-      background: '#FFF7ED',
-      borderRight: '1px solid #E7E5E4',
-      color: '#A8A29E',
-      fontSize: '11px',
-    },
-    '.cm-activeLineGutter': { background: '#FEF3C7' },
-    '.cm-activeLine': { background: 'rgba(234, 88, 12, 0.04)' },
-    '.cm-selectionBackground': { background: 'rgba(234, 88, 12, 0.15) !important' },
-    '&.cm-focused .cm-selectionBackground': { background: 'rgba(234, 88, 12, 0.2) !important' },
-    '.cm-cursor': { borderLeftColor: '#EA580C' },
-  },
-  { dark: false },
-)
+import { appTheme } from '../../lib/codemirrorTheme'
 
 // ─── Samples ──────────────────────────────────────────────────────────────────
 
@@ -261,7 +230,7 @@ export default function MermaidTool() {
   const [code, setCode] = useState(SAMPLES['flowchart']!.code)
   const [themeName, setThemeName] = useState('zinc-light')
   const [viewMode, setViewMode] = useState<ViewMode>('split')
-  const [expanded, setExpanded] = useState(false)
+  const { expanded, setExpanded } = useExpandable()
 
   const editorContainerRef = useRef<HTMLDivElement>(null)
   const editorViewRef = useRef<EditorView | null>(null)
@@ -310,12 +279,7 @@ export default function MermaidTool() {
   const handleZoomOut = useCallback(() => setUserZoom(z => Math.max(0.05, (z ?? svgScale) * 0.8)), [svgScale])
   const handleZoomFit = useCallback(() => setUserZoom(null), [])
 
-  // ── Esc to collapse ─────────────────────────────────────────────────────────
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setExpanded(false) }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [])
+  // ── Esc handled by useExpandable ────────────────────────────────────────────
 
   // ── CodeMirror setup ────────────────────────────────────────────────────────
   useEffect(() => {
@@ -399,59 +363,35 @@ export default function MermaidTool() {
 
   return (
     <>
-      {/* Backdrop */}
-      {expanded && (
-        <div
-          className="fixed left-0 right-0 bottom-0 bg-black/40 z-40 backdrop-blur-sm"
-          style={{ top: '41px' }}
-          onClick={() => setExpanded(false)}
-        />
-      )}
-
       <div className={cn('space-y-4 animate-fade-in', expanded && 'relative z-50')}>
         {/* Breadcrumb & Header */}
           {!expanded && (
-            <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-lg bg-[var(--color-accent)] flex items-center justify-center text-white">
-                <Workflow className="w-3.5 h-3.5" />
-              </div>
-              <h1 className="font-mono text-lg font-semibold text-[var(--color-ink)]">
-                Mermaid <span className="text-[var(--color-accent)]">Diagrams</span>
-              </h1>
-            </div>
+            <ToolHeader icon={<Workflow />} title="Mermaid" accentedSuffix="Diagrams" />
           )}
 
         {/* Main card */}
-        <Card
-          className={cn(expanded && 'fixed left-4 right-4 bottom-4 z-50 shadow-2xl overflow-auto')}
-          style={expanded ? { top: 'calc(41px + 8px)' } : undefined}
-        >
-          <CardHeader>
+        <ExpandableCard expanded={expanded} onExpandedChange={setExpanded}>
+          <ExpandableCardHeader>
             <div className="flex items-center justify-between gap-2">
               {/* Left: view toggles + sample picker */}
               <div className="flex items-center gap-1.5">
                 {/* View mode */}
-                <div className="flex items-center gap-0.5 bg-[var(--color-cream-dark)] border border-[var(--color-border)] rounded-lg p-0.5">
+                <SegmentedControl value={viewMode} onChange={(v) => setViewMode(v as ViewMode)}>
                   {(['editor', 'split', 'preview'] as ViewMode[]).map((mode) => {
                     const Icon = mode === 'editor' ? Code : mode === 'split' ? Columns2 : Eye
                     return (
-                      <button
+                      <SegmentedControlItem
                         key={mode}
-                        onClick={() => setViewMode(mode)}
+                        value={mode}
                         title={mode.charAt(0).toUpperCase() + mode.slice(1)}
-                        className={cn(
-                          'inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors cursor-pointer capitalize',
-                          viewMode === mode
-                            ? 'bg-white text-[var(--color-ink)] shadow-sm'
-                            : 'text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]'
-                        )}
+                        className="px-2 py-1 capitalize"
                       >
                         <Icon className="w-3 h-3" />
                         {mode}
-                      </button>
+                      </SegmentedControlItem>
                     )
                   })}
-                </div>
+                </SegmentedControl>
 
                 {/* Sample picker */}
                 <div className="w-32">
@@ -486,18 +426,12 @@ export default function MermaidTool() {
                   <Trash2 className="w-3 h-3" />
                   Clear
                 </Button>
-                <button
-                  onClick={() => setExpanded(v => !v)}
-                  title={expanded ? 'Collapse' : 'Expand'}
-                  className="inline-flex items-center justify-center w-7 h-7 rounded-lg text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] hover:bg-[var(--color-cream-dark)] transition-colors cursor-pointer"
-                >
-                  {expanded ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
-                </button>
+                <ExpandToggleButton />
               </div>
             </div>
-          </CardHeader>
+          </ExpandableCardHeader>
 
-          <CardContent>
+          <ExpandableCardContent>
             <div className={cn(viewMode === 'split' && 'grid grid-cols-2 gap-3')}>
 
               {/* ── Editor pane ─────────────────────────────────────────── */}
@@ -576,17 +510,13 @@ export default function MermaidTool() {
               <span className="text-[10px] text-[var(--color-ink-muted)]">
                 {code.split('\n').length} lines
               </span>
-              {expanded && (
-                <span className="text-[10px] text-[var(--color-ink-muted)]">
-                  Press <kbd className="px-1 py-0.5 bg-[var(--color-cream-dark)] border border-[var(--color-border)] rounded text-[9px]">Esc</kbd> or click outside to collapse
-                </span>
-              )}
+              <ExpandHint />
               <span className="text-[10px] text-[var(--color-ink-muted)] ml-auto">
                 Powered by <a href="https://github.com/lukilabs/beautiful-mermaid" target="_blank" rel="noopener noreferrer" className="hover:text-[var(--color-accent)] transition-colors">beautiful-mermaid</a>
               </span>
             </div>
-          </CardContent>
-        </Card>
+          </ExpandableCardContent>
+        </ExpandableCard>
       </div>
     </>
   )

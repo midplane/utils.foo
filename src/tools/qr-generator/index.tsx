@@ -4,7 +4,9 @@ import { Card, CardContent, CardHeader } from '../../components/ui/Card'
 import { Button } from '../../components/ui/Button'
 import { Badge } from '../../components/ui/Badge'
 import { Textarea } from '../../components/ui/Textarea'
-import { cn } from '../../lib/utils'
+import { ToolHeader } from '../../components/ui/ToolHeader'
+import { SectionLabel } from '../../components/ui/SectionLabel'
+import { SegmentedControl, SegmentedControlItem } from '../../components/ui/SegmentedControl'
 import { Check, Copy, Download, QrCode } from 'lucide-react'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -116,15 +118,7 @@ export default function QrGeneratorTool() {
 
   return (
     <div className="space-y-4 animate-fade-in">
-      {/* Header */}
-      <div className="flex items-center gap-2">
-        <div className="w-7 h-7 rounded-lg bg-[var(--color-accent)] flex items-center justify-center text-white">
-          <QrCode className="w-3.5 h-3.5" />
-        </div>
-        <h1 className="font-mono text-lg font-semibold text-[var(--color-ink)]">
-          QR <span className="text-[var(--color-accent)]">Generator</span>
-        </h1>
-      </div>
+      <ToolHeader icon={<QrCode />} title="QR" accentedSuffix="Generator" />
 
       <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-4 items-start">
         {/* Left column — input + options */}
@@ -176,26 +170,14 @@ export default function QrGeneratorTool() {
             <CardContent className="space-y-3">
               {/* Error correction */}
               <div>
-                <label className="block text-[10px] font-semibold uppercase tracking-wider text-[var(--color-ink-muted)] mb-1.5">
-                  Error correction
-                </label>
-                <div className="flex gap-1">
+                <SectionLabel className="block mb-1.5">Error correction</SectionLabel>
+                <SegmentedControl value={errorLevel} onChange={(v) => setErrorLevel(v as ErrorLevel)} variant="bordered" className="w-full">
                   {ERROR_LEVELS.map((lvl) => (
-                    <button
-                      key={lvl.value}
-                      onClick={() => setErrorLevel(lvl.value)}
-                      title={lvl.desc}
-                      className={cn(
-                        'flex-1 py-1 text-xs font-mono font-semibold rounded-lg border transition-colors cursor-pointer',
-                        errorLevel === lvl.value
-                          ? 'bg-[var(--color-accent)] border-[var(--color-accent)] text-white'
-                          : 'border-[var(--color-border)] bg-[var(--color-cream-dark)] text-[var(--color-ink-muted)] hover:border-[var(--color-border-dark)] hover:text-[var(--color-ink)]'
-                      )}
-                    >
+                    <SegmentedControlItem key={lvl.value} value={lvl.value} title={lvl.desc} className="flex-1 font-mono font-semibold rounded-lg">
                       {lvl.label}
-                    </button>
+                    </SegmentedControlItem>
                   ))}
-                </div>
+                </SegmentedControl>
                 <p className="text-[10px] text-[var(--color-ink-muted)] mt-1">
                   {ERROR_LEVELS.find(l => l.value === errorLevel)?.desc} — higher levels allow more of the code to be obscured
                 </p>
@@ -204,9 +186,7 @@ export default function QrGeneratorTool() {
               {/* Size */}
               <div>
                 <div className="flex items-center justify-between mb-1.5">
-                  <label className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-ink-muted)]">
-                    Size
-                  </label>
+                  <SectionLabel>Size</SectionLabel>
                   <span className="text-[10px] font-mono text-[var(--color-ink-muted)]">{size}px</span>
                 </div>
                 <input
@@ -226,9 +206,7 @@ export default function QrGeneratorTool() {
               {/* Margin */}
               <div>
                 <div className="flex items-center justify-between mb-1.5">
-                  <label className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-ink-muted)]">
-                    Quiet zone
-                  </label>
+                  <SectionLabel>Quiet zone</SectionLabel>
                   <span className="text-[10px] font-mono text-[var(--color-ink-muted)]">{margin} modules</span>
                 </div>
                 <input
@@ -245,9 +223,7 @@ export default function QrGeneratorTool() {
               {/* Colors */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[10px] font-semibold uppercase tracking-wider text-[var(--color-ink-muted)] mb-1.5">
-                    Foreground
-                  </label>
+                  <SectionLabel className="block mb-1.5">Foreground</SectionLabel>
                   <div className="flex items-center gap-2 px-2.5 py-1.5 border border-[var(--color-border)] rounded-lg bg-white">
                     <div className="relative w-5 h-5 rounded flex-shrink-0 overflow-hidden border border-[var(--color-border)]"
                       style={{ backgroundColor: fgColor }}>
@@ -268,9 +244,7 @@ export default function QrGeneratorTool() {
                   </div>
                 </div>
                 <div>
-                  <label className="block text-[10px] font-semibold uppercase tracking-wider text-[var(--color-ink-muted)] mb-1.5">
-                    Background
-                  </label>
+                  <SectionLabel className="block mb-1.5">Background</SectionLabel>
                   <div className="flex items-center gap-2 px-2.5 py-1.5 border border-[var(--color-border)] rounded-lg bg-white">
                     <div className="relative w-5 h-5 rounded flex-shrink-0 overflow-hidden border border-[var(--color-border)]"
                       style={{ backgroundColor: bgColor }}>
@@ -327,22 +301,13 @@ export default function QrGeneratorTool() {
               {/* Format toggle + download */}
               {hasContent && dataUrl && (
                 <>
-                  <div className="flex gap-1 w-full">
+                  <SegmentedControl value={format} onChange={(v) => setFormat(v as OutputFormat)} variant="bordered" className="w-full">
                     {(['png', 'svg'] as OutputFormat[]).map((f) => (
-                      <button
-                        key={f}
-                        onClick={() => setFormat(f)}
-                        className={cn(
-                          'flex-1 py-1 text-xs font-mono font-semibold rounded-lg border transition-colors cursor-pointer uppercase',
-                          format === f
-                            ? 'bg-[var(--color-accent)] border-[var(--color-accent)] text-white'
-                            : 'border-[var(--color-border)] bg-[var(--color-cream-dark)] text-[var(--color-ink-muted)] hover:border-[var(--color-border-dark)] hover:text-[var(--color-ink)]'
-                        )}
-                      >
+                      <SegmentedControlItem key={f} value={f} className="flex-1 font-mono font-semibold rounded-lg uppercase">
                         {f}
-                      </button>
+                      </SegmentedControlItem>
                     ))}
-                  </div>
+                  </SegmentedControl>
 
                   <div className="flex flex-col gap-1.5 w-full">
                     <Button
@@ -359,7 +324,7 @@ export default function QrGeneratorTool() {
                       className="w-full gap-1.5 justify-center text-xs h-7"
                       size="sm"
                     >
-                      {copied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                      {copied ? <Check className="w-3.5 h-3.5 text-[var(--color-success-icon)]" /> : <Copy className="w-3.5 h-3.5" />}
                       {copied ? 'Copied!' : 'Copy SVG'}
                     </Button>
                   </div>

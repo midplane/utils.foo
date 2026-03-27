@@ -5,6 +5,8 @@ import type { EChartsOption } from 'echarts'
 import Papa from 'papaparse'
 import { Card, CardContent, CardHeader } from '../../components/ui/Card'
 import { Button } from '../../components/ui/Button'
+import { ToolHeader } from '../../components/ui/ToolHeader'
+import { SegmentedControl, SegmentedControlItem } from '../../components/ui/SegmentedControl'
 import { cn } from '../../lib/utils'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -373,14 +375,7 @@ export default function ChartBuilderTool() {
     <div className="space-y-4 animate-fade-in">
       {/* Header */}
       {/* Header */}
-      <div className="flex items-center gap-2">
-        <div className="w-7 h-7 rounded-lg bg-[var(--color-accent)] flex items-center justify-center text-white">
-          <BarChart2 className="w-3.5 h-3.5" />
-        </div>
-        <h1 className="font-mono text-lg font-semibold text-[var(--color-ink)]">
-          Chart <span className="text-[var(--color-accent)]">Builder</span>
-        </h1>
-      </div>
+      <ToolHeader icon={<BarChart2 />} title="Chart" accentedSuffix="Builder" />
 
       {/* Zone 1: Data input */}
       <Card>
@@ -444,44 +439,26 @@ export default function ChartBuilderTool() {
               {/* Chart type */}
               <div className="space-y-1.5">
                 <label className="text-[10px] uppercase tracking-wider font-semibold text-[var(--color-ink-muted)]">Chart Type</label>
-                <div className="flex flex-wrap gap-1">
+                <SegmentedControl value={chartType} onChange={(v) => setChartType(v as ChartType)} variant="bordered">
                   {(['bar', 'stacked-bar', 'line', 'scatter'] as ChartType[]).map((t) => (
-                    <button
-                      key={t}
-                      onClick={() => setChartType(t)}
-                      className={cn(
-                        'px-3 py-1 text-xs font-mono rounded-md border transition-colors cursor-pointer',
-                        chartType === t
-                          ? 'bg-[var(--color-accent)] border-[var(--color-accent)] text-white font-semibold'
-                          : 'border-[var(--color-border)] text-[var(--color-ink-muted)] hover:border-[var(--color-border-dark)] hover:text-[var(--color-ink)]'
-                      )}
-                    >
+                    <SegmentedControlItem key={t} value={t} className="font-mono">
                       {t === 'stacked-bar' ? 'stacked bar' : t}
-                    </button>
+                    </SegmentedControlItem>
                   ))}
-                </div>
+                </SegmentedControl>
               </div>
 
               {/* Orientation (bar / stacked-bar only) */}
               {(chartType === 'bar' || chartType === 'stacked-bar') && (
               <div className="flex flex-col gap-2">
                   <label className="text-[10px] uppercase tracking-wider font-semibold text-[var(--color-ink-muted)]">Orientation</label>
-                  <div className="flex gap-1">
+                  <SegmentedControl value={orientation} onChange={(o) => { setOrientation(o as Orientation); if (o === 'horizontal') setBannerDismissed(true) }} variant="bordered">
                     {(['vertical', 'horizontal'] as Orientation[]).map((o) => (
-                      <button
-                        key={o}
-                        onClick={() => { setOrientation(o); if (o === 'horizontal') setBannerDismissed(true) }}
-                        className={cn(
-                          'px-3 py-1 text-xs font-mono rounded-md border transition-colors cursor-pointer capitalize',
-                          orientation === o
-                            ? 'bg-[var(--color-accent)] border-[var(--color-accent)] text-white font-semibold'
-                            : 'border-[var(--color-border)] text-[var(--color-ink-muted)] hover:border-[var(--color-border-dark)] hover:text-[var(--color-ink)]'
-                        )}
-                      >
+                      <SegmentedControlItem key={o} value={o} className="font-mono capitalize">
                         {o}
-                      </button>
+                      </SegmentedControlItem>
                     ))}
-                  </div>
+                  </SegmentedControl>
                 </div>
               )}
 
@@ -536,17 +513,10 @@ export default function ChartBuilderTool() {
               {/* Legend toggle */}
               <div className="space-y-1.5">
                 <label className="text-[10px] uppercase tracking-wider font-semibold text-[var(--color-ink-muted)]">Legend</label>
-                <button
-                  onClick={() => setShowLegend((v) => !v)}
-                  className={cn(
-                    'inline-flex items-center gap-2 px-3 py-1 text-xs font-mono rounded-md border transition-colors cursor-pointer',
-                    showLegend
-                      ? 'bg-[var(--color-accent)] border-[var(--color-accent)] text-white font-semibold'
-                      : 'border-[var(--color-border)] text-[var(--color-ink-muted)] hover:border-[var(--color-border-dark)] hover:text-[var(--color-ink)]'
-                  )}
-                >
-                  {showLegend ? 'On' : 'Off'}
-                </button>
+                <SegmentedControl value={showLegend ? 'on' : 'off'} onChange={(v) => setShowLegend(v === 'on')} variant="bordered">
+                  <SegmentedControlItem value="on" className="font-mono">On</SegmentedControlItem>
+                  <SegmentedControlItem value="off" className="font-mono">Off</SegmentedControlItem>
+                </SegmentedControl>
               </div>
             </div>
           </CardContent>

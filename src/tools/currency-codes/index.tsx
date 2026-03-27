@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { CircleDollarSign, Search, X } from 'lucide-react'
 import { Card } from '../../components/ui/Card'
 import { CopyButton } from '../../components/ui/CopyButton'
+import { ToolHeader } from '../../components/ui/ToolHeader'
+import { EmptyState } from '../../components/ui/EmptyState'
 
 // ─── Data ─────────────────────────────────────────────────────────────────────
 
@@ -193,14 +195,7 @@ export default function CurrencyCodesTool() {
     <div className="space-y-4 animate-fade-in">
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
-        <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg bg-[var(--color-accent)] flex items-center justify-center text-white">
-            <CircleDollarSign className="w-3.5 h-3.5" />
-          </div>
-          <h1 className="font-mono text-lg font-semibold text-[var(--color-ink)]">
-            Currency <span className="text-[var(--color-accent)]">Codes</span>
-          </h1>
-        </div>
+        <ToolHeader icon={<CircleDollarSign />} title="Currency" accentedSuffix="Codes" />
         <SearchBox query={query} onChange={setQuery} placeholder="Search currency, code or symbol…" />
       </div>
 
@@ -214,7 +209,7 @@ export default function CurrencyCodesTool() {
       </div>
 
       {rows.length === 0 ? (
-        <p className="text-sm text-[var(--color-ink-muted)] text-center py-8">No results for "{query}"</p>
+        <EmptyState query={query} />
       ) : (
         <Card>
           <div className="overflow-x-auto">

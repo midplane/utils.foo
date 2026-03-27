@@ -1,6 +1,7 @@
 import { useState, useCallback, useMemo } from 'react'
 import Papa from 'papaparse'
 import { Table2 } from 'lucide-react'
+import { ToolHeader } from '../../components/ui/ToolHeader'
 import { DataInput } from './components/DataInput'
 import { ConfigPanel } from './components/ConfigPanel'
 import { PivotGrid } from './components/PivotGrid'
@@ -150,14 +151,7 @@ export default function PivotTable() {
   return (
     <div className="space-y-4 animate-fade-in">
       {/* Header */}
-      <div className="flex items-center gap-2">
-        <div className="w-7 h-7 rounded-lg bg-[var(--color-accent)] flex items-center justify-center text-white">
-          <Table2 className="w-3.5 h-3.5" />
-        </div>
-        <h1 className="font-mono text-lg font-semibold text-[var(--color-ink)]">
-          Pivot <span className="text-[var(--color-accent)]">Table</span>
-        </h1>
-      </div>
+      <ToolHeader icon={<Table2 />} title="Pivot" accentedSuffix="Table" />
 
       {/* Data Input */}
       <DataInput

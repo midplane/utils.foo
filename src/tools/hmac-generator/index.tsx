@@ -4,8 +4,12 @@ import { Textarea } from '../../components/ui/Textarea'
 import { Input } from '../../components/ui/Input'
 import { Button } from '../../components/ui/Button'
 import { CopyButton } from '../../components/ui/CopyButton'
-import { cn } from '../../lib/utils'
-import { ChevronDown, Info, KeyRound, ShieldCheck, Trash2 } from 'lucide-react'
+import { InfoCard } from '../../components/ui/InfoCard'
+import { ToolHeader } from '../../components/ui/ToolHeader'
+import { FlowDivider } from '../../components/ui/FlowDivider'
+import { SectionLabel } from '../../components/ui/SectionLabel'
+import { SegmentedControl, SegmentedControlItem } from '../../components/ui/SegmentedControl'
+import { Info, KeyRound, ShieldCheck, Trash2 } from 'lucide-react'
 
 type HmacAlgorithm = 'SHA-256' | 'SHA-512'
 
@@ -44,36 +48,21 @@ export default function HmacGeneratorTool() {
   return (
     <div className="space-y-4 animate-fade-in">
       {/* Breadcrumb & Header */}
-      <div className="flex items-center gap-2">
-        <div className="w-7 h-7 rounded-lg bg-[var(--color-accent)] flex items-center justify-center text-white">
-          <KeyRound className="w-3.5 h-3.5" />
-        </div>
-        <h1 className="font-mono text-lg font-semibold text-[var(--color-ink)]">
-          HMAC <span className="text-[var(--color-accent)]">Generator</span>
-        </h1>
-      </div>
+      <ToolHeader icon={<KeyRound />} title="HMAC" accentedSuffix="Generator" />
 
       {/* Main Card */}
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between flex-wrap gap-2">
             {/* Algorithm Toggle */}
-            <div className="flex bg-[var(--color-cream-dark)] rounded-lg p-0.5 border border-[var(--color-border)]">
-              {(['both', 'SHA-256', 'SHA-512'] as const).map(a => (
-                <button
-                  key={a}
-                  onClick={() => setAlgorithm(a)}
-                  className={cn(
-                    'px-3 py-1.5 text-xs font-medium rounded-md transition-all',
-                    algorithm === a
-                      ? 'bg-white text-[var(--color-ink)] shadow-sm'
-                      : 'text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]'
-                  )}
-                >
-                  {a === 'both' ? 'Both' : a}
-                </button>
-              ))}
-            </div>
+            <SegmentedControl
+              value={algorithm}
+              onChange={(val) => setAlgorithm(val as HmacAlgorithm | 'both')}
+            >
+              <SegmentedControlItem value="both">Both</SegmentedControlItem>
+              <SegmentedControlItem value="SHA-256">SHA-256</SegmentedControlItem>
+              <SegmentedControlItem value="SHA-512">SHA-512</SegmentedControlItem>
+            </SegmentedControl>
             <Button
               variant="ghost"
               size="sm"
@@ -110,30 +99,19 @@ export default function HmacGeneratorTool() {
           />
 
           {/* Divider */}
-          <div className="flex items-center gap-2">
-            <div className="flex-1 h-px bg-[var(--color-border)]" />
-            <div className={cn(
-              'p-1 rounded-full border transition-colors',
-              results.length > 0
-                ? 'bg-emerald-50 border-emerald-200 text-emerald-600'
-                : 'bg-[var(--color-cream-dark)] border-[var(--color-border)] text-[var(--color-ink-muted)]'
-            )}>
-              <ChevronDown className="w-3 h-3" />
-            </div>
-            <div className="flex-1 h-px bg-[var(--color-border)]" />
-          </div>
+          <FlowDivider hasOutput={results.length > 0} />
 
           {/* Output */}
           <div className="space-y-2">
-            <label className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-ink-muted)]">
+            <SectionLabel>
               HMAC output{algorithm === 'both' ? 's' : ''}
-            </label>
+            </SectionLabel>
             {results.length > 0 ? (
               <div className="space-y-2">
                 {results.map(({ algo, hmac }) => (
-                  <div key={algo} className="p-2.5 bg-emerald-50/50 border border-emerald-200 rounded-lg">
+                  <div key={algo} className="p-2.5 bg-[var(--color-success-bg-subtle)] border border-[var(--color-success-border)] rounded-lg">
                     <div className="flex items-center justify-between mb-1">
-                      <span className="text-[10px] font-semibold uppercase tracking-wider text-emerald-700">
+                      <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-success-text)]">
                         HMAC-{algo}
                       </span>
                       <CopyButton text={hmac} />
@@ -155,28 +133,16 @@ export default function HmacGeneratorTool() {
 
       {/* Info cards */}
       <div className="grid grid-cols-2 gap-2">
-        <div className="px-3 py-2 bg-[var(--color-cream-dark)] rounded-lg border border-[var(--color-border)]">
-          <div className="flex gap-2 items-start">
-            <Info className="w-3.5 h-3.5 text-[var(--color-accent)] flex-shrink-0 mt-0.5" />
-            <div>
-              <h3 className="font-semibold text-[var(--color-ink)] text-xs">What is HMAC?</h3>
-              <p className="text-[10px] text-[var(--color-ink-muted)] leading-tight mt-0.5">
-                Hash-based Message Authentication Code — proves a message came from a party that holds the secret key and wasn't tampered with.
-              </p>
-            </div>
-          </div>
-        </div>
-        <div className="px-3 py-2 bg-[var(--color-cream-dark)] rounded-lg border border-[var(--color-border)]">
-          <div className="flex gap-2 items-start">
-            <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0 mt-0.5" />
-            <div>
-              <h3 className="font-semibold text-[var(--color-ink)] text-xs">Common uses</h3>
-              <p className="text-[10px] text-[var(--color-ink-muted)] leading-tight mt-0.5">
-                API request signing (AWS, Stripe, GitHub webhooks), JWT verification, and cookie integrity.
-              </p>
-            </div>
-          </div>
-        </div>
+        <InfoCard
+          icon={<Info className="text-[var(--color-accent)]" />}
+          title="What is HMAC?"
+          description="Hash-based Message Authentication Code — proves a message came from a party that holds the secret key and wasn't tampered with."
+        />
+        <InfoCard
+          icon={<ShieldCheck className="text-[var(--color-success-icon)]" />}
+          title="Common uses"
+          description="API request signing (AWS, Stripe, GitHub webhooks), JWT verification, and cookie integrity."
+        />
       </div>
     </div>
   )

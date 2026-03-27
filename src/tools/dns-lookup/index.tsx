@@ -3,6 +3,9 @@ import { Card, CardContent, CardHeader } from '../../components/ui/Card'
 import { Button } from '../../components/ui/Button'
 import { Input } from '../../components/ui/Input'
 import { CopyButton } from '../../components/ui/CopyButton'
+import { ToolHeader } from '../../components/ui/ToolHeader'
+import { Alert } from '../../components/ui/Alert'
+import { EmptyState } from '../../components/ui/EmptyState'
 import { Globe, Loader2, Info } from 'lucide-react'
 import { cn } from '../../lib/utils'
 
@@ -200,14 +203,7 @@ export default function DnsLookupTool() {
   return (
     <div className="space-y-4 animate-fade-in">
       {/* Breadcrumb & Header */}
-      <div className="flex items-center gap-2">
-        <div className="w-7 h-7 rounded-lg bg-[var(--color-accent)] flex items-center justify-center text-white">
-          <Globe className="w-3.5 h-3.5" />
-        </div>
-        <h1 className="font-mono text-lg font-semibold text-[var(--color-ink)]">
-          DNS <span className="text-[var(--color-accent)]">Lookup</span>
-        </h1>
-      </div>
+      <ToolHeader icon={<Globe />} title="DNS" accentedSuffix="Lookup" />
 
       {/* Input card */}
       <Card>
@@ -250,9 +246,7 @@ export default function DnsLookupTool() {
           </div>
 
           {error && (
-            <div className="p-2.5 bg-red-50 border border-red-200 rounded-lg text-xs text-red-700 font-mono">
-              {error}
-            </div>
+            <Alert variant="error" size="sm" className="font-mono">{error}</Alert>
           )}
         </CardContent>
       </Card>
@@ -271,9 +265,7 @@ export default function DnsLookupTool() {
           </CardHeader>
           <CardContent>
             {visibleResults.length === 0 ? (
-              <p className="text-xs text-[var(--color-ink-muted)] text-center py-4">
-                No records found for the selected types.
-              </p>
+              <EmptyState size="sm" message="No records found for the selected types." />
             ) : (
               <div className="space-y-4">
                 {visibleResults.map(r => (

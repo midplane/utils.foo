@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { Card } from '../../components/ui/Card'
 import { Button } from '../../components/ui/Button'
 import { CopyButton } from '../../components/ui/CopyButton'
+import { ToolHeader } from '../../components/ui/ToolHeader'
 import { Calendar, CalendarClock, ChevronDown, Globe, MousePointer2, Search, Sparkles } from 'lucide-react'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -360,9 +361,9 @@ function TZRow({
             : isPinned
             ? 'bg-[var(--color-ink)]/8'
             : cellColor === 'good'
-            ? 'bg-emerald-50'
+            ? 'bg-[var(--color-success-bg-subtle)]'
             : cellColor === 'partial'
-            ? 'bg-amber-50'
+            ? 'bg-[var(--color-warning-bg-subtle)]'
             : 'bg-white'
 
           const borderColor = isNow
@@ -382,7 +383,7 @@ function TZRow({
               {isWork && (
                 <div
                   className={`absolute bottom-0 left-0 right-0 h-[3px] rounded-t ${
-                    cellColor === 'good' ? 'bg-emerald-400' : cellColor === 'partial' ? 'bg-amber-400' : 'bg-[var(--color-border-dark)]'
+                    cellColor === 'good' ? 'bg-[var(--color-success-icon)]' : cellColor === 'partial' ? 'bg-[var(--color-warning-icon)]' : 'bg-[var(--color-border-dark)]'
                   }`}
                 />
               )}
@@ -528,17 +529,7 @@ export default function TimezonePlanner() {
 
   return (
     <div className="space-y-3 animate-fade-in">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-6 h-6 rounded bg-[var(--color-accent)] flex items-center justify-center text-white">
-            <Globe className="w-3.5 h-3.5" />
-          </div>
-          <h1 className="font-mono text-lg font-semibold text-[var(--color-ink)]">
-            Meeting <span className="text-[var(--color-accent)]">Planner</span>
-          </h1>
-        </div>
-      </div>
+      <ToolHeader icon={<Globe />} title="Meeting" accentedSuffix="Planner" />
 
       {/* Controls bar */}
       <div className="flex flex-wrap items-center gap-2">
@@ -598,8 +589,8 @@ export default function TimezonePlanner() {
 
         {/* Legend */}
         <div className="flex items-center gap-3 ml-auto">
-          <LegendDot color="bg-emerald-400" label="All working" />
-          <LegendDot color="bg-amber-400" label="Some working" />
+          <LegendDot color="bg-[var(--color-success-icon)]" label="All working" />
+          <LegendDot color="bg-[var(--color-warning-icon)]" label="Some working" />
           <LegendDot color="bg-[var(--color-border-dark)]" label="Off hours" />
         </div>
       </div>
@@ -695,18 +686,18 @@ export default function TimezonePlanner() {
               </div>
               <div className="flex items-center gap-2">
                 {summary.working === rangeLength ? (
-                  <span className="inline-flex items-center gap-1 text-[10px] bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-medium">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />
+                  <span className="inline-flex items-center gap-1 text-[10px] bg-[var(--color-success-bg)] text-[var(--color-success-text)] px-2 py-0.5 rounded-full font-medium">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-success-icon)] inline-block" />
                     Works for all {zones.length} zones
                   </span>
                 ) : summary.partial > 0 ? (
-                  <span className="inline-flex items-center gap-1 text-[10px] bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-medium">
-                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500 inline-block" />
+                  <span className="inline-flex items-center gap-1 text-[10px] bg-[var(--color-warning-bg)] text-[var(--color-warning-text)] px-2 py-0.5 rounded-full font-medium">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-warning-icon)] inline-block" />
                     Partial overlap
                   </span>
                 ) : (
-                  <span className="inline-flex items-center gap-1 text-[10px] bg-red-100 text-red-600 px-2 py-0.5 rounded-full font-medium">
-                    <span className="w-1.5 h-1.5 rounded-full bg-red-400 inline-block" />
+                  <span className="inline-flex items-center gap-1 text-[10px] bg-[var(--color-error-bg)] text-[var(--color-error-text)] px-2 py-0.5 rounded-full font-medium">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-error-icon)] inline-block" />
                     Outside work hours
                   </span>
                 )}

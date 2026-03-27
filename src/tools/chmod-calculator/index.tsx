@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { Card, CardContent, CardHeader } from '../../components/ui/Card'
 import { Input } from '../../components/ui/Input'
 import { CopyButton } from '../../components/ui/CopyButton'
+import { InfoCard } from '../../components/ui/InfoCard'
+import { ToolHeader } from '../../components/ui/ToolHeader'
 import { cn } from '../../lib/utils'
 import { FileLock2, Info } from 'lucide-react'
 
@@ -186,15 +188,7 @@ export default function ChmodCalculatorTool() {
 
   return (
     <div className="space-y-4 animate-fade-in">
-      {/* Header */}
-      <div className="flex items-center gap-2">
-        <div className="w-7 h-7 rounded-lg bg-[var(--color-accent)] flex items-center justify-center text-white">
-          <FileLock2 className="w-3.5 h-3.5" />
-        </div>
-        <h1 className="font-mono text-lg font-semibold text-[var(--color-ink)]">
-          Chmod <span className="text-[var(--color-accent)]">Calculator</span>
-        </h1>
-      </div>
+      <ToolHeader icon={<FileLock2 />} title="Chmod" accentedSuffix="Calculator" />
 
       {/* Presets */}
       <div className="flex flex-wrap gap-1.5">
@@ -279,7 +273,7 @@ export default function ChmodCalculatorTool() {
           {/* chmod command */}
           <div className="flex items-center justify-between px-3 py-2 bg-[var(--color-ink)] rounded-lg">
             <code className="font-mono text-sm text-[var(--color-cream)]">
-              chmod <span className="text-emerald-400">{octal}</span> file
+              chmod <span className="text-[var(--color-success-text)]">{octal}</span> file
             </code>
             <CopyButton text={`chmod ${octal} file`} className="!bg-white/10 !border-white/20 !text-[var(--color-cream)] hover:!bg-white/20" />
           </div>
@@ -293,28 +287,16 @@ export default function ChmodCalculatorTool() {
 
       {/* Info */}
       <div className="grid grid-cols-2 gap-2">
-        <div className="px-3 py-2 bg-[var(--color-cream-dark)] rounded-lg border border-[var(--color-border)]">
-          <div className="flex gap-2 items-start">
-            <Info className="w-3.5 h-3.5 text-[var(--color-accent)] flex-shrink-0 mt-0.5" />
-            <div>
-              <h3 className="font-semibold text-[var(--color-ink)] text-xs">Octal values</h3>
-              <p className="text-[10px] text-[var(--color-ink-muted)] leading-tight mt-0.5 font-mono">
-                r=4  w=2  x=1  –=0
-              </p>
-            </div>
-          </div>
-        </div>
-        <div className="px-3 py-2 bg-[var(--color-cream-dark)] rounded-lg border border-[var(--color-border)]">
-          <div className="flex gap-2 items-start">
-            <Info className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0 mt-0.5" />
-            <div>
-              <h3 className="font-semibold text-[var(--color-ink)] text-xs">Who is who</h3>
-              <p className="text-[10px] text-[var(--color-ink-muted)] leading-tight mt-0.5">
-                Owner · Group · Other (everyone else)
-              </p>
-            </div>
-          </div>
-        </div>
+        <InfoCard
+          icon={<Info className="text-[var(--color-accent)]" />}
+          title="Octal values"
+          description="r=4  w=2  x=1  –=0"
+        />
+        <InfoCard
+          icon={<Info className="text-[var(--color-success-icon)]" />}
+          title="Who is who"
+          description="Owner · Group · Other (everyone else)"
+        />
       </div>
     </div>
   )

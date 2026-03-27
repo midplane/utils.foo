@@ -2,6 +2,8 @@ import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import { Card, CardContent, CardHeader } from '../../components/ui/Card'
 import { Button } from '../../components/ui/Button'
 import { Input } from '../../components/ui/Input'
+import { ToolHeader } from '../../components/ui/ToolHeader'
+import { SegmentedControl, SegmentedControlItem } from '../../components/ui/SegmentedControl'
 import { cn } from '../../lib/utils'
 import { Download, SquareAsterisk } from 'lucide-react'
 
@@ -167,14 +169,7 @@ export default function LogoGenerator() {
   return (
     <div className="space-y-4 animate-fade-in">
       {/* Header */}
-      <div className="flex items-center gap-2">
-        <div className="w-7 h-7 rounded-lg bg-[var(--color-accent)] flex items-center justify-center text-white">
-          <SquareAsterisk className="w-3.5 h-3.5" />
-        </div>
-        <h1 className="font-mono text-lg font-semibold text-[var(--color-ink)]">
-          Logo <span className="text-[var(--color-accent)]">Generator</span>
-        </h1>
-      </div>
+      <ToolHeader icon={<SquareAsterisk />} title="Logo" accentedSuffix="Generator" />
 
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-4 items-start">
 
@@ -392,22 +387,13 @@ export default function LogoGenerator() {
               {/* Aspect ratio */}
               <div>
                 <label className="block text-[10px] text-[var(--color-ink-muted)] mb-1 uppercase tracking-wider">Aspect ratio</label>
-                <div className="flex flex-wrap gap-1">
+                <SegmentedControl value={ratio.value} onChange={(v) => setRatio(ASPECT_RATIOS.find(r => r.value === v) ?? ASPECT_RATIOS[0]!)} variant="ink">
                   {ASPECT_RATIOS.map(r => (
-                    <button
-                      key={r.value}
-                      onClick={() => setRatio(r)}
-                      className={cn(
-                        'px-2 py-1 text-xs rounded border font-mono transition-all',
-                        ratio.value === r.value
-                          ? 'bg-[var(--color-ink)] text-[var(--color-cream)] border-[var(--color-ink)]'
-                          : 'bg-white text-[var(--color-ink)] border-[var(--color-border)] hover:border-[var(--color-ink-muted)]'
-                      )}
-                    >
+                    <SegmentedControlItem key={r.value} value={r.value} className="px-2 py-1 font-mono">
                       {r.label}
-                    </button>
+                    </SegmentedControlItem>
                   ))}
-                </div>
+                </SegmentedControl>
                 <p className="mt-1 text-[10px] text-[var(--color-ink-muted)]">
                   {canvasW} × {canvasH}px
                 </p>

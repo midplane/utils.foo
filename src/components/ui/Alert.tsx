@@ -1,63 +1,50 @@
 import { HTMLAttributes, forwardRef, ReactNode } from 'react'
 import { cn } from '../../lib/utils'
+import { CircleAlert, CircleCheck, CircleX, TriangleAlert } from 'lucide-react'
 
 export interface AlertProps extends HTMLAttributes<HTMLDivElement> {
   variant?: 'info' | 'success' | 'warning' | 'error'
+  size?: 'sm' | 'default'
   icon?: ReactNode
 }
 
-const defaultIcons: Record<string, ReactNode> = {
-  info: (
-    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-    </svg>
-  ),
-  success: (
-    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-    </svg>
-  ),
-  warning: (
-    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-    </svg>
-  ),
-  error: (
-    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-    </svg>
-  ),
+const defaultIcons: Record<string, (size: 'sm' | 'default') => ReactNode> = {
+  info: (size) => <CircleAlert className={size === 'sm' ? 'w-3 h-3' : 'w-4 h-4'} />,
+  success: (size) => <CircleCheck className={size === 'sm' ? 'w-3 h-3' : 'w-4 h-4'} />,
+  warning: (size) => <TriangleAlert className={size === 'sm' ? 'w-3 h-3' : 'w-4 h-4'} />,
+  error: (size) => <CircleX className={size === 'sm' ? 'w-3 h-3' : 'w-4 h-4'} />,
 }
 
 export const Alert = forwardRef<HTMLDivElement, AlertProps>(
-  ({ className, variant = 'info', icon, children, ...props }, ref) => {
+  ({ className, variant = 'info', size = 'default', icon, children, ...props }, ref) => {
     return (
       <div
         ref={ref}
         className={cn(
-          'flex items-start gap-2 px-3 py-2 rounded-lg border text-sm',
+          'flex items-center gap-2 rounded-lg border',
+          size === 'sm' ? 'px-2.5 py-1.5 text-xs' : 'px-3 py-2 text-sm',
           {
             'bg-[var(--color-cream-dark)] text-[var(--color-ink)] border-[var(--color-border)]': variant === 'info',
-            'bg-emerald-50 text-emerald-800 border-emerald-200': variant === 'success',
-            'bg-amber-50 text-amber-800 border-amber-200': variant === 'warning',
-            'bg-red-50 text-red-800 border-red-200': variant === 'error',
+            'bg-[var(--color-success-bg)] text-[var(--color-success-text)] border-[var(--color-success-border)]': variant === 'success',
+            'bg-[var(--color-warning-bg)] text-[var(--color-warning-text)] border-[var(--color-warning-border)]': variant === 'warning',
+            'bg-[var(--color-error-bg)] text-[var(--color-error-text)] border-[var(--color-error-border)]': variant === 'error',
           },
           className
         )}
         {...props}
       >
         <span className={cn(
-          'flex-shrink-0 mt-0.5',
+          'flex-shrink-0',
           {
             'text-[var(--color-ink-muted)]': variant === 'info',
-            'text-emerald-600': variant === 'success',
-            'text-amber-600': variant === 'warning',
-            'text-red-600': variant === 'error',
+            'text-[var(--color-success-icon)]': variant === 'success',
+            'text-[var(--color-warning-icon)]': variant === 'warning',
+            'text-[var(--color-error-icon)]': variant === 'error',
           }
         )}>
-          {icon || defaultIcons[variant]}
+          {icon || defaultIcons[variant]?.(size)}
         </span>
-        <div className="flex-1">{children}</div>
+        <div className="flex-1 font-medium">{children}</div>
       </div>
     )
   }

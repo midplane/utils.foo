@@ -4,6 +4,9 @@ import { Card, CardContent, CardHeader } from '../../components/ui/Card'
 import { Input } from '../../components/ui/Input'
 import { Button } from '../../components/ui/Button'
 import { CopyButton } from '../../components/ui/CopyButton'
+import { ToolHeader } from '../../components/ui/ToolHeader'
+import { FlowDivider } from '../../components/ui/FlowDivider'
+import { SegmentedControl, SegmentedControlItem } from '../../components/ui/SegmentedControl'
 
 export default function EpochConverter() {
   // Initialize with current time
@@ -58,17 +61,7 @@ export default function EpochConverter() {
 
   return (
     <div className="space-y-3 animate-fade-in">
-      {/* Compact Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-6 h-6 rounded bg-[var(--color-accent)] flex items-center justify-center text-white">
-            <Clock className="w-3.5 h-3.5" />
-          </div>
-          <h1 className="font-mono text-lg font-semibold text-[var(--color-ink)]">
-            Epoch <span className="text-[var(--color-accent)]">Converter</span>
-          </h1>
-        </div>
-      </div>
+      <ToolHeader icon={<Clock />} title="Epoch" accentedSuffix="Converter" />
 
       {/* Live Clock - Compact */}
       <Card className="overflow-hidden">
@@ -104,24 +97,10 @@ export default function EpochConverter() {
             <span className="text-xs font-semibold text-[var(--color-ink)]">Convert</span>
             <div className="flex items-center gap-2">
               <span className="text-[10px] text-[var(--color-ink-muted)] uppercase">TZ</span>
-              <div className="flex bg-[var(--color-cream-dark)] rounded p-0.5 border border-[var(--color-border)]">
-                <button
-                  onClick={() => handleTimezoneChange('local')}
-                  className={`px-2 py-0.5 text-[10px] font-medium rounded transition-all ${
-                    timezone === 'local' ? 'bg-white text-[var(--color-ink)] shadow-sm' : 'text-[var(--color-ink-muted)]'
-                  }`}
-                >
-                  Local
-                </button>
-                <button
-                  onClick={() => handleTimezoneChange('utc')}
-                  className={`px-2 py-0.5 text-[10px] font-medium rounded transition-all ${
-                    timezone === 'utc' ? 'bg-white text-[var(--color-ink)] shadow-sm' : 'text-[var(--color-ink-muted)]'
-                  }`}
-                >
-                  UTC
-                </button>
-              </div>
+              <SegmentedControl value={timezone} onChange={handleTimezoneChange}>
+                <SegmentedControlItem value="local" className="px-2 py-0.5 text-[10px]">Local</SegmentedControlItem>
+                <SegmentedControlItem value="utc" className="px-2 py-0.5 text-[10px]">UTC</SegmentedControlItem>
+              </SegmentedControl>
             </div>
           </div>
         </CardHeader>
@@ -145,11 +124,7 @@ export default function EpochConverter() {
               )}
             </div>
 
-            <div className="flex items-center gap-2">
-              <div className="flex-1 h-px bg-[var(--color-border)]" />
-              <ArrowUpDown className="w-3.5 h-3.5 text-[var(--color-ink-muted)]" />
-              <div className="flex-1 h-px bg-[var(--color-border)]" />
-            </div>
+            <FlowDivider icon={<ArrowUpDown />} hasOutput={!!timestamp && !!dateString && !timestamp.includes('Invalid') && !dateString.includes('Invalid')} />
 
             <div className="flex gap-2">
               <div className="flex-1">

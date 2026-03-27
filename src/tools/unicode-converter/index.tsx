@@ -1,11 +1,16 @@
 import { useState } from 'react'
 import { Card, CardContent, CardHeader } from '../../components/ui/Card'
 import { Input } from '../../components/ui/Input'
-import { CircleX, Globe, Info, Trash2 } from 'lucide-react'
+import { Globe, Info, Trash2 } from 'lucide-react'
 
 import { Button } from '../../components/ui/Button'
 import { CopyButton } from '../../components/ui/CopyButton'
-import { cn } from '../../lib/utils'
+import { InfoCard } from '../../components/ui/InfoCard'
+import { ToolHeader } from '../../components/ui/ToolHeader'
+import { SectionLabel } from '../../components/ui/SectionLabel'
+import { SegmentedControl, SegmentedControlItem } from '../../components/ui/SegmentedControl'
+import { Alert } from '../../components/ui/Alert'
+import { FlowDivider } from '../../components/ui/FlowDivider'
 
 type InputMode = 'text' | 'codepoint' | 'hex' | 'decimal'
 
@@ -153,37 +158,19 @@ export default function UnicodeConverterTool() {
 
   return (
     <div className="space-y-4 animate-fade-in">
-      {/* Breadcrumb & Header */}
-      <div className="flex items-center gap-2">
-        <div className="w-7 h-7 rounded-lg bg-[var(--color-accent)] flex items-center justify-center text-white">
-          <Globe className="w-3.5 h-3.5" />
-        </div>
-        <h1 className="font-mono text-lg font-semibold text-[var(--color-ink)]">
-          Unicode <span className="text-[var(--color-accent)]">Converter</span>
-        </h1>
-      </div>
+      <ToolHeader icon={<Globe />} title="Unicode" accentedSuffix="Converter" />
 
       {/* Main Card */}
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between flex-wrap gap-2">
             {/* Mode Toggle */}
-            <div className="flex bg-[var(--color-cream-dark)] rounded-lg p-0.5 border border-[var(--color-border)] flex-wrap">
-              {(['text', 'codepoint', 'hex', 'decimal'] as InputMode[]).map((mode) => (
-                <button
-                  key={mode}
-                  onClick={() => handleModeChange(mode)}
-                  className={cn(
-                    'px-2.5 py-1.5 text-xs font-medium rounded-md transition-all capitalize',
-                    inputMode === mode
-                      ? 'bg-white text-[var(--color-ink)] shadow-sm'
-                      : 'text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]'
-                  )}
-                >
-                  {mode === 'codepoint' ? 'U+' : mode}
-                </button>
-              ))}
-            </div>
+            <SegmentedControl value={inputMode} onChange={(v) => handleModeChange(v as InputMode)} className="flex-wrap">
+              <SegmentedControlItem value="text">text</SegmentedControlItem>
+              <SegmentedControlItem value="codepoint">U+</SegmentedControlItem>
+              <SegmentedControlItem value="hex">hex</SegmentedControlItem>
+              <SegmentedControlItem value="decimal">decimal</SegmentedControlItem>
+            </SegmentedControl>
             
             {/* Actions */}
             <div className="flex gap-1">
@@ -209,11 +196,11 @@ export default function UnicodeConverterTool() {
 
           {/* Error */}
           {error && (
-            <div className="flex items-center gap-2 px-2.5 py-1.5 bg-red-50 border border-red-200 rounded-lg text-red-700">
-              <CircleX className="w-3 h-3 text-red-500 flex-shrink-0" />
-              <span className="text-xs font-medium">{error}</span>
-            </div>
+            <Alert variant="error" size="sm">{error}</Alert>
           )}
+
+          {/* Flow Divider */}
+          <FlowDivider hasOutput={charInfos.length > 0} />
 
           {/* Combined Output */}
           {charInfos.length > 0 && (
@@ -245,16 +232,14 @@ export default function UnicodeConverterTool() {
           {/* Character Details */}
           {charInfos.length > 0 && (
             <div className="space-y-1">
-              <label className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-ink-muted)]">
-                Character Details
-              </label>
+              <SectionLabel>Character Details</SectionLabel>
               <div className="max-h-64 overflow-y-auto space-y-1.5">
                 {charInfos.map((info, idx) => (
                   <div 
                     key={idx}
-                    className="p-2 bg-emerald-50/50 border border-emerald-200 rounded-lg flex items-start gap-3"
+                    className="p-2 bg-[var(--color-success-bg-subtle)] border border-[var(--color-success-border)] rounded-lg flex items-start gap-3"
                   >
-                    <div className="w-10 h-10 flex items-center justify-center bg-white border border-emerald-200 rounded-lg text-2xl">
+                    <div className="w-10 h-10 flex items-center justify-center bg-white border border-[var(--color-success-border)] rounded-lg text-2xl">
                       {info.char}
                     </div>
                     <div className="flex-1 grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-1 text-xs">
@@ -298,28 +283,16 @@ export default function UnicodeConverterTool() {
 
       {/* Info */}
       <div className="grid grid-cols-2 gap-2">
-        <div className="px-3 py-2 bg-[var(--color-cream-dark)] rounded-lg border border-[var(--color-border)]">
-          <div className="flex gap-2 items-start">
-            <Info className="w-3.5 h-3.5 text-[var(--color-accent)] flex-shrink-0 mt-0.5" />
-            <div>
-              <h3 className="font-semibold text-[var(--color-ink)] text-xs">Unicode Codepoints</h3>
-              <p className="text-[10px] text-[var(--color-ink-muted)] leading-tight mt-0.5">
-                U+XXXX format represents the unique code for each character.
-              </p>
-            </div>
-          </div>
-        </div>
-        <div className="px-3 py-2 bg-[var(--color-cream-dark)] rounded-lg border border-[var(--color-border)]">
-          <div className="flex gap-2 items-start">
-            <Info className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0 mt-0.5" />
-            <div>
-              <h3 className="font-semibold text-[var(--color-ink)] text-xs">Emoji Support</h3>
-              <p className="text-[10px] text-[var(--color-ink-muted)] leading-tight mt-0.5">
-                Handles multi-byte characters including emoji sequences.
-              </p>
-            </div>
-          </div>
-        </div>
+        <InfoCard
+          icon={<Info className="text-[var(--color-accent)]" />}
+          title="Unicode Codepoints"
+          description="U+XXXX format represents the unique code for each character."
+        />
+        <InfoCard
+          icon={<Info className="text-[var(--color-success-icon)]" />}
+          title="Emoji Support"
+          description="Handles multi-byte characters including emoji sequences."
+        />
       </div>
     </div>
   )

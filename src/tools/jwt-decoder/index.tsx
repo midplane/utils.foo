@@ -3,7 +3,12 @@ import { Card, CardContent, CardHeader } from '../../components/ui/Card'
 import { Textarea } from '../../components/ui/Textarea'
 import { Button } from '../../components/ui/Button'
 import { CopyButton } from '../../components/ui/CopyButton'
-import { CircleX, ClipboardList, Info, LockKeyhole, ShieldCheck, Trash2, TriangleAlert } from 'lucide-react'
+import { InfoCard } from '../../components/ui/InfoCard'
+import { ToolHeader } from '../../components/ui/ToolHeader'
+import { SectionLabel } from '../../components/ui/SectionLabel'
+import { Alert } from '../../components/ui/Alert'
+import { FlowDivider } from '../../components/ui/FlowDivider'
+import { ClipboardList, Info, LockKeyhole, ShieldCheck, Trash2 } from 'lucide-react'
 
 interface JWTPayload {
   [key: string]: unknown
@@ -132,15 +137,7 @@ export default function JwtDecoderTool() {
 
   return (
     <div className="space-y-4 animate-fade-in">
-      {/* Breadcrumb & Header */}
-      <div className="flex items-center gap-2">
-        <div className="w-7 h-7 rounded-lg bg-[var(--color-accent)] flex items-center justify-center text-white">
-          <LockKeyhole className="w-3.5 h-3.5" />
-        </div>
-        <h1 className="font-mono text-lg font-semibold text-[var(--color-ink)]">
-          JWT <span className="text-[var(--color-accent)]">Decoder</span>
-        </h1>
-      </div>
+      <ToolHeader icon={<LockKeyhole />} title="JWT" accentedSuffix="Decoder" />
 
       {/* Main Card */}
       <Card>
@@ -179,29 +176,24 @@ export default function JwtDecoderTool() {
 
           {/* Error */}
           {error && (
-            <div className="flex items-center gap-2 px-2.5 py-1.5 bg-red-50 border border-red-200 rounded-lg text-red-700">
-              <CircleX className="w-3 h-3 text-red-500 flex-shrink-0" />
-              <span className="text-xs font-medium">{error}</span>
-            </div>
+            <Alert variant="error" size="sm">{error}</Alert>
           )}
+
+          {/* Flow Divider */}
+          <FlowDivider hasOutput={!!decoded} />
 
           {/* Decoded Output */}
           {decoded && (
             <>
               {/* Expiration Warning */}
               {expired && (
-                <div className="flex items-center gap-2 px-2.5 py-1.5 bg-amber-50 border border-amber-200 rounded-lg text-amber-700">
-                  <TriangleAlert className="w-3 h-3 text-amber-500 flex-shrink-0" />
-                  <span className="text-xs font-medium">This token has expired</span>
-                </div>
+                <Alert variant="warning" size="sm">This token has expired</Alert>
               )}
 
               {/* Header */}
               <div className="space-y-1">
                 <div className="flex items-center justify-between">
-                  <label className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-ink-muted)]">
-                    Header
-                  </label>
+                  <SectionLabel>Header</SectionLabel>
                   <CopyButton text={JSON.stringify(decoded.header, null, 2)} />
                 </div>
                 <div className="p-2.5 bg-blue-50/50 border border-blue-200 rounded-lg">
@@ -214,16 +206,14 @@ export default function JwtDecoderTool() {
               {/* Payload */}
               <div className="space-y-1">
                 <div className="flex items-center justify-between">
-                  <label className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-ink-muted)]">
-                    Payload
-                  </label>
+                  <SectionLabel>Payload</SectionLabel>
                   <CopyButton text={JSON.stringify(decoded.payload, null, 2)} />
                 </div>
-                <div className="p-2.5 bg-emerald-50/50 border border-emerald-200 rounded-lg space-y-2">
+                <div className="p-2.5 bg-[var(--color-success-bg-subtle)] border border-[var(--color-success-border)] rounded-lg space-y-2">
                   {Object.entries(decoded.payload).map(([key, value]) => (
                     <div key={key} className="flex flex-col gap-0.5">
                       <div className="flex items-center gap-2">
-                        <span className="text-xs font-mono font-semibold text-emerald-700">
+                        <span className="text-xs font-mono font-semibold text-[var(--color-success-text)]">
                           {key}
                         </span>
                         {KNOWN_CLAIMS[key] && (
@@ -232,7 +222,7 @@ export default function JwtDecoderTool() {
                           </span>
                         )}
                         {key === 'exp' && expired && (
-                          <span className="text-[10px] px-1.5 py-0.5 bg-red-100 text-red-700 rounded font-medium">
+                          <span className="text-[10px] px-1.5 py-0.5 bg-[var(--color-error-bg)] text-[var(--color-error-text)] rounded font-medium">
                             EXPIRED
                           </span>
                         )}
@@ -253,12 +243,10 @@ export default function JwtDecoderTool() {
               {/* Signature */}
               <div className="space-y-1">
                 <div className="flex items-center justify-between">
-                  <label className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-ink-muted)]">
-                    Signature
-                  </label>
+                  <SectionLabel>Signature</SectionLabel>
                   <CopyButton text={decoded.signature} />
                 </div>
-                <div className="p-2.5 bg-purple-50/50 border border-purple-200 rounded-lg">
+                <div className="p-2.5 bg-[var(--color-purple-bg-subtle)] border border-[var(--color-purple-border)] rounded-lg">
                   <code className="text-xs font-mono text-[var(--color-ink)] break-all">
                     {decoded.signature}
                   </code>
@@ -271,28 +259,16 @@ export default function JwtDecoderTool() {
 
       {/* Info */}
       <div className="grid grid-cols-2 gap-2">
-        <div className="px-3 py-2 bg-[var(--color-cream-dark)] rounded-lg border border-[var(--color-border)]">
-          <div className="flex gap-2 items-start">
-            <Info className="w-3.5 h-3.5 text-[var(--color-accent)] flex-shrink-0 mt-0.5" />
-            <div>
-              <h3 className="font-semibold text-[var(--color-ink)] text-xs">What is JWT?</h3>
-              <p className="text-[10px] text-[var(--color-ink-muted)] leading-tight mt-0.5">
-                JSON Web Token for secure authentication claims.
-              </p>
-            </div>
-          </div>
-        </div>
-        <div className="px-3 py-2 bg-[var(--color-cream-dark)] rounded-lg border border-[var(--color-border)]">
-          <div className="flex gap-2 items-start">
-            <ShieldCheck className="w-3.5 h-3.5 text-amber-600 flex-shrink-0 mt-0.5" />
-            <div>
-              <h3 className="font-semibold text-[var(--color-ink)] text-xs">Security Note</h3>
-              <p className="text-[10px] text-[var(--color-ink-muted)] leading-tight mt-0.5">
-                Decoding does not verify the signature.
-              </p>
-            </div>
-          </div>
-        </div>
+        <InfoCard
+          icon={<Info className="text-[var(--color-accent)]" />}
+          title="What is JWT?"
+          description="JSON Web Token for secure authentication claims."
+        />
+        <InfoCard
+          icon={<ShieldCheck className="text-[var(--color-warning-icon)]" />}
+          title="Security Note"
+          description="Decoding does not verify the signature."
+        />
       </div>
     </div>
   )

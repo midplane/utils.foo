@@ -5,11 +5,19 @@ import { EditorView } from '@codemirror/view'
 import { Compartment } from '@codemirror/state'
 import { LanguageDescription } from '@codemirror/language'
 import { languages } from '@codemirror/language-data'
-import { Card, CardContent, CardHeader } from '../../components/ui/Card'
 import { Button } from '../../components/ui/Button'
 import { Badge } from '../../components/ui/Badge'
+import { ToolHeader } from '../../components/ui/ToolHeader'
+import {
+  useExpandable,
+  ExpandableCard,
+  ExpandableCardHeader,
+  ExpandableCardContent,
+  ExpandToggleButton,
+} from '../../components/ui/ExpandableCard'
 import { cn } from '../../lib/utils'
-import { ArrowLeftRight, GitCompare, Maximize2, Minimize2, Sparkles, Trash2 } from 'lucide-react'
+import { diffTheme } from '../../lib/codemirrorTheme'
+import { ArrowLeftRight, GitCompare, Sparkles, Trash2 } from 'lucide-react'
 
 // ─── Language list (curated subset shown in dropdown) ────────────────────────
 
@@ -112,43 +120,6 @@ async function loadLanguageExtension(name: string) {
   return [lang]
 }
 
-// ─── Theme ───────────────────────────────────────────────────────────────────
-
-const appTheme = EditorView.theme({
-  '&': {
-    fontSize: '12px',
-    fontFamily: "'JetBrains Mono', ui-monospace, monospace",
-    color: '#1C1917',
-    height: '100%',
-  },
-  '.cm-scroller': {
-    overflow: 'auto',
-    fontFamily: "'JetBrains Mono', ui-monospace, monospace",
-    height: '100%',
-  },
-  '.cm-content': { padding: '12px 4px', caretColor: '#EA580C' },
-  '.cm-line': { padding: '0 8px' },
-  '.cm-gutters': {
-    background: '#FFF7ED',
-    borderRight: '1px solid #E7E5E4',
-    color: '#A8A29E',
-    fontSize: '11px',
-  },
-  '.cm-activeLineGutter': { background: '#FEF3C7' },
-  '.cm-activeLine': { background: 'rgba(234, 88, 12, 0.04)' },
-  '.cm-selectionBackground': { background: 'rgba(234, 88, 12, 0.15) !important' },
-  '&.cm-focused .cm-selectionBackground': { background: 'rgba(234, 88, 12, 0.2) !important' },
-  '&.cm-focused': { outline: 'none' },
-  '.cm-cursor': { borderLeftColor: '#EA580C' },
-  // MergeView diff highlights
-  '.cm-deletedChunk': { background: 'rgba(239,68,68,0.08)' },
-  '.cm-deletedChunk .cm-deletedLine, .cm-deletedLine': { background: 'rgba(239,68,68,0.12)' },
-  '.cm-changedLine': { background: 'rgba(16,185,129,0.08)' },
-  '.cm-changedText': { background: 'rgba(16,185,129,0.25)', borderRadius: '2px' },
-  '.cm-deletedText': { background: 'rgba(239,68,68,0.35)', borderRadius: '2px', textDecoration: 'none' },
-  '.cm-mergeGap': { background: '#FFF7ED', borderTop: '1px solid #E7E5E4', borderBottom: '1px solid #E7E5E4' },
-})
-
 // ─── Sample content ───────────────────────────────────────────────────────────
 
 const SAMPLE_LEFT = `function greet(name) {
@@ -181,7 +152,7 @@ export default function DiffViewerTool() {
   const [leftText, setLeftText]   = useState(SAMPLE_LEFT)
   const [rightText, setRightText] = useState(SAMPLE_RIGHT)
   const [stats, setStats]         = useState({ added: 0, removed: 0 })
-  const [expanded, setExpanded]   = useState(false)
+  const { expanded, setExpanded } = useExpandable()
 
   // 'auto' means follow detection; any other value is a manual override
   const [langOverride, setLangOverride] = useState<string>('auto')
@@ -200,7 +171,7 @@ export default function DiffViewerTool() {
         extensions: [
           basicSetup,
           EditorView.lineWrapping,
-          appTheme,
+          diffTheme,
           langCompartmentA.current.of([]),
           EditorView.updateListener.of((u) => {
             if (u.docChanged) setLeftText(u.state.doc.toString())
@@ -212,7 +183,7 @@ export default function DiffViewerTool() {
         extensions: [
           basicSetup,
           EditorView.lineWrapping,
-          appTheme,
+          diffTheme,
           langCompartmentB.current.of([]),
           EditorView.updateListener.of((u) => {
             if (u.docChanged) setRightText(u.state.doc.toString())
@@ -273,13 +244,6 @@ export default function DiffViewerTool() {
     setStats({ added, removed })
   }, [leftText, rightText])
 
-  // ── Esc to collapse ─────────────────────────────────────────────────────────
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setExpanded(false) }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [])
-
   // ── Swap ────────────────────────────────────────────────────────────────────
   const handleSwap = () => {
     const mv = mergeViewRef.current
@@ -319,34 +283,15 @@ export default function DiffViewerTool() {
 
   return (
     <>
-      {/* Backdrop */}
-      {expanded && (
-        <div
-          className="fixed left-0 right-0 bottom-0 bg-black/40 z-40 backdrop-blur-sm"
-          style={{ top: '41px' }}
-          onClick={() => setExpanded(false)}
-        />
-      )}
-
       <div className={cn('space-y-4 animate-fade-in', expanded && 'relative z-50')}>
         {/* Breadcrumb & Header */}
           {!expanded && (
-            <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-lg bg-[var(--color-accent)] flex items-center justify-center text-white">
-                <GitCompare className="w-3.5 h-3.5" />
-              </div>
-              <h1 className="font-mono text-lg font-semibold text-[var(--color-ink)]">
-                Diff <span className="text-[var(--color-accent)]">Viewer</span>
-              </h1>
-            </div>
+            <ToolHeader icon={<GitCompare />} title="Diff" accentedSuffix="Viewer" />
           )}
 
         {/* Main Card */}
-        <Card
-          className={cn(expanded && 'fixed left-4 right-4 bottom-4 z-50 shadow-2xl overflow-auto')}
-          style={expanded ? { top: 'calc(41px + 8px)' } : undefined}
-        >
-          <CardHeader>
+        <ExpandableCard expanded={expanded} onExpandedChange={setExpanded}>
+          <ExpandableCardHeader>
             <div className="flex items-center justify-between flex-wrap gap-2">
               {/* Labels + stats + language selector */}
               <div className="flex items-center gap-2 flex-wrap">
@@ -394,18 +339,12 @@ export default function DiffViewerTool() {
                   <Trash2 className="w-3 h-3" />
                   Clear
                 </Button>
-                <button
-                  onClick={() => setExpanded((v) => !v)}
-                  title={expanded ? 'Collapse' : 'Expand'}
-                  className="inline-flex items-center justify-center w-7 h-7 rounded-lg text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] hover:bg-[var(--color-cream-dark)] transition-colors cursor-pointer"
-                >
-                  {expanded ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
-                </button>
+                <ExpandToggleButton />
               </div>
             </div>
-          </CardHeader>
+          </ExpandableCardHeader>
 
-          <CardContent>
+          <ExpandableCardContent>
             {/* Column labels */}
             <div className="grid grid-cols-2 gap-px mb-1.5">
               <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-ink-muted)]">Original</span>
@@ -418,8 +357,8 @@ export default function DiffViewerTool() {
               style={{ height: editorHeight }}
               className="rounded-lg border border-[var(--color-border)] overflow-auto"
             />
-          </CardContent>
-        </Card>
+          </ExpandableCardContent>
+        </ExpandableCard>
       </div>
     </>
   )

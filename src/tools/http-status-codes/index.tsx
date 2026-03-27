@@ -1,6 +1,9 @@
 import { useState } from 'react'
-import { Globe, Search, X } from 'lucide-react'
+import { Globe } from 'lucide-react'
 import { Card, CardContent } from '../../components/ui/Card'
+import { ToolHeader } from '../../components/ui/ToolHeader'
+import { SearchInput } from '../../components/ui/SearchInput'
+import { EmptyState } from '../../components/ui/EmptyState'
 
 // ─── Data ─────────────────────────────────────────────────────────────────────
 
@@ -23,9 +26,9 @@ const STATUS_GROUPS: StatusGroup[] = [
   {
     range: '1xx',
     label: 'Informational',
-    color: 'bg-blue-100',
-    textColor: 'text-blue-700',
-    borderColor: 'border-blue-300',
+    color: 'bg-[var(--color-info-bg)]',
+    textColor: 'text-[var(--color-info-text)]',
+    borderColor: 'border-[var(--color-info-border)]',
     codes: [
       { code: 100, name: 'Continue', description: 'The server has received the request headers and the client should proceed to send the request body.' },
       { code: 101, name: 'Switching Protocols', description: 'The server agrees to switch protocols as requested by the client (e.g. upgrading to WebSocket).' },
@@ -36,9 +39,9 @@ const STATUS_GROUPS: StatusGroup[] = [
   {
     range: '2xx',
     label: 'Success',
-    color: 'bg-emerald-100',
-    textColor: 'text-emerald-700',
-    borderColor: 'border-emerald-300',
+    color: 'bg-[var(--color-success-bg)]',
+    textColor: 'text-[var(--color-success-text)]',
+    borderColor: 'border-[var(--color-success-border)]',
     codes: [
       { code: 200, name: 'OK', description: 'The request succeeded. The response body contains the requested resource or action result.' },
       { code: 201, name: 'Created', description: 'The request succeeded and a new resource was created. Typically returned after POST or PUT.' },
@@ -55,9 +58,9 @@ const STATUS_GROUPS: StatusGroup[] = [
   {
     range: '3xx',
     label: 'Redirection',
-    color: 'bg-amber-100',
-    textColor: 'text-amber-700',
-    borderColor: 'border-amber-300',
+    color: 'bg-[var(--color-warning-bg)]',
+    textColor: 'text-[var(--color-warning-text)]',
+    borderColor: 'border-[var(--color-warning-border)]',
     codes: [
       { code: 300, name: 'Multiple Choices', description: 'The request has more than one possible response. The user or client should choose one.' },
       { code: 301, name: 'Moved Permanently', description: 'The requested resource has been permanently moved to a new URL. Future requests should use the new URL.' },
@@ -110,9 +113,9 @@ const STATUS_GROUPS: StatusGroup[] = [
   {
     range: '5xx',
     label: 'Server Error',
-    color: 'bg-red-100',
-    textColor: 'text-red-700',
-    borderColor: 'border-red-300',
+    color: 'bg-[var(--color-error-bg)]',
+    textColor: 'text-[var(--color-error-text)]',
+    borderColor: 'border-[var(--color-error-border)]',
     codes: [
       { code: 500, name: 'Internal Server Error', description: 'The server encountered an unexpected condition that prevented it from fulfilling the request.' },
       { code: 501, name: 'Not Implemented', description: 'The server does not support the functionality required to fulfill the request.' },
@@ -153,43 +156,22 @@ export default function HttpStatusCodesTool() {
     <div className="space-y-4 animate-fade-in">
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
-        <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg bg-[var(--color-accent)] flex items-center justify-center text-white">
-            <Globe className="w-3.5 h-3.5" />
-          </div>
-          <h1 className="font-mono text-lg font-semibold text-[var(--color-ink)]">
-            HTTP <span className="text-[var(--color-accent)]">Status Codes</span>
-          </h1>
-        </div>
+        <ToolHeader icon={<Globe />} title="HTTP" accentedSuffix="Status Codes" />
 
         {/* Search */}
-          <div className="relative w-full sm:w-64">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--color-ink-muted)]" />
-            <input
-              type="search"
-              placeholder="Search by code or name…"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              className="w-full pl-9 pr-8 py-1.5 text-xs bg-white border border-[var(--color-border)] rounded-lg text-[var(--color-ink)] placeholder-[var(--color-ink-muted)] focus:outline-none focus:border-[var(--color-accent)] focus:ring-1 focus:ring-[var(--color-accent)]/20 transition-all font-mono"
-            />
-            {query && (
-              <button
-                onClick={() => setQuery('')}
-                className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 hover:bg-[var(--color-cream-dark)] rounded transition-colors cursor-pointer"
-              >
-                <X className="w-3 h-3 text-[var(--color-ink-muted)]" />
-              </button>
-            )}
-          </div>
+        <SearchInput
+          value={query}
+          onChange={setQuery}
+          placeholder="Search by code or name…"
+          className="w-full sm:w-64"
+        />
       </div>
 
       {/* Search results */}
       {filtered !== null && (
         <div className="space-y-2">
           {filtered.length === 0 ? (
-            <p className="text-sm text-[var(--color-ink-muted)] text-center py-6">
-              No status codes match "{query}"
-            </p>
+            <EmptyState query={query} className="py-6" />
           ) : (
             <>
               <p className="text-[10px] uppercase tracking-wider text-[var(--color-ink-muted)]">

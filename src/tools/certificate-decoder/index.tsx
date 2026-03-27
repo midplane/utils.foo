@@ -3,6 +3,10 @@ import { Card, CardContent, CardHeader } from '../../components/ui/Card'
 import { Textarea } from '../../components/ui/Textarea'
 import { Button } from '../../components/ui/Button'
 import { CopyButton } from '../../components/ui/CopyButton'
+import { InfoCard } from '../../components/ui/InfoCard'
+import { ToolHeader } from '../../components/ui/ToolHeader'
+import { Alert } from '../../components/ui/Alert'
+import { FlowDivider } from '../../components/ui/FlowDivider'
 import { ClipboardList, Info, Loader2, Search, ShieldCheck, Trash2 } from 'lucide-react'
 
 // ---------------------------------------------------------------------------
@@ -391,15 +395,7 @@ export default function CertificateDecoderTool() {
 
   return (
     <div className="space-y-4 animate-fade-in">
-      {/* Header */}
-      <div className="flex items-center gap-2">
-        <div className="w-7 h-7 rounded-lg bg-[var(--color-accent)] flex items-center justify-center text-white">
-          <ShieldCheck className="w-3.5 h-3.5" />
-        </div>
-        <h1 className="font-mono text-lg font-semibold text-[var(--color-ink)]">
-          Certificate <span className="text-[var(--color-accent)]">Decoder</span>
-        </h1>
-      </div>
+      <ToolHeader icon={<ShieldCheck />} title="Certificate" accentedSuffix="Decoder" />
 
       {/* Input card */}
       <Card>
@@ -448,12 +444,13 @@ export default function CertificateDecoderTool() {
             Decode Certificate
           </Button>
           {error && (
-            <div className="p-2.5 bg-red-50 border border-red-200 rounded-lg text-xs text-red-700 font-mono">
-              {error}
-            </div>
+            <Alert variant="error" size="sm" className="font-mono">{error}</Alert>
           )}
         </CardContent>
       </Card>
+
+      {/* Flow Divider */}
+      <FlowDivider hasOutput={!!cert} icon={isParsing ? <Loader2 className="animate-spin" /> : undefined} />
 
       {/* Result card */}
       {cert && (
@@ -463,12 +460,12 @@ export default function CertificateDecoderTool() {
               <div className="flex items-center gap-2">
                 <span className="text-xs font-semibold text-[var(--color-ink)]">Certificate Details</span>
                 {cert.expired ? (
-                  <span className="px-1.5 py-0.5 text-[10px] font-semibold rounded bg-red-100 text-red-700 border border-red-200">EXPIRED</span>
+                  <span className="px-1.5 py-0.5 text-[10px] font-semibold rounded bg-[var(--color-error-bg)] text-[var(--color-error-text)] border border-[var(--color-error-border)]">EXPIRED</span>
                 ) : (
-                  <span className="px-1.5 py-0.5 text-[10px] font-semibold rounded bg-emerald-100 text-emerald-700 border border-emerald-200">VALID</span>
+                  <span className="px-1.5 py-0.5 text-[10px] font-semibold rounded bg-[var(--color-success-bg)] text-[var(--color-success-text)] border border-[var(--color-success-border)]">VALID</span>
                 )}
                 {cert.isCA && (
-                  <span className="px-1.5 py-0.5 text-[10px] font-semibold rounded bg-blue-100 text-blue-700 border border-blue-200">CA</span>
+                  <span className="px-1.5 py-0.5 text-[10px] font-semibold rounded bg-[var(--color-info-bg)] text-[var(--color-info-text)] border border-[var(--color-info-border)]">CA</span>
                 )}
               </div>
               <CopyButton text={JSON.stringify(cert, null, 2)} />
@@ -502,7 +499,7 @@ export default function CertificateDecoderTool() {
                 <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-accent)] mb-1">Validity</p>
                 <Row label="Not Before">{formatDate(cert.notBefore)}</Row>
                 <Row label="Not After">
-                  <span className={cert.expired ? 'text-red-600' : cert.daysRemaining < 30 ? 'text-orange-600' : ''}>
+                  <span className={cert.expired ? 'text-[var(--color-error-text)]' : cert.daysRemaining < 30 ? 'text-[var(--color-warning-text)]' : ''}>
                     {formatDate(cert.notAfter)}
                     {!cert.expired && (
                       <span className="ml-2 text-[var(--color-ink-muted)]">({cert.daysRemaining}d remaining)</span>
@@ -535,28 +532,16 @@ export default function CertificateDecoderTool() {
 
       {/* Info cards */}
       <div className="grid grid-cols-2 gap-2">
-        <div className="px-3 py-2 bg-[var(--color-cream-dark)] rounded-lg border border-[var(--color-border)]">
-          <div className="flex gap-2 items-start">
-            <Info className="w-3.5 h-3.5 text-[var(--color-accent)] flex-shrink-0 mt-0.5" />
-            <div>
-              <h3 className="font-semibold text-[var(--color-ink)] text-xs">What is PEM?</h3>
-              <p className="text-[10px] text-[var(--color-ink-muted)] leading-tight mt-0.5">
-                Privacy-Enhanced Mail — Base64-encoded DER with header/footer lines. Used by TLS/SSL certificates, keys, and CAs.
-              </p>
-            </div>
-          </div>
-        </div>
-        <div className="px-3 py-2 bg-[var(--color-cream-dark)] rounded-lg border border-[var(--color-border)]">
-          <div className="flex gap-2 items-start">
-            <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0 mt-0.5" />
-            <div>
-              <h3 className="font-semibold text-[var(--color-ink)] text-xs">Client-side only</h3>
-              <p className="text-[10px] text-[var(--color-ink-muted)] leading-tight mt-0.5">
-                Your certificate is parsed entirely in the browser. Nothing is transmitted to any server.
-              </p>
-            </div>
-          </div>
-        </div>
+        <InfoCard
+          icon={<Info className="text-[var(--color-accent)]" />}
+          title="What is PEM?"
+          description="Privacy-Enhanced Mail — Base64-encoded DER with header/footer lines. Used by TLS/SSL certificates, keys, and CAs."
+        />
+        <InfoCard
+          icon={<ShieldCheck className="text-[var(--color-success-icon)]" />}
+          title="Client-side only"
+          description="Your certificate is parsed entirely in the browser. Nothing is transmitted to any server."
+        />
       </div>
     </div>
   )

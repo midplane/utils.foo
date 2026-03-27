@@ -1,6 +1,7 @@
 import { useMemo, useCallback, useState } from 'react'
 import { Table2, Copy, Check } from 'lucide-react'
 import { Card, CardContent, CardHeader } from '../../../components/ui/Card'
+import { EmptyState } from '../../../components/ui/EmptyState'
 import { PivotResult, PivotConfig, AGGREGATION_LABELS } from '../types'
 import { PivotEngine, getHeatmapColor } from '../engine/PivotEngine'
 import { flattenKey, compositeKey } from '../engine/sorters'
@@ -222,9 +223,7 @@ export function PivotGrid({ result, config }: PivotGridProps) {
           </div>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-[var(--color-ink-muted)] text-center py-8">
-            Configure rows, columns, and values above to generate a pivot table.
-          </p>
+          <EmptyState message="Configure rows, columns, and values above to generate a pivot table." />
         </CardContent>
       </Card>
     )

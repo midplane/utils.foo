@@ -3,6 +3,7 @@ import { X, Check, Search } from 'lucide-react'
 import { Modal } from '../../../components/ui/Modal'
 import { Button } from '../../../components/ui/Button'
 import { Checkbox } from '../../../components/ui/Checkbox'
+import { EmptyState } from '../../../components/ui/EmptyState'
 import { naturalSort } from '../engine/sorters'
 
 interface FilterModalProps {
@@ -133,9 +134,7 @@ export function FilterModal({
         {/* Value list */}
         <div className="max-h-64 overflow-y-auto border border-[var(--color-border)] rounded-lg divide-y divide-[var(--color-border)]">
           {filteredValues.length === 0 ? (
-            <p className="px-3 py-4 text-xs text-[var(--color-ink-muted)] text-center">
-              No values match your search
-            </p>
+            <EmptyState size="sm" message="No values match your search" className="px-3" />
           ) : (
             filteredValues.map((value) => {
               const isChecked = !localExcluded.has(value)

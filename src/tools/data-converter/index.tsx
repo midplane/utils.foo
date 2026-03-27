@@ -8,12 +8,21 @@ import * as yaml from 'js-yaml'
 import Papa from 'papaparse'
 import { XMLParser, XMLBuilder } from 'fast-xml-parser'
 import { parse as parseTOML, stringify as stringifyTOML } from 'smol-toml'
-import { Card, CardContent, CardHeader } from '../../components/ui/Card'
 import { Button } from '../../components/ui/Button'
 import { CopyButton } from '../../components/ui/CopyButton'
 import { Badge } from '../../components/ui/Badge'
+import { ToolHeader } from '../../components/ui/ToolHeader'
+import { SegmentedControl, SegmentedControlItem } from '../../components/ui/SegmentedControl'
+import {
+  useExpandable,
+  ExpandableCard,
+  ExpandableCardHeader,
+  ExpandableCardContent,
+  ExpandToggleButton,
+} from '../../components/ui/ExpandableCard'
 import { cn } from '../../lib/utils'
-import { ArrowLeftRight, Maximize2, Minimize2, Sparkles, Trash2 } from 'lucide-react'
+import { appTheme } from '../../lib/codemirrorTheme'
+import { ArrowLeftRight, Sparkles, Trash2 } from 'lucide-react'
 
 // ─── Conversion definitions ───────────────────────────────────────────────────
 
@@ -155,40 +164,6 @@ function convert(id: ConversionId, input: string): { output: string; error?: str
   }
 }
 
-// ─── CodeMirror theme ─────────────────────────────────────────────────────────
-
-const appTheme = EditorView.theme({
-  '&': {
-    fontSize: '12px',
-    fontFamily: "'JetBrains Mono', ui-monospace, monospace",
-    background: '#FFFBF5',
-    color: '#1C1917',
-    height: '100%',
-  },
-  '&.cm-focused': { outline: 'none', border: '1px solid #EA580C', boxShadow: '0 0 0 3px rgba(234,88,12,0.12)' },
-  '.cm-scroller': { overflow: 'auto', fontFamily: "'JetBrains Mono', ui-monospace, monospace", height: '100%' },
-  '.cm-content': { padding: '12px 4px', caretColor: '#EA580C' },
-  '.cm-line': { padding: '0 8px' },
-  '.cm-gutters': { background: '#FFF7ED', borderRight: '1px solid #E7E5E4', color: '#A8A29E', fontSize: '11px' },
-  '.cm-activeLineGutter': { background: '#FEF3C7' },
-  '.cm-activeLine': { background: 'rgba(234,88,12,0.04)' },
-  '.cm-selectionBackground': { background: 'rgba(234,88,12,0.15) !important' },
-  '&.cm-focused .cm-selectionBackground': { background: 'rgba(234,88,12,0.2) !important' },
-  '.cm-cursor': { borderLeftColor: '#EA580C' },
-  // syntax colours
-  '.tok-propertyName': { color: '#C2410C', fontWeight: '500' },
-  '.tok-string': { color: '#15803D' },
-  '.tok-number': { color: '#1D4ED8' },
-  '.tok-bool': { color: '#7C3AED' },
-  '.tok-null': { color: '#6B7280' },
-  '.tok-punctuation, .tok-bracket': { color: '#78716C' },
-  '.tok-comment': { color: '#A8A29E', fontStyle: 'italic' },
-  '.tok-keyword': { color: '#7C3AED' },
-  '.tok-tagName': { color: '#C2410C' },
-  '.tok-attributeName': { color: '#1D4ED8' },
-  '.tok-attributeValue': { color: '#15803D' },
-}, { dark: false })
-
 // ─── Async language loader ────────────────────────────────────────────────────
 
 async function loadLang(name: string) {
@@ -205,7 +180,7 @@ export default function DataConverterTool() {
   const [inputText, setInputText] = useState('')
   const [outputText, setOutputText] = useState('')
   const [error, setError] = useState('')
-  const [expanded, setExpanded] = useState(false)
+  const { expanded, setExpanded } = useExpandable()
 
   const conv = CONVERSIONS.find(c => c.id === convId)!
 
@@ -322,64 +297,32 @@ export default function DataConverterTool() {
     if (iv) iv.dispatch({ changes: { from: 0, to: iv.state.doc.length, insert: sample } })
   }, [conv.from])
 
-  // ── Esc ───────────────────────────────────────────────────────────────────────
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setExpanded(false) }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [])
+  // ── Esc — handled by useExpandable ────────────────────────────────────────────
 
   const editorHeight = expanded ? 'calc(100vh - 161px)' : '480px'
   const canSwap = CONVERSIONS.some(c => c.id === `${conv.to.toLowerCase()}-${conv.from.toLowerCase()}`)
 
   return (
     <>
-      {expanded && (
-        <div
-          className="fixed left-0 right-0 bottom-0 bg-black/40 z-40 backdrop-blur-sm"
-          style={{ top: '41px' }}
-          onClick={() => setExpanded(false)}
-        />
-      )}
-
       <div className={cn('space-y-4 animate-fade-in', expanded && 'relative z-50')}>
         {/* Header */}
         {!expanded && (
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-[var(--color-accent)] flex items-center justify-center text-white">
-              <ArrowLeftRight className="w-3.5 h-3.5" />
-            </div>
-            <h1 className="font-mono text-lg font-semibold text-[var(--color-ink)]">
-              Data <span className="text-[var(--color-accent)]">Converter</span>
-            </h1>
-          </div>
+          <ToolHeader icon={<ArrowLeftRight />} title="Data" accentedSuffix="Converter" />
         )}
 
         {/* Main card */}
-        <Card
-          className={cn(expanded && 'fixed left-4 right-4 bottom-4 z-50 shadow-2xl overflow-auto')}
-          style={expanded ? { top: 'calc(41px + 8px)' } : undefined}
-        >
-          <CardHeader>
+        <ExpandableCard expanded={expanded} onExpandedChange={setExpanded}>
+          <ExpandableCardHeader>
             <div className="flex items-center justify-between flex-wrap gap-2">
               {/* Conversion selector */}
               <div className="flex items-center gap-2 flex-wrap">
-                <div className="flex flex-wrap gap-1">
+                <SegmentedControl value={convId} onChange={(v) => handleConvChange(v as ConversionId)} variant="bordered">
                   {CONVERSIONS.map((c) => (
-                    <button
-                      key={c.id}
-                      onClick={() => handleConvChange(c.id)}
-                      className={cn(
-                        'text-[11px] font-mono px-2 py-0.5 rounded-md border transition-colors cursor-pointer',
-                        convId === c.id
-                          ? 'bg-[var(--color-accent)] border-[var(--color-accent)] text-white font-semibold'
-                          : 'border-[var(--color-border)] bg-[var(--color-cream-dark)] text-[var(--color-ink-muted)] hover:border-[var(--color-border-dark)] hover:text-[var(--color-ink)]'
-                      )}
-                    >
+                    <SegmentedControlItem key={c.id} value={c.id} className="text-[11px] font-mono px-2 py-0.5">
                       {c.label}
-                    </button>
+                    </SegmentedControlItem>
                   ))}
-                </div>
+                </SegmentedControl>
                 {error && (
                   <Badge variant="error" className="text-[10px]">Error</Badge>
                 )}
@@ -399,18 +342,12 @@ export default function DataConverterTool() {
                   <Trash2 className="w-3 h-3" />
                   Clear
                 </Button>
-                <button
-                  onClick={() => setExpanded(v => !v)}
-                  title={expanded ? 'Collapse' : 'Expand'}
-                  className="inline-flex items-center justify-center w-7 h-7 rounded-lg text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] hover:bg-[var(--color-cream-dark)] transition-colors cursor-pointer"
-                >
-                  {expanded ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
-                </button>
+                <ExpandToggleButton />
               </div>
             </div>
-          </CardHeader>
+          </ExpandableCardHeader>
 
-          <CardContent>
+          <ExpandableCardContent>
             {/* Error message */}
             {error && (
               <div className="mb-2 px-3 py-2 bg-red-50 border border-red-200 rounded-lg text-[11px] text-red-700 font-mono">
@@ -448,8 +385,8 @@ export default function DataConverterTool() {
                 />
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </ExpandableCardContent>
+        </ExpandableCard>
       </div>
     </>
   )

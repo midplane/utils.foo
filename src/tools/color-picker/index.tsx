@@ -2,6 +2,8 @@ import { useState, useCallback } from 'react'
 import { Card, CardContent, CardHeader } from '../../components/ui/Card'
 import { Input } from '../../components/ui/Input'
 import { CopyButton } from '../../components/ui/CopyButton'
+import { InfoCard } from '../../components/ui/InfoCard'
+import { ToolHeader } from '../../components/ui/ToolHeader'
 import { cn } from '../../lib/utils'
 import { Info, Pipette } from 'lucide-react'
 
@@ -176,15 +178,7 @@ export default function ColorPickerTool() {
 
   return (
     <div className="space-y-4 animate-fade-in">
-      {/* Header */}
-      <div className="flex items-center gap-2">
-        <div className="w-7 h-7 rounded-lg bg-[var(--color-accent)] flex items-center justify-center text-white">
-          <Pipette className="w-3.5 h-3.5" />
-        </div>
-        <h1 className="font-mono text-lg font-semibold text-[var(--color-ink)]">
-          Color <span className="text-[var(--color-accent)]">Picker</span>
-        </h1>
-      </div>
+      <ToolHeader icon={<Pipette />} title="Color" accentedSuffix="Picker" />
 
       {/* Preview + native picker */}
       <Card>
@@ -287,9 +281,9 @@ export default function ColorPickerTool() {
           {/* CSS variable snippet */}
           <div className="flex items-center justify-between px-3 py-2 bg-[var(--color-ink)] rounded-lg">
             <code className="font-mono text-xs text-[var(--color-cream)]">
-              <span className="text-blue-400">--color</span>
+              <span className="text-[var(--color-info-text)]">--color</span>
               {': '}
-              <span className="text-emerald-400">{hex.toUpperCase()}</span>
+              <span className="text-[var(--color-success-text)]">{hex.toUpperCase()}</span>
               {';'}
             </code>
             <CopyButton text={`--color: ${hex.toUpperCase()};`} className="!bg-white/10 !border-white/20 !text-[var(--color-cream)] hover:!bg-white/20" />
@@ -299,28 +293,16 @@ export default function ColorPickerTool() {
 
       {/* Info */}
       <div className="grid grid-cols-2 gap-2">
-        <div className="px-3 py-2 bg-[var(--color-cream-dark)] rounded-lg border border-[var(--color-border)]">
-          <div className="flex gap-2 items-start">
-            <Info className="w-3.5 h-3.5 text-[var(--color-accent)] flex-shrink-0 mt-0.5" />
-            <div>
-              <h3 className="font-semibold text-[var(--color-ink)] text-xs">Click the preview</h3>
-              <p className="text-[10px] text-[var(--color-ink-muted)] leading-tight mt-0.5">
-                Opens your browser's native color picker.
-              </p>
-            </div>
-          </div>
-        </div>
-        <div className="px-3 py-2 bg-[var(--color-cream-dark)] rounded-lg border border-[var(--color-border)]">
-          <div className="flex gap-2 items-start">
-            <Info className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0 mt-0.5" />
-            <div>
-              <h3 className="font-semibold text-[var(--color-ink)] text-xs">rebeccapurple</h3>
-              <p className="text-[10px] text-[var(--color-ink-muted)] leading-tight mt-0.5">
-                Named in CSS spec for Rebecca Meyer (2014).
-              </p>
-            </div>
-          </div>
-        </div>
+        <InfoCard
+          icon={<Info className="text-[var(--color-accent)]" />}
+          title="Click the preview"
+          description="Opens your browser's native color picker."
+        />
+        <InfoCard
+          icon={<Info className="text-[var(--color-success-icon)]" />}
+          title="rebeccapurple"
+          description="Named in CSS spec for Rebecca Meyer (2014)."
+        />
       </div>
     </div>
   )

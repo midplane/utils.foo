@@ -13,6 +13,40 @@
   --color-border: #E7E5E4;
   --color-border-dark: #D6D3D1;
   
+  /* Semantic colors - success (emerald) */
+  --color-success-bg: #ecfdf5;
+  --color-success-bg-subtle: rgba(236, 253, 245, 0.5);
+  --color-success-border: #a7f3d0;
+  --color-success-text: #047857;
+  --color-success-icon: #059669;
+  
+  /* Semantic colors - error (red) */
+  --color-error-bg: #fef2f2;
+  --color-error-bg-subtle: rgba(254, 242, 242, 0.5);
+  --color-error-border: #fecaca;
+  --color-error-text: #b91c1c;
+  --color-error-icon: #ef4444;
+  
+  /* Semantic colors - warning (amber) */
+  --color-warning-bg: #fffbeb;
+  --color-warning-bg-subtle: rgba(255, 251, 235, 0.5);
+  --color-warning-border: #fde68a;
+  --color-warning-text: #b45309;
+  --color-warning-icon: #f59e0b;
+  
+  /* Semantic colors - info (blue) */
+  --color-info-bg: #eff6ff;
+  --color-info-bg-subtle: rgba(239, 246, 255, 0.5);
+  --color-info-border: #bfdbfe;
+  --color-info-text: #1d4ed8;
+  --color-info-icon: #3b82f6;
+  
+  /* Semantic colors - purple (for special highlights) */
+  --color-purple-bg: #faf5ff;
+  --color-purple-bg-subtle: rgba(250, 245, 255, 0.5);
+  --color-purple-border: #e9d5ff;
+  --color-purple-text: #7c3aed;
+  
   --font-mono: 'JetBrains Mono', ui-monospace, monospace;
   --font-serif: Georgia, serif;
   

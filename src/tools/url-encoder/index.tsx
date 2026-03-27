@@ -3,8 +3,14 @@ import { Card, CardContent, CardHeader } from '../../components/ui/Card'
 import { Textarea } from '../../components/ui/Textarea'
 import { Button } from '../../components/ui/Button'
 import { CopyButton } from '../../components/ui/CopyButton'
+import { InfoCard } from '../../components/ui/InfoCard'
+import { ToolHeader } from '../../components/ui/ToolHeader'
+import { FlowDivider } from '../../components/ui/FlowDivider'
+import { SectionLabel } from '../../components/ui/SectionLabel'
+import { SegmentedControl, SegmentedControlItem } from '../../components/ui/SegmentedControl'
+import { Alert } from '../../components/ui/Alert'
 import { cn } from '../../lib/utils'
-import { ArrowLeftRight, ChevronDown, CircleX, Info, Link2, MoveLeft, MoveRight, Trash2 } from 'lucide-react'
+import { ArrowLeftRight, Info, Link2, MoveLeft, MoveRight, Trash2 } from 'lucide-react'
 
 type Mode = 'encode' | 'decode'
 type EncodeType = 'component' | 'full'
@@ -91,14 +97,7 @@ export default function UrlEncoderTool() {
   return (
     <div className="space-y-4 animate-fade-in">
       {/* Breadcrumb & Header */}
-      <div className="flex items-center gap-2">
-        <div className="w-7 h-7 rounded-lg bg-[var(--color-accent)] flex items-center justify-center text-white">
-          <Link2 className="w-3.5 h-3.5" />
-        </div>
-        <h1 className="font-mono text-lg font-semibold text-[var(--color-ink)]">
-          URL <span className="text-[var(--color-accent)]">Encoder</span>
-        </h1>
-      </div>
+      <ToolHeader icon={<Link2 />} title="URL" accentedSuffix="Encoder" />
 
       {/* Main Card */}
       <Card>
@@ -106,58 +105,22 @@ export default function UrlEncoderTool() {
           <div className="flex items-center justify-between flex-wrap gap-2">
             <div className="flex gap-2 flex-wrap">
               {/* Mode Toggle */}
-              <div className="flex bg-[var(--color-cream-dark)] rounded-lg p-0.5 border border-[var(--color-border)]">
-                <button
-                  onClick={() => handleModeChange('encode')}
-                  className={cn(
-                    'px-3 py-1.5 text-xs font-medium rounded-md transition-all flex items-center gap-1.5',
-                    mode === 'encode'
-                      ? 'bg-white text-[var(--color-ink)] shadow-sm'
-                      : 'text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]'
-                  )}
-                >
+              <SegmentedControl value={mode} onChange={(val) => handleModeChange(val as Mode)}>
+                <SegmentedControlItem value="encode" className="flex items-center gap-1.5">
                   <MoveRight className="w-3 h-3" />
                   Encode
-                </button>
-                <button
-                  onClick={() => handleModeChange('decode')}
-                  className={cn(
-                    'px-3 py-1.5 text-xs font-medium rounded-md transition-all flex items-center gap-1.5',
-                    mode === 'decode'
-                      ? 'bg-white text-[var(--color-ink)] shadow-sm'
-                      : 'text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]'
-                  )}
-                >
+                </SegmentedControlItem>
+                <SegmentedControlItem value="decode" className="flex items-center gap-1.5">
                   <MoveLeft className="w-3 h-3" />
                   Decode
-                </button>
-              </div>
+                </SegmentedControlItem>
+              </SegmentedControl>
               
               {/* Encode Type Toggle */}
-              <div className="flex bg-[var(--color-cream-dark)] rounded-lg p-0.5 border border-[var(--color-border)]">
-                <button
-                  onClick={() => handleEncodeTypeChange('component')}
-                  className={cn(
-                    'px-2 py-1.5 text-xs font-medium rounded-md transition-all',
-                    encodeType === 'component'
-                      ? 'bg-white text-[var(--color-ink)] shadow-sm'
-                      : 'text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]'
-                  )}
-                >
-                  Component
-                </button>
-                <button
-                  onClick={() => handleEncodeTypeChange('full')}
-                  className={cn(
-                    'px-2 py-1.5 text-xs font-medium rounded-md transition-all',
-                    encodeType === 'full'
-                      ? 'bg-white text-[var(--color-ink)] shadow-sm'
-                      : 'text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]'
-                  )}
-                >
-                  Full URL
-                </button>
-              </div>
+              <SegmentedControl value={encodeType} onChange={(val) => handleEncodeTypeChange(val as EncodeType)}>
+                <SegmentedControlItem value="component">Component</SegmentedControlItem>
+                <SegmentedControlItem value="full">Full URL</SegmentedControlItem>
+              </SegmentedControl>
             </div>
             
             {/* Actions */}
@@ -194,32 +157,18 @@ export default function UrlEncoderTool() {
 
           {/* Error */}
           {error && (
-            <div className="flex items-center gap-2 px-2.5 py-1.5 bg-red-50 border border-red-200 rounded-lg text-red-700">
-              <CircleX className="w-3 h-3 text-red-500 flex-shrink-0" />
-              <span className="text-xs font-medium">{error}</span>
-            </div>
+            <Alert variant="error" size="sm">{error}</Alert>
           )}
 
           {/* Arrow Divider */}
-          <div className="flex items-center gap-2">
-            <div className="flex-1 h-px bg-[var(--color-border)]" />
-            <div className={cn(
-              "p-1 rounded-full border transition-colors",
-              output 
-                ? "bg-emerald-50 border-emerald-200 text-emerald-600" 
-                : "bg-[var(--color-cream-dark)] border-[var(--color-border)] text-[var(--color-ink-muted)]"
-            )}>
-              <ChevronDown className="w-3 h-3" />
-            </div>
-            <div className="flex-1 h-px bg-[var(--color-border)]" />
-          </div>
+          <FlowDivider hasOutput={!!output} />
 
           {/* Output */}
           <div className="space-y-1">
             <div className="flex items-center justify-between">
-              <label className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-ink-muted)]">
+              <SectionLabel>
                 {mode === 'encode' ? 'Encoded URL' : 'Decoded text'}
-              </label>
+              </SectionLabel>
               {output && <CopyButton text={output} />}
             </div>
             <Textarea
@@ -229,7 +178,7 @@ export default function UrlEncoderTool() {
               placeholder="Output will appear here..."
               className={cn(
                 "font-mono text-sm",
-                output ? "bg-emerald-50/50 border-emerald-200" : "bg-[var(--color-cream-dark)]"
+                output ? "bg-[var(--color-success-bg-subtle)] border-[var(--color-success-border)]" : "bg-[var(--color-cream-dark)]"
               )}
               id="output"
             />
@@ -244,28 +193,16 @@ export default function UrlEncoderTool() {
 
       {/* Info */}
       <div className="grid grid-cols-2 gap-2">
-        <div className="px-3 py-2 bg-[var(--color-cream-dark)] rounded-lg border border-[var(--color-border)]">
-          <div className="flex gap-2 items-start">
-            <Info className="w-3.5 h-3.5 text-[var(--color-accent)] flex-shrink-0 mt-0.5" />
-            <div>
-              <h3 className="font-semibold text-[var(--color-ink)] text-xs">Component Mode</h3>
-              <p className="text-[10px] text-[var(--color-ink-muted)] leading-tight mt-0.5">
-                Encodes all special chars including / : ? & =
-              </p>
-            </div>
-          </div>
-        </div>
-        <div className="px-3 py-2 bg-[var(--color-cream-dark)] rounded-lg border border-[var(--color-border)]">
-          <div className="flex gap-2 items-start">
-            <Info className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0 mt-0.5" />
-            <div>
-              <h3 className="font-semibold text-[var(--color-ink)] text-xs">Full URL Mode</h3>
-              <p className="text-[10px] text-[var(--color-ink-muted)] leading-tight mt-0.5">
-                Preserves URL structure chars like / : ? & =
-              </p>
-            </div>
-          </div>
-        </div>
+        <InfoCard
+          icon={<Info className="text-[var(--color-accent)]" />}
+          title="Component Mode"
+          description="Encodes all special chars including / : ? & ="
+        />
+        <InfoCard
+          icon={<Info className="text-[var(--color-success-icon)]" />}
+          title="Full URL Mode"
+          description="Preserves URL structure chars like / : ? & ="
+        />
       </div>
     </div>
   )
