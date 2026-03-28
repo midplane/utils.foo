@@ -239,7 +239,7 @@ export default function UnicodeConverterTool() {
                     key={idx}
                     className="p-2 bg-[var(--color-success-bg-subtle)] border border-[var(--color-success-border)] rounded-lg flex items-start gap-3"
                   >
-                    <div className="w-10 h-10 flex items-center justify-center bg-[var(--color-cream)] border border-[var(--color-success-border)] rounded-lg text-2xl">
+                    <div className="w-10 h-10 flex items-center justify-center bg-white border border-[var(--color-success-border)] rounded-lg text-2xl">
                       {info.char}
                     </div>
                     <div className="flex-1 grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-1 text-xs">

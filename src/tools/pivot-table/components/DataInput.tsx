@@ -45,7 +45,7 @@ export function DataInput({ value, onChange, error, onLoadSample }: DataInputPro
           rows={5}
           placeholder="Paste CSV data here..."
           spellCheck={false}
-          className="w-full px-3 py-2 text-xs font-mono bg-[var(--color-cream)] border border-[var(--color-border)] rounded-lg text-[var(--color-ink)] placeholder-[var(--color-ink-muted)] focus:outline-none focus:border-[var(--color-accent)] focus:ring-1 focus:ring-[var(--color-accent)]/20 resize-y transition-all"
+          className="w-full px-3 py-2 text-xs font-mono bg-white border border-[var(--color-border)] rounded-lg text-[var(--color-ink)] placeholder-[var(--color-ink-muted)] focus:outline-none focus:border-[var(--color-accent)] focus:ring-1 focus:ring-[var(--color-accent)]/20 resize-y transition-all"
         />
 
         {error && (
@@ -63,7 +63,7 @@ export function DataInput({ value, onChange, error, onLoadSample }: DataInputPro
               className="sr-only"
               onChange={handleFile}
             />
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg border border-[var(--color-border)] bg-[var(--color-cream)] text-[var(--color-ink)] hover:border-[var(--color-ink-muted)] transition-all cursor-pointer">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg border border-[var(--color-border)] bg-white text-[var(--color-ink)] hover:border-[var(--color-ink-muted)] transition-all cursor-pointer">
               <Upload className="w-3.5 h-3.5" />
               Upload File
             </span>

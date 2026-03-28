@@ -210,7 +210,7 @@ export default function MarkdownPreviewTool() {
               {/* ── Preview pane ──────────────────────────────────────────── */}
               <div
                 className={cn(
-                  'overflow-y-auto rounded-lg border border-[var(--color-border)] bg-[var(--color-cream)] px-5 py-4',
+                  'overflow-y-auto rounded-lg border border-[var(--color-border)] bg-white px-5 py-4',
                   viewMode === 'editor' && 'hidden',
                 )}
                 style={{ height: EDITOR_HEIGHT }}

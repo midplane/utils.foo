@@ -146,7 +146,7 @@ export default function PasswordGeneratorTool() {
                     'px-3 py-2 text-xs rounded-lg border text-left transition-all',
                     enabled[key]
                       ? 'bg-[var(--color-accent)]/10 border-[var(--color-accent)] text-[var(--color-accent)]'
-                      : 'bg-[var(--color-cream)] border-[var(--color-border)] text-[var(--color-ink-muted)]'
+                      : 'bg-white border-[var(--color-border)] text-[var(--color-ink-muted)]'
                   )}
                 >
                   <span className="font-semibold capitalize">{key}</span>
@@ -165,7 +165,7 @@ export default function PasswordGeneratorTool() {
               'w-full flex items-center gap-2 px-3 py-2 text-xs rounded-lg border transition-all text-left',
               excludeAmbiguous
                 ? 'bg-[var(--color-accent)]/10 border-[var(--color-accent)] text-[var(--color-accent)]'
-                : 'bg-[var(--color-cream)] border-[var(--color-border)] text-[var(--color-ink-muted)]'
+                : 'bg-white border-[var(--color-border)] text-[var(--color-ink-muted)]'
             )}
           >
             <div className={cn(
