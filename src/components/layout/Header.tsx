@@ -1,6 +1,10 @@
 import { Link } from 'react-router-dom'
+import { Moon, Sun } from 'lucide-react'
+import { useTheme } from '../../hooks/useTheme'
 
 export function Header() {
+  const { theme, toggleTheme } = useTheme()
+
   return (
     <header className="border-b border-[var(--color-border)] bg-[var(--color-cream)]/80 backdrop-blur-sm sticky top-0 z-50">
       <div className="max-w-5xl mx-auto px-4 py-3.5 flex items-center justify-between">
@@ -14,7 +18,7 @@ export function Header() {
             utils<span className="text-[var(--color-accent)]">.</span>foo
           </span>
         </Link>
-        
+
         <div className="flex items-center gap-2">
           <div className="hidden sm:flex items-center gap-1.5 px-2 py-1 bg-[var(--color-cream-dark)] rounded-full border border-[var(--color-border)]">
             <div className="relative flex items-center justify-center">
@@ -28,6 +32,13 @@ export function Header() {
           <span className="hidden md:block text-[10px] text-[var(--color-ink-muted)]">
             Your data never leaves your browser
           </span>
+          <button
+            onClick={toggleTheme}
+            aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+            className="p-1.5 rounded-md text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] hover:bg-[var(--color-cream-dark)] border border-transparent hover:border-[var(--color-border)] transition-colors duration-200"
+          >
+            {theme === 'dark' ? <Sun size={14} /> : <Moon size={14} />}
+          </button>
         </div>
       </div>
     </header>

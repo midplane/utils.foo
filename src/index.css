@@ -241,6 +241,71 @@ body {
   border-color: #EA580C;
 }
 
+/* ─── Dark mode ────────────────────────────────────────────────────────────── */
+html.dark {
+  /* Base */
+  --color-cream: #1A1512;
+  --color-cream-dark: #221E1B;
+
+  --color-ink: #F2EDE8;
+  --color-ink-light: #D4CEC8;
+  --color-ink-muted: #9D9189;
+
+  --color-border: #302B28;
+  --color-border-dark: #3A3532;
+
+  /* Semantic - success */
+  --color-success-bg: #052e16;
+  --color-success-bg-subtle: rgba(5, 46, 22, 0.5);
+  --color-success-border: #166534;
+  --color-success-text: #4ade80;
+  --color-success-icon: #22c55e;
+
+  /* Semantic - error */
+  --color-error-bg: #2d0a0a;
+  --color-error-bg-subtle: rgba(45, 10, 10, 0.5);
+  --color-error-border: #991b1b;
+  --color-error-text: #f87171;
+  --color-error-icon: #ef4444;
+
+  /* Semantic - warning */
+  --color-warning-bg: #2d1a00;
+  --color-warning-bg-subtle: rgba(45, 26, 0, 0.5);
+  --color-warning-border: #92400e;
+  --color-warning-text: #fbbf24;
+  --color-warning-icon: #f59e0b;
+
+  /* Semantic - info */
+  --color-info-bg: #0d1f3d;
+  --color-info-bg-subtle: rgba(13, 31, 61, 0.5);
+  --color-info-border: #1e40af;
+  --color-info-text: #60a5fa;
+  --color-info-icon: #3b82f6;
+
+  /* Semantic - purple */
+  --color-purple-bg: #1e0a3c;
+  --color-purple-bg-subtle: rgba(30, 10, 60, 0.5);
+  --color-purple-border: #6d28d9;
+  --color-purple-text: #a78bfa;
+
+  /* Shadows */
+  --shadow-soft: 0 1px 2px rgba(0, 0, 0, 0.3), 0 4px 12px rgba(0, 0, 0, 0.4);
+  --shadow-medium: 0 2px 4px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.45);
+  --shadow-lifted: 0 4px 8px rgba(0, 0, 0, 0.35), 0 16px 40px rgba(0, 0, 0, 0.5);
+}
+
+/* Dark mode: CodeMirror merge revert buttons */
+html.dark .cm-mergeRevert {
+  background: #221E1B;
+  border-color: #302B28;
+  color: #9D9189;
+}
+html.dark .cm-mergeRevert:hover {
+  background: #2d2118;
+  color: #EA580C;
+  border-color: #EA580C;
+}
+
 /* Noise texture overlay (optional, for grain effect) */
 .noise-overlay::before {
   content: '';

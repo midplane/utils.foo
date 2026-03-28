@@ -160,7 +160,7 @@ export default function UuidGeneratorTool() {
                   ))}
                 </SegmentedControl>
                 <input
-                  className="w-full px-3 py-2 text-xs font-mono bg-white border border-[var(--color-border)] rounded-lg focus:outline-none focus:border-[var(--color-accent)] transition-colors"
+                  className="w-full px-3 py-2 text-xs font-mono bg-[var(--color-cream)] border border-[var(--color-border)] rounded-lg focus:outline-none focus:border-[var(--color-accent)] transition-colors"
                   value={v5Namespace}
                   onChange={e => setV5Namespace(e.target.value)}
                   placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
@@ -170,7 +170,7 @@ export default function UuidGeneratorTool() {
               <div className="space-y-1">
                 <SectionLabel>Name</SectionLabel>
                 <input
-                  className="w-full px-3 py-2 text-xs font-mono bg-white border border-[var(--color-border)] rounded-lg focus:outline-none focus:border-[var(--color-accent)] transition-colors"
+                  className="w-full px-3 py-2 text-xs font-mono bg-[var(--color-cream)] border border-[var(--color-border)] rounded-lg focus:outline-none focus:border-[var(--color-accent)] transition-colors"
                   value={v5Name}
                   onChange={e => setV5Name(e.target.value)}
                   placeholder="e.g. example.com"
@@ -253,7 +253,7 @@ export default function UuidGeneratorTool() {
               <span className="text-[10px] text-[var(--color-ink-muted)] font-mono">122 bits of entropy</span>
             </div>
             <p className="text-[11px] text-[var(--color-ink-muted)] leading-relaxed">
-              Generated entirely from random (or pseudo-random) numbers. Version and variant bits are fixed; the remaining 122 bits come from <code className="text-[10px] bg-white border border-[var(--color-border)] rounded px-1">crypto.getRandomValues()</code>. Two independently generated v4 UUIDs will collide with probability ~1 in 5.3&times;10<sup>36</sup>.
+              Generated entirely from random (or pseudo-random) numbers. Version and variant bits are fixed; the remaining 122 bits come from <code className="text-[10px] bg-[var(--color-cream)] border border-[var(--color-border)] rounded px-1">crypto.getRandomValues()</code>. Two independently generated v4 UUIDs will collide with probability ~1 in 5.3&times;10<sup>36</sup>.
             </p>
             <p className="text-[11px] text-[var(--color-ink-muted)] leading-relaxed mt-1">
               <strong className="text-[var(--color-ink)]">Use when:</strong> you need a unique ID and don't care about ordering or reproducibility — the right choice for most applications.
@@ -271,7 +271,7 @@ export default function UuidGeneratorTool() {
               Derived by hashing a <strong className="text-[var(--color-ink)]">namespace UUID</strong> concatenated with a <strong className="text-[var(--color-ink)]">name</strong> using SHA-1, then truncating to 128 bits and stamping the version/variant. The same namespace + name pair always produces the same UUID — on any machine, at any time.
             </p>
             <p className="text-[11px] text-[var(--color-ink-muted)] leading-relaxed mt-1">
-              <strong className="text-[var(--color-ink)]">Use when:</strong> you need a stable, reproducible ID for a named resource — e.g. mapping <code className="text-[10px] bg-white border border-[var(--color-border)] rounded px-1">dns:example.com</code> to a consistent UUID across systems without coordination.
+              <strong className="text-[var(--color-ink)]">Use when:</strong> you need a stable, reproducible ID for a named resource — e.g. mapping <code className="text-[10px] bg-[var(--color-cream)] border border-[var(--color-border)] rounded px-1">dns:example.com</code> to a consistent UUID across systems without coordination.
             </p>
             <p className="text-[11px] text-[var(--color-ink-muted)] leading-relaxed mt-1">
               <strong className="text-[var(--color-ink)]">Note:</strong> SHA-1 is considered cryptographically weak for security purposes, but v5 is designed for identity, not secrecy. Use v8 with SHA-256 if collision resistance is critical.
@@ -289,7 +289,7 @@ export default function UuidGeneratorTool() {
               Encodes a Unix millisecond timestamp in the most-significant 48 bits, followed by a 4-bit version, 12 bits of random data, a 2-bit variant, and 62 more random bits. Because the timestamp comes first, v7 UUIDs sort lexicographically in creation order.
             </p>
             <p className="text-[11px] text-[var(--color-ink-muted)] leading-relaxed mt-1">
-              <strong className="text-[var(--color-ink)]">Use when:</strong> UUIDs are stored as primary keys in a database — sorted inserts avoid page splits in B-tree indexes (the same problem <code className="text-[10px] bg-white border border-[var(--color-border)] rounded px-1">ULID</code> and <code className="text-[10px] bg-white border border-[var(--color-border)] rounded px-1">CUID2</code> solve). PostgreSQL, MySQL, and SQLite all benefit from this ordering. Standardised in RFC 9562 (2024).
+              <strong className="text-[var(--color-ink)]">Use when:</strong> UUIDs are stored as primary keys in a database — sorted inserts avoid page splits in B-tree indexes (the same problem <code className="text-[10px] bg-[var(--color-cream)] border border-[var(--color-border)] rounded px-1">ULID</code> and <code className="text-[10px] bg-[var(--color-cream)] border border-[var(--color-border)] rounded px-1">CUID2</code> solve). PostgreSQL, MySQL, and SQLite all benefit from this ordering. Standardised in RFC 9562 (2024).
             </p>
           </div>
         </div>
