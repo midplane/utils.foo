@@ -89,6 +89,21 @@ const PROSE_STYLES = `
   .md-body tr:nth-child(even) { background: #FFFBF5; }
   .md-body img { max-width: 100%; border-radius: 6px; }
   .md-body hr { border: none; border-top: 1px solid #E7E5E4; margin: 1.2em 0; }
+
+  /* ── Dark mode overrides ── */
+  .dark .md-body { color: #F2EDE8; }
+  .dark .md-body h1,.dark .md-body h2,.dark .md-body h3,.dark .md-body h4 { color: #F2EDE8; }
+  .dark .md-body h1 { border-bottom-color: #3A3430; }
+  .dark .md-body h2 { border-bottom-color: #3A3430; }
+  .dark .md-body a { color: #F97316; }
+  .dark .md-body code { background: #332A1E; border-color: #4A4440; color: #F2EDE8; }
+  .dark .md-body pre { background: #141210; }
+  .dark .md-body pre code { color: #CFC8C1; }
+  .dark .md-body blockquote { color: #9A8F88; background: #231F1C; border-left-color: #F97316; }
+  .dark .md-body th { background: #231F1C; color: #F2EDE8; }
+  .dark .md-body th,.dark .md-body td { border-color: #3A3430; color: #F2EDE8; }
+  .dark .md-body tr:nth-child(even) { background: #2C2621; }
+  .dark .md-body hr { border-top-color: #3A3430; }
 `
 
 // ─── View modes ───────────────────────────────────────────────────────────────
