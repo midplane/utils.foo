@@ -26,7 +26,7 @@ export function CopyButton({ text, className, children, ...props }: CopyButtonPr
       onClick={handleCopy}
       className={cn(
         'gap-1',
-        copied && 'bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-50',
+        copied && 'bg-[var(--color-success-bg)] border-[var(--color-success-border)] text-[var(--color-success-text)] hover:bg-[var(--color-success-bg)]',
         className
       )}
       {...props}

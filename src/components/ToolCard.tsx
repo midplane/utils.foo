@@ -24,7 +24,7 @@ export function ToolCard({ tool, index = 0, isFavorite = false, onToggleFavorite
       className={`group block opacity-0 animate-fade-in-up stagger-${Math.min(index + 1, 6)}`}
       style={{ animationFillMode: 'forwards' }}
     >
-      <div className="h-full p-3 bg-white rounded-lg border border-[var(--color-border)] hover:border-[var(--color-border-dark)] hover:shadow-[var(--shadow-soft)] transition-all relative overflow-hidden">
+      <div className="h-full p-3 bg-[var(--color-surface)] rounded-lg border border-[var(--color-border)] hover:border-[var(--color-border-dark)] hover:shadow-[var(--shadow-soft)] transition-all relative overflow-hidden">
         {/* Favorite button */}
         <button
           type="button"

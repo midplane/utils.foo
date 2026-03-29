@@ -20,7 +20,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
             ref={ref}
             id={id}
             className={cn(
-              'w-full px-2.5 py-1.5 text-sm bg-white border border-[var(--color-border)] rounded-lg text-[var(--color-ink)] appearance-none cursor-pointer',
+              'w-full px-2.5 py-1.5 text-sm bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg text-[var(--color-ink)] appearance-none cursor-pointer',
               'focus:outline-none focus:border-[var(--color-border-dark)] focus:ring-1 focus:ring-[var(--color-ink)]/5',
               'disabled:bg-[var(--color-cream-dark)] disabled:text-[var(--color-ink-muted)] disabled:cursor-not-allowed',
               'transition-colors',

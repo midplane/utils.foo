@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect, useRef, useCallback } from 'react'
 import { renderMermaidSVG, THEMES } from 'beautiful-mermaid'
 import { basicSetup } from 'codemirror'
 import { EditorView } from '@codemirror/view'
+import { Compartment } from '@codemirror/state'
 import { EditorState } from '@codemirror/state'
 import { StreamLanguage } from '@codemirror/language'
 import { stex } from '@codemirror/legacy-modes/mode/stex'
@@ -19,7 +20,8 @@ import {
 } from '../../components/ui/ExpandableCard'
 import { Workflow, Trash2, Download, Code, Eye, Columns2, ZoomIn, ZoomOut, Shrink } from 'lucide-react'
 import { cn } from '../../lib/utils'
-import { appTheme } from '../../lib/codemirrorTheme'
+import { appTheme, appThemeDark } from '../../lib/codemirrorTheme'
+import { useTheme } from '../../contexts/ThemeContext'
 
 // ─── Samples ──────────────────────────────────────────────────────────────────
 
@@ -231,9 +233,13 @@ export default function MermaidTool() {
   const [themeName, setThemeName] = useState('zinc-light')
   const [viewMode, setViewMode] = useState<ViewMode>('split')
   const { expanded, setExpanded } = useExpandable()
+  const { isDark } = useTheme()
+  const isDarkRef = useRef(isDark)
+  isDarkRef.current = isDark
 
   const editorContainerRef = useRef<HTMLDivElement>(null)
   const editorViewRef = useRef<EditorView | null>(null)
+  const themeComp = useRef(new Compartment())
 
   // ── Render SVG synchronously via useMemo ────────────────────────────────────
   const { svg, error, svgW, svgH } = useMemo(() => {
@@ -291,7 +297,7 @@ export default function MermaidTool() {
       extensions: [
         basicSetup,
         StreamLanguage.define(stex),
-        appTheme,
+        themeComp.current.of(isDarkRef.current ? appThemeDark : appTheme),
         EditorView.lineWrapping,
         EditorView.updateListener.of((update) => {
           if (update.docChanged) setCode(update.state.doc.toString())
@@ -303,6 +309,13 @@ export default function MermaidTool() {
     editorViewRef.current = view
     return () => { view.destroy(); editorViewRef.current = null }
   }, [])
+
+  // Reconfigure CodeMirror syntax highlighting when dark mode changes
+  useEffect(() => {
+    const view = editorViewRef.current
+    if (!view) return
+    view.dispatch({ effects: themeComp.current.reconfigure(isDark ? appThemeDark : appTheme) })
+  }, [isDark])
 
   // ── Replace editor content ──────────────────────────────────────────────────
   const setEditorContent = useCallback((text: string) => {

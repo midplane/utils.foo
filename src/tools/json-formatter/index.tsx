@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Braces, AlignLeft, ChevronsLeftRight, CircleCheck, RefreshCw, Trash2, ListFilter, Play, X, HelpCircle } from "lucide-react";
 import { basicSetup } from "codemirror";
 import { EditorView } from "@codemirror/view";
-import { EditorState } from "@codemirror/state";
+import { EditorState, Compartment } from "@codemirror/state";
 import { json, jsonParseLinter } from "@codemirror/lang-json";
 import { linter, lintGutter } from "@codemirror/lint";
 import { JSONPath } from "jsonpath-plus";
@@ -21,7 +21,8 @@ import {
   ExpandHint,
 } from "../../components/ui/ExpandableCard";
 import { cn } from "../../lib/utils";
-import { appTheme } from "../../lib/codemirrorTheme";
+import { appTheme, appThemeDark } from "../../lib/codemirrorTheme";
+import { useTheme } from "../../contexts/ThemeContext";
 
 // ─── Validation helpers ────────────────────────────────────────────────────────
 
@@ -74,10 +75,15 @@ const JSONPATH_CHEATSHEET = [
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function JsonFormatterTool() {
+  const { isDark } = useTheme();
+  const isDarkRef = useRef(isDark);
+  isDarkRef.current = isDark;
+
   const editorContainerRef = useRef<HTMLDivElement>(null);
   const editorViewRef = useRef<EditorView | null>(null);
   const resultContainerRef = useRef<HTMLDivElement>(null);
   const resultViewRef = useRef<EditorView | null>(null);
+  const themeComp = useRef(new Compartment());
 
   const [charCount, setCharCount] = useState(0);
   const [lineCount, setLineCount] = useState(0);
@@ -103,7 +109,7 @@ export default function JsonFormatterTool() {
       extensions: [
         basicSetup,
         json(),
-        appTheme,
+        themeComp.current.of(isDarkRef.current ? appThemeDark : appTheme),
         EditorState.readOnly.of(true),
         EditorView.editable.of(false),
         EditorView.lineWrapping,
@@ -143,7 +149,7 @@ export default function JsonFormatterTool() {
         json(),
         lintGutter(),
         linter(jsonParseLinter()),
-        appTheme,
+        themeComp.current.of(isDarkRef.current ? appThemeDark : appTheme),
         EditorView.updateListener.of(
           (update: import("@codemirror/view").ViewUpdate) => {
             if (update.docChanged) {
@@ -171,6 +177,14 @@ export default function JsonFormatterTool() {
       editorViewRef.current = null;
     };
   }, []);
+
+  // Reconfigure CodeMirror syntax highlighting when dark mode changes
+  useEffect(() => {
+    const theme = isDark ? appThemeDark : appTheme;
+    const effect = themeComp.current.reconfigure(theme);
+    editorViewRef.current?.dispatch({ effects: effect });
+    resultViewRef.current?.dispatch({ effects: effect });
+  }, [isDark]);
 
   // ── Replace editor content ──────────────────────────────────────────────────
   const setEditorContent = useCallback((text: string) => {

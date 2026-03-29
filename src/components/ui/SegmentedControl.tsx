@@ -68,7 +68,7 @@ export function SegmentedControlItem({ value, children, className, disabled, tit
         'inline-flex items-center justify-center gap-1 px-3 py-1.5 text-xs font-medium rounded-md transition-all cursor-pointer',
         variant === 'pill' && (
           isSelected
-            ? 'bg-white text-[var(--color-ink)] shadow-sm'
+            ? 'bg-[var(--color-surface)] text-[var(--color-ink)] shadow-sm'
             : 'text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]'
         ),
         variant === 'accent' && (
@@ -84,7 +84,7 @@ export function SegmentedControlItem({ value, children, className, disabled, tit
         variant === 'ink' && (
           isSelected
             ? 'bg-[var(--color-ink)] border border-[var(--color-ink)] text-[var(--color-cream)]'
-            : 'border border-[var(--color-border)] bg-white text-[var(--color-ink)] hover:border-[var(--color-ink-muted)]'
+            : 'border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-ink)] hover:border-[var(--color-ink-muted)]'
         ),
         disabled && 'opacity-50 cursor-not-allowed',
         className

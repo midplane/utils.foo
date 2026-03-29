@@ -224,7 +224,7 @@ export default function QrGeneratorTool() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <SectionLabel className="block mb-1.5">Foreground</SectionLabel>
-                  <div className="flex items-center gap-2 px-2.5 py-1.5 border border-[var(--color-border)] rounded-lg bg-white">
+                  <div className="flex items-center gap-2 px-2.5 py-1.5 border border-[var(--color-border)] rounded-lg bg-[var(--color-surface)]">
                     <div className="relative w-5 h-5 rounded flex-shrink-0 overflow-hidden border border-[var(--color-border)]"
                       style={{ backgroundColor: fgColor }}>
                       <input
@@ -245,7 +245,7 @@ export default function QrGeneratorTool() {
                 </div>
                 <div>
                   <SectionLabel className="block mb-1.5">Background</SectionLabel>
-                  <div className="flex items-center gap-2 px-2.5 py-1.5 border border-[var(--color-border)] rounded-lg bg-white">
+                  <div className="flex items-center gap-2 px-2.5 py-1.5 border border-[var(--color-border)] rounded-lg bg-[var(--color-surface)]">
                     <div className="relative w-5 h-5 rounded flex-shrink-0 overflow-hidden border border-[var(--color-border)]"
                       style={{ backgroundColor: bgColor }}>
                       <input

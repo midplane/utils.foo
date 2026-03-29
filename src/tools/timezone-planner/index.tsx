@@ -234,7 +234,7 @@ function SearchDropdown({
 
   return (
     <div ref={ref} className="relative">
-      <div className="flex items-center gap-1 bg-white border border-[var(--color-border)] rounded-lg px-2.5 py-1.5 focus-within:border-[var(--color-border-dark)]">
+      <div className="flex items-center gap-1 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-2.5 py-1.5 focus-within:border-[var(--color-border-dark)]">
         <Search className="w-3.5 h-3.5 text-[var(--color-ink-muted)] shrink-0" />
         <input
           ref={inputRef}
@@ -247,7 +247,7 @@ function SearchDropdown({
         />
       </div>
       {open && filtered.length > 0 && (
-        <div className="absolute top-full mt-1 left-0 right-0 bg-white border border-[var(--color-border)] rounded-lg shadow-[var(--shadow-medium)] z-50 overflow-hidden">
+        <div className="absolute top-full mt-1 left-0 right-0 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg shadow-[var(--shadow-medium)] z-50 overflow-hidden">
           {filtered.map(t => {
             const { abbr, offsetMinutes } = getTZInfo(t.iana)
             return (
@@ -364,7 +364,7 @@ function TZRow({
             ? 'bg-[var(--color-success-bg-subtle)]'
             : cellColor === 'partial'
             ? 'bg-[var(--color-warning-bg-subtle)]'
-            : 'bg-white'
+            : 'bg-[var(--color-surface)]'
 
           const borderColor = isNow
             ? 'border-l border-[var(--color-accent)]/80'
@@ -551,7 +551,7 @@ export default function TimezonePlanner() {
             <ChevronDown className={`w-3 h-3 transition-transform ${showAddPreset ? 'rotate-180' : ''}`} />
           </Button>
           {showAddPreset && (
-            <div className="absolute top-full mt-1 left-0 bg-white border border-[var(--color-border)] rounded-lg shadow-[var(--shadow-medium)] z-50 overflow-hidden min-w-[160px]">
+            <div className="absolute top-full mt-1 left-0 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg shadow-[var(--shadow-medium)] z-50 overflow-hidden min-w-[160px]">
               {PRESETS.map(p => (
                 <button
                   key={p.label}
@@ -771,7 +771,7 @@ function WorkHoursPanel({
   return (
     <div
       ref={ref}
-      className="absolute top-full mt-1 left-0 bg-white border border-[var(--color-border)] rounded-lg shadow-[var(--shadow-medium)] z-50 p-3 min-w-[200px]"
+      className="absolute top-full mt-1 left-0 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg shadow-[var(--shadow-medium)] z-50 p-3 min-w-[200px]"
     >
       <div className="text-[9px] font-semibold uppercase tracking-wider text-[var(--color-ink-muted)] mb-2">Working Hours</div>
       <div className="space-y-2">
@@ -780,7 +780,7 @@ function WorkHoursPanel({
           <select
             value={workStart}
             onChange={e => onChange(parseInt(e.target.value), workEnd)}
-            className="flex-1 text-xs bg-white border border-[var(--color-border)] rounded px-1.5 py-1 text-[var(--color-ink)] cursor-pointer focus:outline-none"
+            className="flex-1 text-xs bg-[var(--color-surface)] border border-[var(--color-border)] rounded px-1.5 py-1 text-[var(--color-ink)] cursor-pointer focus:outline-none"
           >
             {Array.from({ length: 24 }, (_, i) => (
               <option key={i} value={i}>{formatHour(i)}</option>
@@ -792,7 +792,7 @@ function WorkHoursPanel({
           <select
             value={workEnd}
             onChange={e => onChange(workStart, parseInt(e.target.value))}
-            className="flex-1 text-xs bg-white border border-[var(--color-border)] rounded px-1.5 py-1 text-[var(--color-ink)] cursor-pointer focus:outline-none"
+            className="flex-1 text-xs bg-[var(--color-surface)] border border-[var(--color-border)] rounded px-1.5 py-1 text-[var(--color-ink)] cursor-pointer focus:outline-none"
           >
             {Array.from({ length: 24 }, (_, i) => (
               <option key={i} value={i}>{formatHour(i)}</option>
@@ -812,7 +812,7 @@ function WorkHoursPanel({
             className={`px-2 py-0.5 text-[9px] rounded border cursor-pointer transition-colors ${
               workStart === p.s && workEnd === p.e
                 ? 'bg-[var(--color-ink)] text-[var(--color-cream)] border-[var(--color-ink)]'
-                : 'bg-white text-[var(--color-ink-muted)] border-[var(--color-border)] hover:border-[var(--color-border-dark)]'
+                : 'bg-[var(--color-surface)] text-[var(--color-ink-muted)] border-[var(--color-border)] hover:border-[var(--color-border-dark)]'
             }`}
           >
             {p.label}

@@ -47,12 +47,70 @@
   --color-purple-border: #e9d5ff;
   --color-purple-text: #7c3aed;
   
+  /* Surface color for elevated elements (cards, inputs) */
+  --color-surface: #FFFFFF;
+  /* CodeMirror active-line gutter background */
+  --color-editor-active-line: #FEF3C7;
+
   --font-mono: 'JetBrains Mono', ui-monospace, monospace;
   --font-serif: Georgia, serif;
-  
+
   --shadow-soft: 0 1px 2px rgba(28, 25, 23, 0.04), 0 4px 12px rgba(28, 25, 23, 0.06);
   --shadow-medium: 0 2px 4px rgba(28, 25, 23, 0.04), 0 8px 24px rgba(28, 25, 23, 0.08);
   --shadow-lifted: 0 4px 8px rgba(28, 25, 23, 0.04), 0 16px 40px rgba(28, 25, 23, 0.12);
+}
+
+/* ─── Dark mode overrides ──────────────────────────────────────────────────── */
+.dark {
+  --color-cream: #1C1917;
+  --color-cream-dark: #231F1C;
+  --color-surface: #2C2621;
+  --color-ink: #F2EDE8;
+  --color-ink-light: #CFC8C1;
+  --color-ink-muted: #9A8F88;
+  --color-accent: #F97316;
+  --color-accent-hover: #EA580C;
+  --color-border: #3A3430;
+  --color-border-dark: #4A4440;
+  --color-editor-active-line: #332A1E;
+
+  /* Semantic - success */
+  --color-success-bg: #0C1F16;
+  --color-success-bg-subtle: rgba(12, 31, 22, 0.5);
+  --color-success-border: #1A4A32;
+  --color-success-text: #34D399;
+  --color-success-icon: #10B981;
+
+  /* Semantic - error */
+  --color-error-bg: #2A1414;
+  --color-error-bg-subtle: rgba(42, 20, 20, 0.5);
+  --color-error-border: #7F1D1D;
+  --color-error-text: #F87171;
+  --color-error-icon: #EF4444;
+
+  /* Semantic - warning */
+  --color-warning-bg: #2A1E06;
+  --color-warning-bg-subtle: rgba(42, 30, 6, 0.5);
+  --color-warning-border: #78350F;
+  --color-warning-text: #FCD34D;
+  --color-warning-icon: #F59E0B;
+
+  /* Semantic - info */
+  --color-info-bg: #121E33;
+  --color-info-bg-subtle: rgba(18, 30, 51, 0.5);
+  --color-info-border: #1E3A5F;
+  --color-info-text: #60A5FA;
+  --color-info-icon: #3B82F6;
+
+  /* Semantic - purple */
+  --color-purple-bg: #180F2E;
+  --color-purple-bg-subtle: rgba(24, 15, 46, 0.5);
+  --color-purple-border: #4C1D95;
+  --color-purple-text: #A78BFA;
+
+  --shadow-soft: 0 1px 2px rgba(0, 0, 0, 0.15), 0 4px 12px rgba(0, 0, 0, 0.25);
+  --shadow-medium: 0 2px 4px rgba(0, 0, 0, 0.15), 0 8px 24px rgba(0, 0, 0, 0.35);
+  --shadow-lifted: 0 4px 8px rgba(0, 0, 0, 0.15), 0 16px 40px rgba(0, 0, 0, 0.5);
 }
 
 /* Base styles */
@@ -229,16 +287,16 @@ body {
 
 /* Style MergeView's built-in revert/gutter buttons to match app theme */
 .cm-mergeRevert {
-  background: #FFF7ED;
-  border: 1px solid #E7E5E4;
+  background: var(--color-cream-dark);
+  border: 1px solid var(--color-border);
   border-radius: 4px;
-  color: #78716C;
+  color: var(--color-ink-muted);
   cursor: pointer;
 }
 .cm-mergeRevert:hover {
-  background: #FFEEDD;
-  color: #EA580C;
-  border-color: #EA580C;
+  background: var(--color-surface);
+  color: var(--color-accent);
+  border-color: var(--color-accent);
 }
 
 /* Noise texture overlay (optional, for grain effect) */

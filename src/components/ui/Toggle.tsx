@@ -27,7 +27,7 @@ export const Toggle = forwardRef<HTMLInputElement, ToggleProps>(
             'peer-disabled:opacity-50 peer-disabled:cursor-not-allowed'
           )} />
           <div className={cn(
-            'absolute top-0.5 left-0.5 w-3.5 h-3.5 bg-white rounded-full shadow-sm transition-transform',
+            'absolute top-0.5 left-0.5 w-3.5 h-3.5 bg-[var(--color-surface)] rounded-full shadow-sm transition-transform',
             'peer-checked:translate-x-3.5'
           )} />
         </div>

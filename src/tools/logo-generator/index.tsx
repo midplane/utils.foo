@@ -212,7 +212,7 @@ export default function LogoGenerator() {
                 onChange={e => setText(e.target.value)}
                 rows={3}
                 placeholder="Your logo text…"
-                className="w-full px-3 py-2 text-sm font-mono bg-white border border-[var(--color-border)] rounded-lg text-[var(--color-ink)] placeholder-[var(--color-ink-muted)] focus:outline-none focus:border-[var(--color-accent)] focus:ring-1 focus:ring-[var(--color-accent)]/20 resize-none transition-all"
+                className="w-full px-3 py-2 text-sm font-mono bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg text-[var(--color-ink)] placeholder-[var(--color-ink-muted)] focus:outline-none focus:border-[var(--color-accent)] focus:ring-1 focus:ring-[var(--color-accent)]/20 resize-none transition-all"
               />
               <p className="mt-1 text-[10px] text-[var(--color-ink-muted)]">Use newlines for multiple lines</p>
             </CardContent>
@@ -248,7 +248,7 @@ export default function LogoGenerator() {
                       type="color"
                       value={bgColor}
                       onChange={e => setBgColor(e.target.value)}
-                      className="w-8 h-8 rounded cursor-pointer border border-[var(--color-border)] p-0.5 bg-white"
+                      className="w-8 h-8 rounded cursor-pointer border border-[var(--color-border)] p-0.5 bg-[var(--color-surface)]"
                     />
                     <Input
                       value={bgColor}
@@ -264,7 +264,7 @@ export default function LogoGenerator() {
                       type="color"
                       value={fgColor}
                       onChange={e => setFgColor(e.target.value)}
-                      className="w-8 h-8 rounded cursor-pointer border border-[var(--color-border)] p-0.5 bg-white"
+                      className="w-8 h-8 rounded cursor-pointer border border-[var(--color-border)] p-0.5 bg-[var(--color-surface)]"
                     />
                     <Input
                       value={fgColor}
@@ -295,7 +295,7 @@ export default function LogoGenerator() {
                         'px-2 py-1 text-xs rounded border transition-all',
                         fontFamily === f.value
                           ? 'bg-[var(--color-ink)] text-[var(--color-cream)] border-[var(--color-ink)]'
-                          : 'bg-white text-[var(--color-ink)] border-[var(--color-border)] hover:border-[var(--color-ink-muted)]'
+                          : 'bg-[var(--color-surface)] text-[var(--color-ink)] border-[var(--color-border)] hover:border-[var(--color-ink-muted)]'
                       )}
                       style={{ fontFamily: f.value }}
                     >
@@ -317,7 +317,7 @@ export default function LogoGenerator() {
                         'px-2 py-1 text-xs rounded border transition-all',
                         fontWeight === w.value
                           ? 'bg-[var(--color-ink)] text-[var(--color-cream)] border-[var(--color-ink)]'
-                          : 'bg-white text-[var(--color-ink)] border-[var(--color-border)] hover:border-[var(--color-ink-muted)]'
+                          : 'bg-[var(--color-surface)] text-[var(--color-ink)] border-[var(--color-border)] hover:border-[var(--color-ink-muted)]'
                       )}
                       style={{ fontWeight: w.value }}
                     >

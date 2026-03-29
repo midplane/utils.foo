@@ -39,7 +39,7 @@ export const Modal = forwardRef<HTMLDivElement, ModalProps>(
         <div
           ref={ref}
           className={cn(
-            'bg-white rounded-lg border border-[var(--color-border)] shadow-[var(--shadow-lifted)] w-full max-w-md animate-fade-in-up',
+            'bg-[var(--color-surface)] rounded-lg border border-[var(--color-border)] shadow-[var(--shadow-lifted)] w-full max-w-md animate-fade-in-up',
             className
           )}
           {...props}

@@ -408,7 +408,7 @@ export default function ChartBuilderTool() {
             onChange={(e) => { setRaw(e.target.value); setBannerDismissed(false) }}
             placeholder={'Paste CSV or TSV data here…\n\nExample:\nMonth,Revenue,Expenses\nJan,42000,31000\nFeb,38000,29000'}
             spellCheck={false}
-            className="w-full h-40 resize-y font-mono text-xs bg-white border border-[var(--color-border)] rounded-lg px-3 py-2.5 text-[var(--color-ink)] placeholder-[var(--color-ink-muted)] focus:outline-none focus:border-[var(--color-accent)] focus:ring-1 focus:ring-[var(--color-accent)]/20 transition-all"
+            className="w-full h-40 resize-y font-mono text-xs bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3 py-2.5 text-[var(--color-ink)] placeholder-[var(--color-ink-muted)] focus:outline-none focus:border-[var(--color-accent)] focus:ring-1 focus:ring-[var(--color-accent)]/20 transition-all"
           />
           {/* Status line */}
           <div className="mt-1.5 flex items-center gap-2 text-[10px] font-mono">
@@ -468,7 +468,7 @@ export default function ChartBuilderTool() {
                 <select
                   value={xCol}
                   onChange={(e) => handleXColChange(e.target.value)}
-                  className="w-full text-xs font-mono bg-white border border-[var(--color-border)] rounded-lg px-2.5 py-1.5 text-[var(--color-ink)] focus:outline-none focus:border-[var(--color-accent)] focus:ring-1 focus:ring-[var(--color-accent)]/20 transition-all cursor-pointer"
+                  className="w-full text-xs font-mono bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-2.5 py-1.5 text-[var(--color-ink)] focus:outline-none focus:border-[var(--color-accent)] focus:ring-1 focus:ring-[var(--color-accent)]/20 transition-all cursor-pointer"
                 >
                   {data.columns.map((c) => (
                     <option key={c} value={c}>{c}</option>
@@ -494,7 +494,7 @@ export default function ChartBuilderTool() {
                             'inline-flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-mono rounded-md border transition-all cursor-pointer',
                             active
                               ? 'border-transparent text-white font-semibold'
-                              : 'border-[var(--color-border)] text-[var(--color-ink-muted)] bg-white hover:border-[var(--color-border-dark)]'
+                              : 'border-[var(--color-border)] text-[var(--color-ink-muted)] bg-[var(--color-surface)] hover:border-[var(--color-border-dark)]'
                           )}
                           style={active ? { backgroundColor: color, borderColor: color } : {}}
                         >

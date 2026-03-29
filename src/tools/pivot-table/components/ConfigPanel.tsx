@@ -33,7 +33,7 @@ function FieldChip({ field, isNumeric, onRemove, isDragging }: FieldChipProps) {
       className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-mono cursor-grab active:cursor-grabbing select-none transition-all ${
         isDragging
           ? 'opacity-50'
-          : 'bg-white border border-[var(--color-border)] hover:border-[var(--color-ink-muted)] shadow-sm'
+          : 'bg-[var(--color-surface)] border border-[var(--color-border)] hover:border-[var(--color-ink-muted)] shadow-sm'
       }`}
     >
       <GripVertical className="w-3 h-3 text-[var(--color-ink-muted)]" />
@@ -179,7 +179,7 @@ function ValueConfigInline({
   const availableFields2 = fields.filter((f) => numericFields.has(f))
 
   return (
-    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-white border border-[var(--color-border)] rounded text-xs shadow-sm">
+    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-[var(--color-surface)] border border-[var(--color-border)] rounded text-xs shadow-sm">
       <select
         value={config.aggregation}
         onChange={(e) =>
@@ -451,7 +451,7 @@ export function ConfigPanel({ config, fields, onConfigChange }: ConfigPanelProps
                 onChange={(e) =>
                   onConfigChange({ ...config, heatmap: e.target.value as PivotConfig['heatmap'] })
                 }
-                className="px-1.5 py-0.5 bg-white border border-[var(--color-border)] rounded text-xs focus:outline-none cursor-pointer"
+                className="px-1.5 py-0.5 bg-[var(--color-surface)] border border-[var(--color-border)] rounded text-xs focus:outline-none cursor-pointer"
               >
                 {Object.entries(HEATMAP_LABELS).map(([key, label]) => (
                   <option key={key} value={key}>
@@ -468,7 +468,7 @@ export function ConfigPanel({ config, fields, onConfigChange }: ConfigPanelProps
                 onChange={(e) =>
                   onConfigChange({ ...config, rowOrder: e.target.value as PivotConfig['rowOrder'] })
                 }
-                className="px-1.5 py-0.5 bg-white border border-[var(--color-border)] rounded text-xs focus:outline-none cursor-pointer"
+                className="px-1.5 py-0.5 bg-[var(--color-surface)] border border-[var(--color-border)] rounded text-xs focus:outline-none cursor-pointer"
               >
                 {Object.entries(SORT_ORDER_LABELS).map(([key, label]) => (
                   <option key={key} value={key}>

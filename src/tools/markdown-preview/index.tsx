@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect, useRef, useCallback } from 'react'
 import { marked } from 'marked'
 import { basicSetup } from 'codemirror'
 import { EditorView } from '@codemirror/view'
+import { Compartment } from '@codemirror/state'
 import { EditorState } from '@codemirror/state'
 import { markdown } from '@codemirror/lang-markdown'
 import { Button } from '../../components/ui/Button'
@@ -18,7 +19,8 @@ import {
 } from '../../components/ui/ExpandableCard'
 import { FileText, Trash2, RefreshCw, Code, Eye, Columns2 } from 'lucide-react'
 import { cn } from '../../lib/utils'
-import { appTheme } from '../../lib/codemirrorTheme'
+import { appTheme, appThemeDark } from '../../lib/codemirrorTheme'
+import { useTheme } from '../../contexts/ThemeContext'
 
 // ─── marked configuration ─────────────────────────────────────────────────────
 
@@ -99,9 +101,13 @@ export default function MarkdownPreviewTool() {
   const [source, setSource] = useState(SAMPLE_MD)
   const [viewMode, setViewMode] = useState<ViewMode>('split')
   const { expanded, setExpanded } = useExpandable()
+  const { isDark } = useTheme()
+  const isDarkRef = useRef(isDark)
+  isDarkRef.current = isDark
 
   const editorContainerRef = useRef<HTMLDivElement>(null)
   const editorViewRef = useRef<EditorView | null>(null)
+  const themeComp = useRef(new Compartment())
 
   // Render markdown → HTML (synchronous with marked v15)
   const html = useMemo(() => marked.parse(source) as string, [source])
@@ -115,7 +121,7 @@ export default function MarkdownPreviewTool() {
       extensions: [
         basicSetup,
         markdown(),
-        appTheme,
+        themeComp.current.of(isDarkRef.current ? appThemeDark : appTheme),
         EditorView.lineWrapping,
         EditorView.updateListener.of((update) => {
           if (update.docChanged) {
@@ -133,6 +139,13 @@ export default function MarkdownPreviewTool() {
       editorViewRef.current = null
     }
   }, [])
+
+  // Reconfigure CodeMirror syntax highlighting when dark mode changes
+  useEffect(() => {
+    const view = editorViewRef.current
+    if (!view) return
+    view.dispatch({ effects: themeComp.current.reconfigure(isDark ? appThemeDark : appTheme) })
+  }, [isDark])
 
   const handleClear = useCallback(() => {
     const view = editorViewRef.current
@@ -210,7 +223,7 @@ export default function MarkdownPreviewTool() {
               {/* ── Preview pane ──────────────────────────────────────────── */}
               <div
                 className={cn(
-                  'overflow-y-auto rounded-lg border border-[var(--color-border)] bg-white px-5 py-4',
+                  'overflow-y-auto rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-5 py-4',
                   viewMode === 'editor' && 'hidden',
                 )}
                 style={{ height: EDITOR_HEIGHT }}

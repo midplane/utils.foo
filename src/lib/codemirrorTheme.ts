@@ -1,16 +1,18 @@
 import { EditorView } from '@codemirror/view'
+import { syntaxHighlighting } from '@codemirror/language'
+import { oneDarkHighlightStyle } from '@codemirror/theme-one-dark'
+import type { Extension } from '@codemirror/state'
 
 /**
  * Shared CodeMirror theme that uses CSS custom properties from index.css.
  * This allows the editor to automatically adapt to theme changes (e.g., dark mode).
- * 
+ *
  * Usage:
- *   import { appTheme } from '../../lib/codemirrorTheme'
- *   // ... in EditorState.create extensions array:
- *   extensions: [basicSetup, json(), appTheme, ...]
+ *   import { appTheme, appThemeDark } from '../../lib/codemirrorTheme'
+ *   // Pass the appropriate one based on useTheme().isDark
  */
 
-// ─── Shared base rules ───────────────────────────────────────────────────────
+// ─── Shared base rules (all colors reference CSS custom properties) ───────────
 const baseRules = {
   '&': {
     fontFamily: 'var(--font-mono)',
@@ -32,7 +34,7 @@ const baseRules = {
     fontSize: '11px',
   },
   '.cm-activeLineGutter': {
-    backgroundColor: '#FEF3C7',
+    backgroundColor: 'var(--color-editor-active-line)',
   },
   // Selection: drawn overlay (.cm-selectionBackground) + native (::selection).
   // IMPORTANT: never set `color` in ::selection — Chrome's inheritance bug
@@ -45,12 +47,11 @@ const baseRules = {
   },
 } as const satisfies Record<string, Record<string, string>>
 
-// ─── App theme (general-purpose editor) ──────────────────────────────────────
-export const appTheme = EditorView.theme(
+// ─── App theme — light (general-purpose editor) ───────────────────────────────
+export const appTheme: Extension = EditorView.theme(
   {
     ...baseRules,
     '&': { ...baseRules['&'], fontSize: '13px' },
-    // Lint gutter
     '.cm-gutter-lint': {
       width: '18px',
       backgroundColor: 'var(--color-cream-dark)',
@@ -68,12 +69,38 @@ export const appTheme = EditorView.theme(
   { dark: false }
 )
 
-// ─── Diff theme (MergeView) ─────────────────────────────────────────────────
-export const diffTheme = EditorView.theme(
+// ─── App theme — dark ─────────────────────────────────────────────────────────
+// Structural colors come from CSS variables (auto-adapted by .dark overrides).
+// oneDarkHighlightStyle replaces the light defaultHighlightStyle from basicSetup.
+export const appThemeDark: Extension = [
+  EditorView.theme(
+    {
+      ...baseRules,
+      '&': { ...baseRules['&'], fontSize: '13px' },
+      '.cm-gutter-lint': {
+        width: '18px',
+        backgroundColor: 'var(--color-cream-dark)',
+      },
+      '.cm-lint-marker-error': {
+        content: '""',
+        display: 'block',
+        width: '6px',
+        height: '6px',
+        borderRadius: '50%',
+        backgroundColor: 'var(--color-error-icon)',
+        margin: '0 auto',
+      },
+    },
+    { dark: true }
+  ),
+  syntaxHighlighting(oneDarkHighlightStyle),
+]
+
+// ─── Diff theme — light (MergeView) ──────────────────────────────────────────
+export const diffTheme: Extension = EditorView.theme(
   {
     ...baseRules,
     '&': { ...baseRules['&'], fontSize: '12px' },
-    // MergeView diff highlights
     '.cm-deletedChunk': {
       backgroundColor: 'rgba(239, 68, 68, 0.08)',
     },
@@ -100,3 +127,38 @@ export const diffTheme = EditorView.theme(
   },
   { dark: false }
 )
+
+// ─── Diff theme — dark ────────────────────────────────────────────────────────
+export const diffThemeDark: Extension = [
+  EditorView.theme(
+    {
+      ...baseRules,
+      '&': { ...baseRules['&'], fontSize: '12px' },
+      '.cm-deletedChunk': {
+        backgroundColor: 'rgba(239, 68, 68, 0.12)',
+      },
+      '.cm-deletedChunk .cm-deletedLine, .cm-deletedLine': {
+        backgroundColor: 'rgba(239, 68, 68, 0.18)',
+      },
+      '.cm-changedLine': {
+        backgroundColor: 'rgba(16, 185, 129, 0.12)',
+      },
+      '.cm-changedText': {
+        backgroundColor: 'rgba(16, 185, 129, 0.30)',
+        borderRadius: '2px',
+      },
+      '.cm-deletedText': {
+        backgroundColor: 'rgba(239, 68, 68, 0.40)',
+        borderRadius: '2px',
+        textDecoration: 'none',
+      },
+      '.cm-mergeGap': {
+        backgroundColor: 'var(--color-cream-dark)',
+        borderTop: '1px solid var(--color-border)',
+        borderBottom: '1px solid var(--color-border)',
+      },
+    },
+    { dark: true }
+  ),
+  syntaxHighlighting(oneDarkHighlightStyle),
+]

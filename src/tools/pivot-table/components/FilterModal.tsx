@@ -107,7 +107,7 @@ export function FilterModal({
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search values..."
-            className="w-full pl-9 pr-3 py-2 text-xs font-mono bg-white border border-[var(--color-border)] rounded-lg focus:outline-none focus:border-[var(--color-accent)]"
+            className="w-full pl-9 pr-3 py-2 text-xs font-mono bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg focus:outline-none focus:border-[var(--color-accent)]"
           />
         </div>
 

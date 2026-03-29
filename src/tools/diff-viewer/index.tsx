@@ -16,7 +16,8 @@ import {
   ExpandToggleButton,
 } from '../../components/ui/ExpandableCard'
 import { cn } from '../../lib/utils'
-import { diffTheme } from '../../lib/codemirrorTheme'
+import { diffTheme, diffThemeDark } from '../../lib/codemirrorTheme'
+import { useTheme } from '../../contexts/ThemeContext'
 import { ArrowLeftRight, GitCompare, Sparkles, Trash2 } from 'lucide-react'
 
 // ─── Language list (curated subset shown in dropdown) ────────────────────────
@@ -153,6 +154,10 @@ export default function DiffViewerTool() {
   const [rightText, setRightText] = useState('')
   const [stats, setStats]         = useState({ added: 0, removed: 0 })
   const { expanded, setExpanded } = useExpandable()
+  const { isDark } = useTheme()
+  const isDarkRef = useRef(isDark)
+  isDarkRef.current = isDark
+  const themeComp = useRef(new Compartment())
 
   // 'auto' means follow detection; any other value is a manual override
   const [langOverride, setLangOverride] = useState<string>('auto')
@@ -171,7 +176,7 @@ export default function DiffViewerTool() {
         extensions: [
           basicSetup,
           EditorView.lineWrapping,
-          diffTheme,
+          themeComp.current.of(isDarkRef.current ? diffThemeDark : diffTheme),
           langCompartmentA.current.of([]),
           EditorView.updateListener.of((u) => {
             if (u.docChanged) setLeftText(u.state.doc.toString())
@@ -183,7 +188,7 @@ export default function DiffViewerTool() {
         extensions: [
           basicSetup,
           EditorView.lineWrapping,
-          diffTheme,
+          themeComp.current.of(isDarkRef.current ? diffThemeDark : diffTheme),
           langCompartmentB.current.of([]),
           EditorView.updateListener.of((u) => {
             if (u.docChanged) setRightText(u.state.doc.toString())
@@ -204,6 +209,15 @@ export default function DiffViewerTool() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  // Reconfigure CodeMirror syntax highlighting when dark mode changes
+  useEffect(() => {
+    const mv = mergeViewRef.current
+    if (!mv) return
+    const effect = themeComp.current.reconfigure(isDark ? diffThemeDark : diffTheme)
+    mv.a.dispatch({ effects: effect })
+    mv.b.dispatch({ effects: effect })
+  }, [isDark])
 
   // ── Apply language to both panes ─────────────────────────────────────────────
   const applyLanguage = useCallback(async (name: string) => {

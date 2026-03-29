@@ -21,7 +21,8 @@ import {
   ExpandToggleButton,
 } from '../../components/ui/ExpandableCard'
 import { cn } from '../../lib/utils'
-import { appTheme } from '../../lib/codemirrorTheme'
+import { appTheme, appThemeDark } from '../../lib/codemirrorTheme'
+import { useTheme } from '../../contexts/ThemeContext'
 import { ArrowLeftRight, Sparkles, Trash2 } from 'lucide-react'
 
 // ─── Conversion definitions ───────────────────────────────────────────────────
@@ -181,6 +182,9 @@ export default function DataConverterTool() {
   const [outputText, setOutputText] = useState('')
   const [error, setError] = useState('')
   const { expanded, setExpanded } = useExpandable()
+  const { isDark } = useTheme()
+  const isDarkRef = useRef(isDark)
+  isDarkRef.current = isDark
 
   const conv = CONVERSIONS.find(c => c.id === convId)!
 
@@ -190,6 +194,7 @@ export default function DataConverterTool() {
   const outputView = useRef<EditorView | null>(null)
   const inputLangComp  = useRef(new Compartment())
   const outputLangComp = useRef(new Compartment())
+  const themeComp = useRef(new Compartment())
 
   // ── Build editors once ───────────────────────────────────────────────────────
   useEffect(() => {
@@ -201,7 +206,7 @@ export default function DataConverterTool() {
         extensions: [
           basicSetup,
           EditorView.lineWrapping,
-          appTheme,
+          themeComp.current.of(isDarkRef.current ? appThemeDark : appTheme),
           inputLangComp.current.of([]),
           EditorView.updateListener.of((u) => {
             if (u.docChanged) setInputText(u.state.doc.toString())
@@ -217,7 +222,7 @@ export default function DataConverterTool() {
         extensions: [
           basicSetup,
           EditorView.lineWrapping,
-          appTheme,
+          themeComp.current.of(isDarkRef.current ? appThemeDark : appTheme),
           outputLangComp.current.of([]),
           EditorView.editable.of(false),
         ],
@@ -233,6 +238,13 @@ export default function DataConverterTool() {
       ov.destroy(); outputView.current = null
     }
   }, [])
+
+  // Reconfigure CodeMirror syntax highlighting when dark mode changes
+  useEffect(() => {
+    const effect = themeComp.current.reconfigure(isDark ? appThemeDark : appTheme)
+    inputView.current?.dispatch({ effects: effect })
+    outputView.current?.dispatch({ effects: effect })
+  }, [isDark])
 
   // ── Apply language extensions when conversion changes ────────────────────────
   useEffect(() => {
