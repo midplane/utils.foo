@@ -64,7 +64,7 @@
 .dark {
   --color-cream: #1C1917;
   --color-cream-dark: #231F1C;
-  --color-surface: #2C2621;
+  --color-surface: #332D29;
   --color-ink: #F2EDE8;
   --color-ink-light: #CFC8C1;
   --color-ink-muted: #9A8F88;
@@ -235,12 +235,11 @@ body {
 
 /* Card hover transform */
 .card-hover {
-  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), 
-              box-shadow 0.3s ease;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .card-hover:hover {
-  transform: translateY(-4px) rotate(0.5deg);
+  transform: translateY(-4px);
   box-shadow: var(--shadow-lifted);
 }
 
