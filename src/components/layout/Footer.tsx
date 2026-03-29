@@ -8,11 +8,25 @@ export function Footer() {
           <Link to="/" className="flex items-center gap-1.5 hover:text-[var(--color-accent)] transition-colors">
             <span className="font-medium">utils<span className="text-[var(--color-accent)]">.</span>foo</span>
           </Link>
-          
+
           <div className="flex items-center gap-3">
-            <span>100% client-side</span>
+            <a
+              href="https://github.com/midplane/utils.foo"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-[var(--color-accent)] transition-colors"
+            >
+              GitHub
+            </a>
             <span className="text-[var(--color-border-dark)]">·</span>
-            <span>No data sent to servers</span>
+            <a
+              href="https://github.com/midplane/utils.foo/issues"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-[var(--color-accent)] transition-colors"
+            >
+              Raise a request
+            </a>
           </div>
         </div>
       </div>
