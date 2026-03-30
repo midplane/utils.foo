@@ -104,6 +104,12 @@ describe('symbolicToPermissions', () => {
   it('returns null for invalid characters', () => {
     expect(symbolicToPermissions('rwxr-xabc')).toBeNull()
   })
+
+  it('returns null for position-invalid strings where chars are valid but in wrong slots', () => {
+    // 'r' in a write slot, 'w' in a read slot, etc.
+    expect(symbolicToPermissions('rrrwwwxxx')).toBeNull()
+    expect(symbolicToPermissions('www------')).toBeNull()
+  })
 })
 
 describe('permissionsToOctal / permissionsToSymbolic round-trip', () => {

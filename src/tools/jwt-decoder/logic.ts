@@ -49,5 +49,5 @@ export function formatTimestamp(value: unknown): string | null {
 
 export function isExpired(exp: unknown): boolean {
   if (typeof exp !== 'number') return false
-  return Date.now() > exp * 1000
+  return Date.now() >= exp * 1000
 }

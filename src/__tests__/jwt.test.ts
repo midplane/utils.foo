@@ -33,13 +33,20 @@ describe('decodeJWT', () => {
     expect(() => decodeJWT('!!!.abc.sig')).toThrow()
   })
 
-  it('handles base64url chars: - and _ in payload', () => {
-    // Build a payload whose base64url encoding will contain - or _
-    // Any payload with non-ASCII chars after encoding will do
-    const payload = { data: 'hello+world/test' }
-    const token = makeJWT({ alg: 'none' }, payload)
+  it('handles "-" in payload segment (base64url substitution for "+")', () => {
+    // {"~":""} UTF-8 encodes to a base64 group ending in 62 (+), so the
+    // base64url payload segment is eyJ-IjoiIn0 — the 4th char is literally "-"
+    const token = 'eyJhbGciOiJub25lIn0.eyJ-IjoiIn0.sig'
     const result = decodeJWT(token)
-    expect(result.payload).toMatchObject(payload)
+    expect(result.payload).toMatchObject({ '~': '' })
+  })
+
+  it('handles "_" in payload segment (base64url substitution for "/")', () => {
+    // {"?":""} UTF-8 encodes to a base64 group ending in 63 (/), so the
+    // base64url payload segment is eyI_IjoiIn0 — the 4th char is literally "_"
+    const token = 'eyJhbGciOiJub25lIn0.eyI_IjoiIn0.sig'
+    const result = decodeJWT(token)
+    expect(result.payload).toMatchObject({ '?': '' })
   })
 
   it('decodes the well-known Ada Lovelace easter-egg token', () => {
@@ -82,6 +89,11 @@ describe('isExpired', () => {
     expect(isExpired(pastExp)).toBe(true)
   })
 
+  it('returns true when exp equals the current time (expiry is inclusive)', () => {
+    const nowSeconds = Math.floor(new Date('2024-01-01T00:00:00Z').getTime() / 1000)
+    expect(isExpired(nowSeconds)).toBe(true)
+  })
+
   it('returns false when exp is a string', () => {
     expect(isExpired('2020-01-01')).toBe(false)
   })
@@ -105,8 +117,9 @@ describe('formatTimestamp', () => {
   })
 
   it('treats the value as seconds, not milliseconds', () => {
-    // 0 seconds = epoch = 1970
-    const result = formatTimestamp(0)
-    expect(result).toContain('1970')
+    // 1_700_000_000 seconds = Nov 2023; interpreted as ms it would be Jan 1970
+    // Using a mid-year timestamp avoids UTC±offset flipping the year
+    const result = formatTimestamp(1_700_000_000)
+    expect(result).toContain('2023')
   })
 })

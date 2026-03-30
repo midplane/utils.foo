@@ -40,7 +40,7 @@ export function octalToPermissions(octal: string): Permissions | null {
 }
 
 export function symbolicToPermissions(sym: string): Permissions | null {
-  if (!/^[rwx-]{9}$/.test(sym)) return null
+  if (!/^[r-][w-][x-][r-][w-][x-][r-][w-][x-]$/.test(sym)) return null
   const parseSet = (s: string): PermSet => ({
     read:    s[0] === 'r',
     write:   s[1] === 'w',

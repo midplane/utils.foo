@@ -50,6 +50,10 @@ describe('parseField', () => {
     expect(f.description).toContain('5')
   })
 
+  it('step with out-of-range start → invalid', () => {
+    expect(parseField('99/5', 0, 59).valid).toBe(false)
+  })
+
   it('named days resolved via names array', () => {
     const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']
     const f = parseField('Mon', 0, 7, days)
@@ -160,6 +164,10 @@ describe('parseCron', () => {
 
   it('named day "Mon" in DOW field is valid', () => {
     expect(parseCron('0 9 * * Mon').valid).toBe(true)
+  })
+
+  it('named month "Jan" in month field is valid', () => {
+    expect(parseCron('0 0 1 Jan *').valid).toBe(true)
   })
 
   it('numeric month is valid', () => {

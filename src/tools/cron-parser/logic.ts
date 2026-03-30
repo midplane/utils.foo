@@ -26,14 +26,15 @@ export function parseField(
   value: string,
   min: number,
   max: number,
-  names?: string[]
+  names?: string[],
+  nameOffset: number = 0
 ): CronField {
   const raw = value
 
   let v = value.toLowerCase()
   if (names) {
     names.forEach((name, idx) => {
-      v = v.replace(new RegExp(name.toLowerCase(), 'g'), String(idx))
+      v = v.replace(new RegExp(name.toLowerCase(), 'g'), String(idx + nameOffset))
     })
   }
 
@@ -44,7 +45,8 @@ export function parseField(
     const step = parseInt(stepMatch[2]!)
     const start = stepMatch[1] === '*' ? min : parseInt(stepMatch[1]!)
     if (isNaN(step) || step < 1) return { raw, description: '', valid: false, error: `Invalid step` }
-    const label = names ? (names[start] ?? String(start)) : String(start)
+    if (isNaN(start) || start < min || start > max) return { raw, description: '', valid: false, error: `Value out of range (${min}-${max})` }
+    const label = names ? (names[start - nameOffset] ?? String(start)) : String(start)
     return { raw, description: `every ${step} (starting at ${label})`, valid: true }
   }
 
@@ -54,7 +56,7 @@ export function parseField(
     if (nums.some(n => isNaN(n) || n < min || n > max)) {
       return { raw, description: '', valid: false, error: `Value out of range (${min}-${max})` }
     }
-    const labels = nums.map(n => names ? (names[n] ?? String(n)) : String(n))
+    const labels = nums.map(n => names ? (names[n - nameOffset] ?? String(n)) : String(n))
     return { raw, description: labels.join(', '), valid: true }
   }
 
@@ -63,8 +65,8 @@ export function parseField(
     if (isNaN(a!) || isNaN(b!) || a! < min || b! > max || a! > b!) {
       return { raw, description: '', valid: false, error: `Invalid range (${min}-${max})` }
     }
-    const la = names ? (names[a!] ?? String(a)) : String(a)
-    const lb = names ? (names[b!] ?? String(b)) : String(b)
+    const la = names ? (names[a! - nameOffset] ?? String(a)) : String(a)
+    const lb = names ? (names[b! - nameOffset] ?? String(b)) : String(b)
     return { raw, description: `${la} through ${lb}`, valid: true }
   }
 
@@ -72,7 +74,7 @@ export function parseField(
   if (isNaN(n) || n < min || n > max) {
     return { raw, description: '', valid: false, error: `Value out of range (${min}-${max})` }
   }
-  const label = names ? (names[n] ?? String(n)) : String(n)
+  const label = names ? (names[n - nameOffset] ?? String(n)) : String(n)
   return { raw, description: label, valid: true }
 }
 
@@ -186,8 +188,8 @@ export function parseCron(expr: string): ParsedCron {
     minute: parseField(m,    0, 59),
     hour:   parseField(h,    0, 23),
     dom:    parseField(dom,  1, 31),
-    month:  parseField(month,1, 12, MONTH_ABBR),
-    dow:    parseField(dow,  0,  7, DAY_ABBR),
+    month:  parseField(month, 1, 12, MONTH_ABBR, 1),
+    dow:    parseField(dow,   0,  7, DAY_ABBR,   0),
   }
 
   const invalid = Object.entries(fields).find(([, f]) => !f.valid)

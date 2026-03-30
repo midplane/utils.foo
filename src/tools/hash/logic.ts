@@ -49,15 +49,16 @@ export function md5(string: string): string {
   }
 
   function convertToWordArray(string: string): number[] {
-    const utf8 = unescape(encodeURIComponent(string))
-    const wordCount = ((utf8.length + 8) >> 6) + 1
+    const bytes = new TextEncoder().encode(string)
+    const byteLength = bytes.length
+    const wordCount = ((byteLength + 8) >> 6) + 1
     const wordArray = new Array(wordCount * 16).fill(0)
 
-    for (let i = 0; i < utf8.length; i++) {
-      wordArray[i >> 2] |= utf8.charCodeAt(i) << ((i % 4) * 8)
+    for (let i = 0; i < byteLength; i++) {
+      wordArray[i >> 2] |= bytes[i]! << ((i % 4) * 8)
     }
-    wordArray[utf8.length >> 2] |= 0x80 << ((utf8.length % 4) * 8)
-    wordArray[wordCount * 16 - 2] = utf8.length * 8
+    wordArray[byteLength >> 2] |= 0x80 << ((byteLength % 4) * 8)
+    wordArray[wordCount * 16 - 2] = byteLength * 8
     return wordArray
   }
 
