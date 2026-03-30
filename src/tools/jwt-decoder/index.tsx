@@ -9,63 +9,7 @@ import { SectionLabel } from '../../components/ui/SectionLabel'
 import { Alert } from '../../components/ui/Alert'
 import { FlowDivider } from '../../components/ui/FlowDivider'
 import { ClipboardList, Info, LockKeyhole, ShieldCheck, Trash2 } from 'lucide-react'
-
-interface JWTPayload {
-  [key: string]: unknown
-}
-
-interface JWTHeader {
-  alg?: string
-  typ?: string
-  [key: string]: unknown
-}
-
-interface DecodedJWT {
-  header: JWTHeader
-  payload: JWTPayload
-  signature: string
-}
-
-function decodeJWT(token: string): DecodedJWT {
-  const parts = token.split('.')
-  if (parts.length !== 3) {
-    throw new Error('Invalid JWT format: must have 3 parts separated by dots')
-  }
-
-  const [headerB64, payloadB64, signature] = parts
-
-  const decodeBase64Url = (str: string): string => {
-    // Convert base64url to base64
-    let base64 = str.replace(/-/g, '+').replace(/_/g, '/')
-    // Add padding if needed
-    const padding = base64.length % 4
-    if (padding) {
-      base64 += '='.repeat(4 - padding)
-    }
-    return decodeURIComponent(escape(atob(base64)))
-  }
-
-  try {
-    const header = JSON.parse(decodeBase64Url(headerB64 ?? ''))
-    const payload = JSON.parse(decodeBase64Url(payloadB64 ?? ''))
-    return { header, payload, signature: signature ?? '' }
-  } catch {
-    throw new Error('Invalid JWT: failed to decode')
-  }
-}
-
-function formatTimestamp(value: unknown): string | null {
-  if (typeof value !== 'number') return null
-  // JWT timestamps are in seconds
-  const date = new Date(value * 1000)
-  if (isNaN(date.getTime())) return null
-  return date.toLocaleString()
-}
-
-function isExpired(exp: unknown): boolean {
-  if (typeof exp !== 'number') return false
-  return Date.now() > exp * 1000
-}
+import { type DecodedJWT, decodeJWT, formatTimestamp, isExpired } from './logic'
 
 const KNOWN_CLAIMS: Record<string, string> = {
   iss: 'Issuer',
