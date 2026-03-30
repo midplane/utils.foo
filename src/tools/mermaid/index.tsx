@@ -229,13 +229,22 @@ function resolveSvgForRaster(svg: string): string {
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function MermaidTool() {
+  const { isDark } = useTheme()
   const [code, setCode] = useState(SAMPLES['flowchart']!.code)
-  const [themeName, setThemeName] = useState('zinc-light')
+  const [themeName, setThemeName] = useState(() => {
+    const stored = localStorage.getItem('mermaid-theme')
+    if (stored && stored in THEMES) return stored
+    return isDark ? 'zinc-dark' : 'zinc-light'
+  })
   const [viewMode, setViewMode] = useState<ViewMode>('split')
   const { expanded, setExpanded } = useExpandable()
-  const { isDark } = useTheme()
   const isDarkRef = useRef(isDark)
   isDarkRef.current = isDark
+
+  // ── Persist theme selection ─────────────────────────────────────────────────
+  useEffect(() => {
+    localStorage.setItem('mermaid-theme', themeName)
+  }, [themeName])
 
   const editorContainerRef = useRef<HTMLDivElement>(null)
   const editorViewRef = useRef<EditorView | null>(null)
