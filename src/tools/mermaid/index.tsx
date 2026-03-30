@@ -229,13 +229,23 @@ function resolveSvgForRaster(svg: string): string {
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function MermaidTool() {
+  const { isDark } = useTheme()
   const [code, setCode] = useState(SAMPLES['flowchart']!.code)
-  const [themeName, setThemeName] = useState('zinc-light')
+  const [themeName, setThemeName] = useState(() => {
+    const stored = localStorage.getItem('mermaid-theme')
+    if (stored && stored in THEMES) return stored
+    return isDark ? 'zinc-dark' : 'zinc-light'
+  })
   const [viewMode, setViewMode] = useState<ViewMode>('split')
   const { expanded, setExpanded } = useExpandable()
-  const { isDark } = useTheme()
   const isDarkRef = useRef(isDark)
   isDarkRef.current = isDark
+
+  // ── Auto-follow dark mode when the user has no stored preference ─────────────
+  useEffect(() => {
+    if (localStorage.getItem('mermaid-theme')) return
+    setThemeName(isDark ? 'zinc-dark' : 'zinc-light')
+  }, [isDark])
 
   const editorContainerRef = useRef<HTMLDivElement>(null)
   const editorViewRef = useRef<EditorView | null>(null)
@@ -439,7 +449,7 @@ export default function MermaidTool() {
                   <Select
                     options={THEME_OPTIONS}
                     value={themeName}
-                    onChange={e => setThemeName(e.target.value)}
+                    onChange={e => { localStorage.setItem('mermaid-theme', e.target.value); setThemeName(e.target.value) }}
                     className="h-7 text-xs py-0"
                   />
                 </div>
