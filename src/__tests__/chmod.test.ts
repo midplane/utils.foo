@@ -107,9 +107,6 @@ describe('symbolicToPermissions', () => {
 })
 
 describe('permissionsToOctal / permissionsToSymbolic round-trip', () => {
-  const cases = ['000', '644', '755', '777', '400', '600', 'chmod']
-    .filter(c => /^[0-7]{3}$/.test(c)) // only valid ones
-
   for (const octal of ['000', '644', '755', '777', '400', '600', '711', '664']) {
     it(`round-trip for ${octal}`, () => {
       const perms = octalToPermissions(octal)!
