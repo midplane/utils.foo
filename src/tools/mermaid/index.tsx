@@ -280,10 +280,26 @@ export default function MermaidTool() {
   // ── User zoom — null means "auto-fit" ────────────────────────────────────────
   const [userZoom, setUserZoom] = useState<number | null>(null)
   const effectiveScale = userZoom ?? svgScale
+  const svgScaleRef = useRef(svgScale)
+  svgScaleRef.current = svgScale
 
-  const handleZoomIn  = useCallback(() => setUserZoom(z => Math.min(4, (z ?? svgScale) * 1.25)), [svgScale])
-  const handleZoomOut = useCallback(() => setUserZoom(z => Math.max(0.05, (z ?? svgScale) * 0.8)), [svgScale])
+  const handleZoomIn  = useCallback(() => setUserZoom(z => Math.min(4, (z ?? svgScaleRef.current) * 1.25)), [])
+  const handleZoomOut = useCallback(() => setUserZoom(z => Math.max(0.05, (z ?? svgScaleRef.current) * 0.8)), [])
   const handleZoomFit = useCallback(() => setUserZoom(null), [])
+
+  // ── Trackpad pinch-to-zoom ────────────────────────────────────────────────────
+  useEffect(() => {
+    const el = previewPaneRef.current
+    if (!el) return
+    const onWheel = (e: WheelEvent) => {
+      if (!e.ctrlKey) return
+      e.preventDefault()
+      const factor = Math.exp(-e.deltaY * 0.01)
+      setUserZoom(z => Math.min(4, Math.max(0.05, (z ?? svgScaleRef.current) * factor)))
+    }
+    el.addEventListener('wheel', onWheel, { passive: false })
+    return () => el.removeEventListener('wheel', onWheel)
+  }, [])
 
   // ── Esc handled by useExpandable ────────────────────────────────────────────
 
