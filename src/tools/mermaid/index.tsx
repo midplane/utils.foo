@@ -241,10 +241,11 @@ export default function MermaidTool() {
   const isDarkRef = useRef(isDark)
   isDarkRef.current = isDark
 
-  // ── Persist theme selection ─────────────────────────────────────────────────
+  // ── Auto-follow dark mode when the user has no stored preference ─────────────
   useEffect(() => {
-    localStorage.setItem('mermaid-theme', themeName)
-  }, [themeName])
+    if (localStorage.getItem('mermaid-theme')) return
+    setThemeName(isDark ? 'zinc-dark' : 'zinc-light')
+  }, [isDark])
 
   const editorContainerRef = useRef<HTMLDivElement>(null)
   const editorViewRef = useRef<EditorView | null>(null)
@@ -448,7 +449,7 @@ export default function MermaidTool() {
                   <Select
                     options={THEME_OPTIONS}
                     value={themeName}
-                    onChange={e => setThemeName(e.target.value)}
+                    onChange={e => { localStorage.setItem('mermaid-theme', e.target.value); setThemeName(e.target.value) }}
                     className="h-7 text-xs py-0"
                   />
                 </div>
