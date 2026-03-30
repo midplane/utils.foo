@@ -44,12 +44,39 @@ export const DERIVED_AGGREGATIONS: Set<AggregationType> = new Set([
   'countPctTotal', 'countPctRow', 'countPctCol',
 ])
 
+// ─── Aggregator Interface ─────────────────────────────────────────────────────
+
+export interface Aggregator {
+  push(value: unknown, value2?: unknown): void
+  value(): number | null
+  clone(): Aggregator
+}
+
+export type AggregatorFactory = () => Aggregator
+
+// ─── Custom Aggregator Plugin ─────────────────────────────────────────────────
+
+export interface AggregatorPlugin {
+  /** Unique identifier. Must not collide with built-in AggregationType values. */
+  type: string
+  /** Human-readable label shown in UI dropdowns. */
+  label: string
+  /** If true, the UI shows a second field selector (like sumOverSum). */
+  requiresSecondField?: boolean
+  /** If true, engine treats this as a post-hoc derived value (like pct types). */
+  isDerived?: boolean
+  /** Factory returning a fresh Aggregator instance. */
+  factory: AggregatorFactory
+  /** Optional custom formatter. Falls back to built-in formatNumber if not provided. */
+  format?: (value: number | null) => string
+}
+
 // ─── Configuration Types ──────────────────────────────────────────────────────
 
 export interface ValueConfig {
   field: string
-  field2?: string              // Second field for sumOverSum
-  aggregation: AggregationType
+  field2?: string                    // Second field for sumOverSum
+  aggregation: AggregationType | string  // Built-in or custom (via registerAggregator)
 }
 
 export interface FilterConfig {
@@ -98,16 +125,6 @@ export interface ParsedData {
   numericFields: Set<string>
 }
 
-// ─── Aggregator Interface ─────────────────────────────────────────────────────
-
-export interface Aggregator {
-  push(value: unknown, value2?: unknown): void
-  value(): number | null
-  clone(): Aggregator
-}
-
-export type AggregatorFactory = () => Aggregator
-
 // ─── Pivot Result Types ───────────────────────────────────────────────────────
 
 export interface CellValue {
@@ -126,7 +143,7 @@ export interface PivotResult {
   isEmpty: boolean
 }
 
-// ─── UI State Types ───────────────────────────────────────────────────────────
+// ─── Field Analysis Types ─────────────────────────────────────────────────────
 
 export interface FieldInfo {
   name: string

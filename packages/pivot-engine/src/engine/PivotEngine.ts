@@ -6,9 +6,13 @@ import {
   Aggregator,
   ValueConfig,
   SortOrder,
-  DERIVED_AGGREGATIONS,
 } from '../types'
-import { createAggregator, formatNumber, calculatePercentage } from './aggregators'
+import {
+  createAggregator,
+  formatNumber,
+  calculatePercentage,
+  isEffectivelyDerived,
+} from './aggregators'
 import {
   flattenKey,
   compositeKey,
@@ -22,8 +26,7 @@ import {
 interface AggregatorGroup {
   aggregators: Aggregator[]
   push(record: DataRecord): void
-  getValues(): (number | null)[]
-  getRawValues(): (number | null)[]  // For percentage calculations
+  getRawValues(): (number | null)[]
 }
 
 function createAggregatorGroup(valueConfigs: ValueConfig[]): AggregatorGroup {
@@ -38,9 +41,6 @@ function createAggregatorGroup(valueConfigs: ValueConfig[]): AggregatorGroup {
         const value2 = vc.field2 ? record[vc.field2] : undefined
         aggregators[i]!.push(value, value2)
       }
-    },
-    getValues() {
-      return aggregators.map((a) => a.value())
     },
     getRawValues() {
       return aggregators.map((a) => a.value())
@@ -75,7 +75,7 @@ export class PivotEngine {
   private processRecords(): void {
     const { rows, cols, values, filters } = this.config
 
-    // Build filter lookup for fast checking
+    // Build filter lookup for fast O(1) checking
     const filterMap = new Map<string, Set<string>>()
     for (const f of filters) {
       if (f.excludedValues.size > 0) {
@@ -160,12 +160,11 @@ export class PivotEngine {
     const isValueSort = order === 'value_asc' || order === 'value_desc'
 
     if (isValueSort) {
-      // Sort by first aggregated value
       const valueGetter = (key: string[]): number | null => {
         const flatKey = flattenKey(key)
         const group = totalsMap.get(flatKey)
         if (!group) return null
-        const values = group.getValues()
+        const values = group.getRawValues()
         return values[0] ?? null
       }
       return [...keys].sort(createValueComparator(valueGetter, isDescending))
@@ -183,15 +182,14 @@ export class PivotEngine {
     grandTotalValues: (number | null)[]
   ): (number | null)[] {
     const { values } = this.config
-    
+
     return rawValues.map((raw, i) => {
       const agg = values[i]!.aggregation
-      
-      if (!DERIVED_AGGREGATIONS.has(agg)) {
+
+      if (!isEffectivelyDerived(agg)) {
         return raw
       }
 
-      // Determine which total to use based on aggregation type
       switch (agg) {
         case 'pctTotal':
         case 'countPctTotal':
@@ -203,6 +201,8 @@ export class PivotEngine {
         case 'countPctCol':
           return calculatePercentage(raw, colTotalValues?.[i] ?? grandTotalValues[i] ?? null)
         default:
+          // Custom derived aggregations: no automatic percentage formula —
+          // the plugin's aggregator computes its own final value
           return raw
       }
     })
@@ -225,44 +225,42 @@ export class PivotEngine {
       this.colTotals
     )
 
-    // Get grand total raw values for percentage calculations
     const grandTotalRaw = this.grandTotal.getRawValues()
 
     // Build cells map with derived calculations
     const cells = new Map<string, CellValue>()
     for (const [key, group] of this.cells) {
-      // Parse the composite key to get row and col totals
       const [flatRowKey, flatColKey] = key.split('|')
       const rowTotalRaw = flatRowKey ? this.rowTotals.get(flatRowKey)?.getRawValues() ?? null : null
       const colTotalRaw = flatColKey ? this.colTotals.get(flatColKey)?.getRawValues() ?? null : null
-      
+
       const rawValues = group.getRawValues()
       const computedValues = this.computeDerivedValues(rawValues, rowTotalRaw, colTotalRaw, grandTotalRaw)
-      
+
       cells.set(key, {
         values: computedValues,
         formatted: computedValues.map((v, i) => formatNumber(v, values[i]!.aggregation)),
       })
     }
 
-    // Build row totals (for % row, the row total should show 100%)
+    // Row totals (% row shows 100% in the total column)
     const rowTotalsResult = new Map<string, CellValue>()
     for (const [key, group] of this.rowTotals) {
       const rawValues = group.getRawValues()
       const computedValues = this.computeDerivedValues(rawValues, rawValues, null, grandTotalRaw)
-      
+
       rowTotalsResult.set(key, {
         values: computedValues,
         formatted: computedValues.map((v, i) => formatNumber(v, values[i]!.aggregation)),
       })
     }
 
-    // Build column totals (for % col, the col total should show 100%)
+    // Column totals (% col shows 100% in the total row)
     const colTotalsResult = new Map<string, CellValue>()
     for (const [key, group] of this.colTotals) {
       const rawValues = group.getRawValues()
       const computedValues = this.computeDerivedValues(rawValues, null, rawValues, grandTotalRaw)
-      
+
       colTotalsResult.set(key, {
         values: computedValues,
         formatted: computedValues.map((v, i) => formatNumber(v, values[i]!.aggregation)),
@@ -270,7 +268,9 @@ export class PivotEngine {
     }
 
     // Grand total
-    const grandTotalComputed = this.computeDerivedValues(grandTotalRaw, grandTotalRaw, grandTotalRaw, grandTotalRaw)
+    const grandTotalComputed = this.computeDerivedValues(
+      grandTotalRaw, grandTotalRaw, grandTotalRaw, grandTotalRaw
+    )
     const grandTotal: CellValue = {
       values: grandTotalComputed,
       formatted: grandTotalComputed.map((v, i) => formatNumber(v, values[i]!.aggregation)),
@@ -380,7 +380,6 @@ export function getHeatmapColor(
   if (range.max === range.min) return 'rgba(59, 130, 246, 0.3)' // Single value
 
   const ratio = (value - range.min) / (range.max - range.min)
-  // Use blue color scale (matches accent color)
   const alpha = 0.1 + ratio * 0.5
   return `rgba(59, 130, 246, ${alpha.toFixed(2)})`
 }

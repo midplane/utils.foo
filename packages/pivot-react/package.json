@@ -1,0 +1,18 @@
+{
+  "name": "@utils-foo/pivot-react",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@utils-foo/pivot-engine": "*",
+    "@types/papaparse": "^5.5.2",
+    "papaparse": "^5.5.3"
+  },
+  "peerDependencies": {
+    "lucide-react": "^1.0.0",
+    "react": "^19.0.0"
+  }
+}

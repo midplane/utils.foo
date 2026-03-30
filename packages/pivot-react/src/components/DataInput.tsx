@@ -1,7 +1,7 @@
 import { useCallback } from 'react'
 import { Upload, FileSpreadsheet, X } from 'lucide-react'
-import { Card, CardContent, CardHeader } from '../../../components/ui/Card'
-import { Button } from '../../../components/ui/Button'
+import { Card, CardContent, CardHeader } from '../ui/Card'
+import { Button } from '../ui/Button'
 
 interface DataInputProps {
   value: string
@@ -22,7 +22,6 @@ export function DataInput({ value, onChange, error, onLoadSample }: DataInputPro
         onChange(text)
       }
       reader.readAsText(file)
-      // Reset so same file can be re-uploaded
       e.target.value = ''
     },
     [onChange]

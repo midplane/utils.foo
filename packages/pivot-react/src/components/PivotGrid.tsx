@@ -1,10 +1,8 @@
 import { useMemo, useCallback, useState } from 'react'
 import { Table2, Copy, Check } from 'lucide-react'
-import { Card, CardContent, CardHeader } from '../../../components/ui/Card'
-import { EmptyState } from '../../../components/ui/EmptyState'
-import { PivotResult, PivotConfig, AGGREGATION_LABELS } from '../types'
-import { PivotEngine, getHeatmapColor } from '../engine/PivotEngine'
-import { flattenKey, compositeKey } from '../engine/sorters'
+import { Card, CardContent, CardHeader } from '../ui/Card'
+import { EmptyState } from '../ui/EmptyState'
+import { PivotResult, PivotConfig, PivotEngine, getHeatmapColor, flattenKey, compositeKey, getAggregationLabel } from '@utils-foo/pivot-engine'
 
 interface PivotGridProps {
   result: PivotResult
@@ -38,7 +36,7 @@ export function PivotGrid({ result, config }: PivotGridProps) {
         const colLabel = colKey.join(' / ')
         if (numValues > 1) {
           for (const vc of valueConfigs) {
-            headerRow.push(`${colLabel} - ${AGGREGATION_LABELS[vc.aggregation]} of ${vc.field}`)
+            headerRow.push(`${colLabel} - ${getAggregationLabel(vc.aggregation)} of ${vc.field}`)
           }
         } else if (numValues === 1) {
           headerRow.push(colLabel)
@@ -50,7 +48,7 @@ export function PivotGrid({ result, config }: PivotGridProps) {
       if (config.showRowTotals) {
         if (numValues > 1) {
           for (const vc of valueConfigs) {
-            headerRow.push(`Total - ${AGGREGATION_LABELS[vc.aggregation]} of ${vc.field}`)
+            headerRow.push(`Total - ${getAggregationLabel(vc.aggregation)} of ${vc.field}`)
           }
         } else {
           headerRow.push('Total')
@@ -59,7 +57,7 @@ export function PivotGrid({ result, config }: PivotGridProps) {
     } else {
       // No columns - show value headers directly
       for (const vc of valueConfigs) {
-        headerRow.push(`${AGGREGATION_LABELS[vc.aggregation]} of ${vc.field}`)
+        headerRow.push(`${getAggregationLabel(vc.aggregation)} of ${vc.field}`)
       }
     }
 
@@ -310,7 +308,7 @@ export function PivotGrid({ result, config }: PivotGridProps) {
                         key={`val-header-${vi}`}
                         className="px-3 py-2 text-center font-semibold text-[var(--color-ink)] bg-[var(--color-cream-dark)] border-b border-[var(--color-border)] whitespace-nowrap"
                       >
-                        {AGGREGATION_LABELS[vc.aggregation]} of {vc.field}
+                        {getAggregationLabel(vc.aggregation)} of {vc.field}
                       </th>
                     ))}
                   </>
@@ -326,7 +324,7 @@ export function PivotGrid({ result, config }: PivotGridProps) {
                         key={`val-sub-${colIdx}-${vi}`}
                         className="px-2 py-1 text-center text-[10px] font-medium text-[var(--color-ink-muted)] bg-[var(--color-cream)] border-b border-r border-[var(--color-border)] whitespace-nowrap"
                       >
-                        {AGGREGATION_LABELS[vc.aggregation]} of {vc.field}
+                        {getAggregationLabel(vc.aggregation)} of {vc.field}
                       </th>
                     ))
                   )}

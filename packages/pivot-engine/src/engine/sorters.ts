@@ -56,8 +56,7 @@ export function naturalSort(a: unknown, b: unknown): number {
       if (RX_DIGIT.test(chunkA) && RX_DIGIT.test(chunkB)) {
         const diff = parseInt(chunkA, 10) - parseInt(chunkB, 10)
         if (diff !== 0) return diff
-        // Same numeric value but different string (e.g., "01" vs "1")
-        // Shorter string first
+        // Same numeric value but different string (e.g., "01" vs "1") — shorter first
         if (chunkA.length !== chunkB.length) {
           return chunkA.length - chunkB.length
         }
@@ -105,7 +104,7 @@ export function createValueComparator(
 
 // ─── Key Utilities ────────────────────────────────────────────────────────────
 
-// Use null character as delimiter (won't appear in normal data)
+// Null character as delimiter — won't appear in normal data
 const KEY_DELIMITER = '\0'
 
 export function flattenKey(key: string[]): string {

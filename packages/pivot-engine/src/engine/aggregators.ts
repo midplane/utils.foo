@@ -1,4 +1,11 @@
-import { Aggregator, AggregatorFactory, AggregationType, DERIVED_AGGREGATIONS } from '../types'
+import {
+  Aggregator,
+  AggregatorFactory,
+  AggregatorPlugin,
+  AggregationType,
+  AGGREGATION_LABELS,
+  DERIVED_AGGREGATIONS,
+} from '../types'
 
 // ─── Count Aggregator ─────────────────────────────────────────────────────────
 
@@ -167,7 +174,7 @@ class MaxAggregator implements Aggregator {
   }
 }
 
-// ─── Standard Deviation Aggregator (Welford's algorithm) ──────────────────────
+// ─── Standard Deviation Aggregator (Welford's algorithm) ─────────────────────
 
 class StdevAggregator implements Aggregator {
   private n = 0
@@ -234,7 +241,7 @@ class SumOverSumAggregator implements Aggregator {
 }
 
 // ─── Derived Aggregators (% of total/row/col) ─────────────────────────────────
-// These use Sum internally but format as percentage after totals are known
+// Collect raw sums/counts; the engine applies percentage formula using totals
 
 class DerivedSumAggregator implements Aggregator {
   private sum = 0
@@ -278,7 +285,7 @@ class DerivedCountAggregator implements Aggregator {
   }
 }
 
-// ─── Factory Map ──────────────────────────────────────────────────────────────
+// ─── Built-in Factory Map ─────────────────────────────────────────────────────
 
 const AGGREGATOR_FACTORIES: Record<AggregationType, AggregatorFactory> = {
   count: () => new CountAggregator(),
@@ -299,20 +306,96 @@ const AGGREGATOR_FACTORIES: Record<AggregationType, AggregatorFactory> = {
   countPctCol: () => new DerivedCountAggregator(),
 }
 
-export function createAggregator(type: AggregationType): Aggregator {
-  return AGGREGATOR_FACTORIES[type]()
+// ─── Plugin Registry ──────────────────────────────────────────────────────────
+
+const pluginRegistry = new Map<string, AggregatorPlugin>()
+
+/**
+ * Register a custom aggregation type. Call this once at startup before
+ * creating any PivotEngine instances that use the custom type.
+ *
+ * @example
+ * registerAggregator({
+ *   type: 'geoMean',
+ *   label: 'Geo Mean',
+ *   factory: () => { ... },
+ *   format: (v) => v?.toFixed(3) ?? '—',
+ * })
+ */
+export function registerAggregator(plugin: AggregatorPlugin): void {
+  if (plugin.type in AGGREGATOR_FACTORIES) {
+    throw new Error(`[pivot-engine] Cannot override built-in aggregation type: "${plugin.type}"`)
+  }
+  if (pluginRegistry.has(plugin.type)) {
+    console.warn(`[pivot-engine] Aggregator "${plugin.type}" is already registered. Overwriting.`)
+  }
+  pluginRegistry.set(plugin.type, plugin)
 }
 
-// ─── Number Formatting (US format) ────────────────────────────────────────────
+/**
+ * Returns all registered custom aggregator plugins (does not include built-ins).
+ * Useful for populating UI dropdowns with custom aggregation options.
+ */
+export function getRegisteredPlugins(): ReadonlyMap<string, AggregatorPlugin> {
+  return pluginRegistry
+}
+
+// ─── Factory ──────────────────────────────────────────────────────────────────
+
+export function createAggregator(type: AggregationType | string): Aggregator {
+  if (Object.prototype.hasOwnProperty.call(AGGREGATOR_FACTORIES, type)) {
+    return (AGGREGATOR_FACTORIES as Record<string, AggregatorFactory>)[type]!()
+  }
+  const plugin = pluginRegistry.get(type)
+  if (plugin) return plugin.factory()
+  throw new Error(
+    `[pivot-engine] Unknown aggregation type: "${type}". Register it with registerAggregator() first.`
+  )
+}
+
+// ─── Derived Check ────────────────────────────────────────────────────────────
+
+/** Returns true if the aggregation type should be treated as post-hoc derived. */
+export function isEffectivelyDerived(type: AggregationType | string): boolean {
+  if (DERIVED_AGGREGATIONS.has(type as AggregationType)) return true
+  return pluginRegistry.get(type)?.isDerived === true
+}
+
+// ─── Label Lookup ─────────────────────────────────────────────────────────────
+
+/** Returns the display label for any aggregation type (built-in or custom). */
+export function getAggregationLabel(type: AggregationType | string): string {
+  return (
+    AGGREGATION_LABELS[type as AggregationType] ??
+    pluginRegistry.get(type)?.label ??
+    type
+  )
+}
+
+/**
+ * Returns all aggregation options (built-ins + registered plugins) as a flat list,
+ * suitable for populating a UI select element.
+ */
+export function getAllAggregations(): Array<{ type: string; label: string }> {
+  const builtIns = Object.entries(AGGREGATION_LABELS).map(([type, label]) => ({ type, label }))
+  const customs = Array.from(pluginRegistry.values()).map(({ type, label }) => ({ type, label }))
+  return [...builtIns, ...customs]
+}
+
+// ─── Number Formatting ────────────────────────────────────────────────────────
 
 export function formatNumber(
   value: number | null,
-  aggregationType: AggregationType
+  aggregationType: AggregationType | string
 ): string {
+  // Check plugin registry first (plugin may handle null its own way)
+  const plugin = pluginRegistry.get(aggregationType)
+  if (plugin?.format) return plugin.format(value)
+
   if (value === null) return '—'
 
   // Percentage types
-  if (DERIVED_AGGREGATIONS.has(aggregationType)) {
+  if (DERIVED_AGGREGATIONS.has(aggregationType as AggregationType)) {
     return (value * 100).toLocaleString('en-US', {
       minimumFractionDigits: 1,
       maximumFractionDigits: 1,
@@ -327,7 +410,7 @@ export function formatNumber(
     })
   }
 
-  // Determine decimal places based on aggregation type
+  // Decimal places by aggregation type
   let decimals: number
   switch (aggregationType) {
     case 'count':
@@ -340,7 +423,7 @@ export function formatNumber(
       decimals = 2
       break
     default:
-      // For sum, min, max - use up to 2 decimals only if needed
+      // sum, min, max — integer if whole, 2 decimals otherwise
       decimals = Number.isInteger(value) ? 0 : 2
   }
 

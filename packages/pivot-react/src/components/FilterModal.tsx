@@ -1,10 +1,10 @@
 import { useState, useMemo, useCallback, useRef, useEffect } from 'react'
 import { X, Check, Search } from 'lucide-react'
-import { Modal } from '../../../components/ui/Modal'
-import { Button } from '../../../components/ui/Button'
-import { Checkbox } from '../../../components/ui/Checkbox'
-import { EmptyState } from '../../../components/ui/EmptyState'
-import { naturalSort } from '../engine/sorters'
+import { naturalSort } from '@utils-foo/pivot-engine'
+import { Modal } from '../ui/Modal'
+import { Button } from '../ui/Button'
+import { Checkbox } from '../ui/Checkbox'
+import { EmptyState } from '../ui/EmptyState'
 
 interface FilterModalProps {
   open: boolean
@@ -23,26 +23,21 @@ export function FilterModal({
   excludedValues,
   onApply,
 }: FilterModalProps) {
-  // Initialize with prop value - component is remounted when modal is shown
-  // because parent conditionally renders based on filterModalField
   const [localExcluded, setLocalExcluded] = useState<Set<string>>(() => new Set(excludedValues))
   const [search, setSearch] = useState('')
   const searchRef = useRef<HTMLInputElement>(null)
 
-  // Focus search input on mount
   useEffect(() => {
     if (!open) return
     const timer = setTimeout(() => searchRef.current?.focus(), 100)
     return () => clearTimeout(timer)
   }, [open])
 
-  // Sort values naturally
   const sortedValues = useMemo(
     () => [...allValues].sort((a, b) => naturalSort(a, b)),
     [allValues]
   )
 
-  // Filter by search
   const filteredValues = useMemo(() => {
     const q = search.trim().toLowerCase()
     if (!q) return sortedValues
@@ -64,9 +59,7 @@ export function FilterModal({
   const handleSelectAll = useCallback(() => {
     setLocalExcluded((prev) => {
       const next = new Set(prev)
-      for (const v of filteredValues) {
-        next.delete(v)
-      }
+      for (const v of filteredValues) next.delete(v)
       return next
     })
   }, [filteredValues])
@@ -74,9 +67,7 @@ export function FilterModal({
   const handleSelectNone = useCallback(() => {
     setLocalExcluded((prev) => {
       const next = new Set(prev)
-      for (const v of filteredValues) {
-        next.add(v)
-      }
+      for (const v of filteredValues) next.add(v)
       return next
     })
   }, [filteredValues])
@@ -87,7 +78,6 @@ export function FilterModal({
   }, [onApply, onClose, localExcluded])
 
   const handleCancel = useCallback(() => {
-    // Reset to original and close
     setLocalExcluded(new Set(excludedValues))
     setSearch('')
     onClose()
@@ -98,7 +88,6 @@ export function FilterModal({
   return (
     <Modal open={open} onClose={handleCancel} title={`Filter: ${fieldName}`}>
       <div className="space-y-3">
-        {/* Search */}
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--color-ink-muted)]" />
           <input
@@ -111,19 +100,12 @@ export function FilterModal({
           />
         </div>
 
-        {/* Quick actions */}
         <div className="flex items-center gap-2 text-xs">
-          <button
-            onClick={handleSelectAll}
-            className="text-[var(--color-accent)] hover:underline"
-          >
+          <button onClick={handleSelectAll} className="text-[var(--color-accent)] hover:underline">
             Select All
           </button>
           <span className="text-[var(--color-ink-muted)]">|</span>
-          <button
-            onClick={handleSelectNone}
-            className="text-[var(--color-accent)] hover:underline"
-          >
+          <button onClick={handleSelectNone} className="text-[var(--color-accent)] hover:underline">
             Select None
           </button>
           <span className="ml-auto text-[var(--color-ink-muted)]">
@@ -131,7 +113,6 @@ export function FilterModal({
           </span>
         </div>
 
-        {/* Value list */}
         <div className="max-h-64 overflow-y-auto border border-[var(--color-border)] rounded-lg divide-y divide-[var(--color-border)]">
           {filteredValues.length === 0 ? (
             <EmptyState size="sm" message="No values match your search" className="px-3" />
@@ -156,7 +137,6 @@ export function FilterModal({
           )}
         </div>
 
-        {/* Actions */}
         <div className="flex justify-end gap-2 pt-2">
           <Button variant="ghost" onClick={handleCancel}>
             <X className="w-3.5 h-3.5" />

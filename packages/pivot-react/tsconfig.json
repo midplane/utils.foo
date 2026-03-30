@@ -1,7 +1,6 @@
 {
   "compilerOptions": {
     "target": "ES2020",
-    "useDefineForClassFields": true,
     "lib": ["ES2020", "DOM", "DOM.Iterable"],
     "module": "ESNext",
     "skipLibCheck": true,
@@ -17,10 +16,9 @@
     "noFallthroughCasesInSwitch": true,
     "noUncheckedIndexedAccess": true,
     "paths": {
-      "@utils-foo/pivot-engine": ["./packages/pivot-engine/src/index.ts"],
-      "@utils-foo/pivot-react": ["./packages/pivot-react/src/index.ts"],
-      "@ui/*": ["./src/components/ui/*"]
+      "@utils-foo/pivot-engine": ["../pivot-engine/src/index.ts"],
+      "@ui/*": ["../../src/components/ui/*"]
     }
   },
-  "include": ["src", "packages/*/src"]
+  "include": ["src"]
 }

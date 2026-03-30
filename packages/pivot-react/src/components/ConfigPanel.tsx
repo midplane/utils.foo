@@ -1,17 +1,18 @@
 import { useState, useCallback, useMemo } from 'react'
 import { Plus, X, GripVertical } from 'lucide-react'
-import { Toggle } from '../../../components/ui/Toggle'
-import { FilterModal } from './FilterModal'
 import {
   PivotConfig,
   ValueConfig,
   FilterConfig,
   FieldInfo,
-  AGGREGATION_LABELS,
   SORT_ORDER_LABELS,
   HEATMAP_LABELS,
   DUAL_FIELD_AGGREGATIONS,
-} from '../types'
+  getAllAggregations,
+  getRegisteredPlugins,
+} from '@utils-foo/pivot-engine'
+import { Toggle } from '../ui/Toggle'
+import { FilterModal } from './FilterModal'
 
 // ─── Draggable Field Chip ─────────────────────────────────────────────────────
 
@@ -60,7 +61,6 @@ interface DropZoneProps {
   allFields: FieldInfo[]
   onDrop: (field: string) => void
   onRemove: (field: string) => void
-  onReorder?: (fields: string[]) => void
   activeFilters?: Map<string, number>
   onFilterClick?: (field: string) => void
   className?: string
@@ -89,9 +89,7 @@ function DropZone({
     setIsDragOver(true)
   }, [])
 
-  const handleDragLeave = useCallback(() => {
-    setIsDragOver(false)
-  }, [])
+  const handleDragLeave = useCallback(() => setIsDragOver(false), [])
 
   const handleDrop = useCallback(
     (e: React.DragEvent) => {
@@ -121,9 +119,7 @@ function DropZone({
       </div>
       <div className="flex flex-wrap gap-1 min-h-[28px]">
         {fields.length === 0 ? (
-          <span className="text-[10px] text-[var(--color-ink-muted)] italic">
-            Drop fields here
-          </span>
+          <span className="text-[10px] text-[var(--color-ink-muted)] italic">Drop fields here</span>
         ) : (
           fields.map((field) => {
             const info = fieldInfoMap.get(field)
@@ -163,14 +159,19 @@ interface ValueConfigInlineProps {
   onRemove: () => void
 }
 
-function ValueConfigInline({
-  config,
-  fields,
-  numericFields,
-  onUpdate,
-  onRemove,
-}: ValueConfigInlineProps) {
-  const isDualField = DUAL_FIELD_AGGREGATIONS.has(config.aggregation)
+function ValueConfigInline({ config, fields, numericFields, onUpdate, onRemove }: ValueConfigInlineProps) {
+  // All aggregation options: built-ins + registered plugins
+  const allAggregations = useMemo(
+    () => getAllAggregations(),
+    // Re-compute only if new plugins are registered (rare, so useMemo is stable)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [getRegisteredPlugins().size]
+  )
+
+  const isDualField =
+    DUAL_FIELD_AGGREGATIONS.has(config.aggregation as Parameters<typeof DUAL_FIELD_AGGREGATIONS['has']>[0]) ||
+    (getRegisteredPlugins().get(config.aggregation)?.requiresSecondField === true)
+
   const availableFields =
     config.aggregation === 'count' || config.aggregation === 'countUnique'
       ? fields
@@ -182,15 +183,11 @@ function ValueConfigInline({
     <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-[var(--color-surface)] border border-[var(--color-border)] rounded text-xs shadow-sm">
       <select
         value={config.aggregation}
-        onChange={(e) =>
-          onUpdate({ ...config, aggregation: e.target.value as ValueConfig['aggregation'] })
-        }
+        onChange={(e) => onUpdate({ ...config, aggregation: e.target.value })}
         className="bg-transparent text-[10px] font-medium focus:outline-none cursor-pointer"
       >
-        {Object.entries(AGGREGATION_LABELS).map(([key, label]) => (
-          <option key={key} value={key}>
-            {label}
-          </option>
+        {allAggregations.map(({ type, label }) => (
+          <option key={type} value={type}>{label}</option>
         ))}
       </select>
       <span className="text-[var(--color-ink-muted)]">of</span>
@@ -201,9 +198,7 @@ function ValueConfigInline({
       >
         <option value="">—</option>
         {availableFields.map((f) => (
-          <option key={f} value={f}>
-            {f}
-          </option>
+          <option key={f} value={f}>{f}</option>
         ))}
       </select>
       {isDualField && (
@@ -216,9 +211,7 @@ function ValueConfigInline({
           >
             <option value="">—</option>
             {availableFields2.map((f) => (
-              <option key={f} value={f}>
-                {f}
-              </option>
+              <option key={f} value={f}>{f}</option>
             ))}
           </select>
         </>
@@ -248,13 +241,11 @@ export function ConfigPanel({ config, fields, onConfigChange }: ConfigPanelProps
     [fields]
   )
 
-  // Fields not yet assigned to rows, cols, or filters
   const unassignedFields = useMemo(() => {
     const assigned = new Set([...config.rows, ...config.cols])
     return fieldNames.filter((f) => !assigned.has(f))
   }, [fieldNames, config.rows, config.cols])
 
-  // Active filter counts by field
   const activeFilterCounts = useMemo(() => {
     const counts = new Map<string, number>()
     for (const f of config.filters) {
@@ -265,11 +256,8 @@ export function ConfigPanel({ config, fields, onConfigChange }: ConfigPanelProps
     return counts
   }, [config.filters])
 
-  // ─── Handlers ──────────────────────────────────────────────────────────────
-
   const handleDropToRows = useCallback(
     (field: string) => {
-      // Remove from cols if present
       const newCols = config.cols.filter((f) => f !== field)
       onConfigChange({ ...config, rows: [...config.rows, field], cols: newCols })
     },
@@ -278,7 +266,6 @@ export function ConfigPanel({ config, fields, onConfigChange }: ConfigPanelProps
 
   const handleDropToCols = useCallback(
     (field: string) => {
-      // Remove from rows if present
       const newRows = config.rows.filter((f) => f !== field)
       onConfigChange({ ...config, cols: [...config.cols, field], rows: newRows })
     },
@@ -286,16 +273,12 @@ export function ConfigPanel({ config, fields, onConfigChange }: ConfigPanelProps
   )
 
   const handleRemoveFromRows = useCallback(
-    (field: string) => {
-      onConfigChange({ ...config, rows: config.rows.filter((f) => f !== field) })
-    },
+    (field: string) => onConfigChange({ ...config, rows: config.rows.filter((f) => f !== field) }),
     [config, onConfigChange]
   )
 
   const handleRemoveFromCols = useCallback(
-    (field: string) => {
-      onConfigChange({ ...config, cols: config.cols.filter((f) => f !== field) })
-    },
+    (field: string) => onConfigChange({ ...config, cols: config.cols.filter((f) => f !== field) }),
     [config, onConfigChange]
   )
 
@@ -319,8 +302,7 @@ export function ConfigPanel({ config, fields, onConfigChange }: ConfigPanelProps
 
   const handleRemoveValue = useCallback(
     (index: number) => {
-      const values = config.values.filter((_, i) => i !== index)
-      onConfigChange({ ...config, values })
+      onConfigChange({ ...config, values: config.values.filter((_, i) => i !== index) })
     },
     [config, onConfigChange]
   )
@@ -349,21 +331,17 @@ export function ConfigPanel({ config, fields, onConfigChange }: ConfigPanelProps
     ? config.filters.find((f) => f.field === filterModalField)?.excludedValues || new Set<string>()
     : new Set<string>()
 
-  // ─── Render ────────────────────────────────────────────────────────────────
-
   return (
     <>
       <div className="space-y-3 p-3 bg-[var(--color-cream)] border border-[var(--color-border)] rounded-lg text-xs">
-        {/* Row 1: Available Fields */}
+        {/* Available Fields */}
         <div>
           <div className="text-[10px] font-semibold text-[var(--color-ink-muted)] uppercase tracking-wider mb-2">
             Fields
           </div>
           <div className="flex flex-wrap gap-1.5">
             {unassignedFields.length === 0 ? (
-              <span className="text-[10px] text-[var(--color-ink-muted)] italic">
-                All fields assigned
-              </span>
+              <span className="text-[10px] text-[var(--color-ink-muted)] italic">All fields assigned</span>
             ) : (
               unassignedFields.map((field) => {
                 const info = fields.find((f) => f.name === field)
@@ -373,7 +351,7 @@ export function ConfigPanel({ config, fields, onConfigChange }: ConfigPanelProps
           </div>
         </div>
 
-        {/* Row 2: Drop Zones - Rows, Columns, Filters */}
+        {/* Drop Zones */}
         <div className="flex gap-3">
           <DropZone
             label="Rows"
@@ -400,9 +378,8 @@ export function ConfigPanel({ config, fields, onConfigChange }: ConfigPanelProps
           />
         </div>
 
-        {/* Row 3: Values and Options */}
+        {/* Values and Options */}
         <div className="flex flex-wrap items-center gap-3 pt-2 border-t border-[var(--color-border)]">
-          {/* Values */}
           <div className="flex items-center gap-1.5">
             <span className="text-[10px] font-semibold text-[var(--color-ink-muted)] uppercase tracking-wider">
               Values:
@@ -427,7 +404,6 @@ export function ConfigPanel({ config, fields, onConfigChange }: ConfigPanelProps
 
           <div className="flex-1" />
 
-          {/* Options */}
           <div className="flex items-center gap-3">
             <label className="flex items-center gap-1 cursor-pointer">
               <Toggle
@@ -454,9 +430,7 @@ export function ConfigPanel({ config, fields, onConfigChange }: ConfigPanelProps
                 className="px-1.5 py-0.5 bg-[var(--color-surface)] border border-[var(--color-border)] rounded text-xs focus:outline-none cursor-pointer"
               >
                 {Object.entries(HEATMAP_LABELS).map(([key, label]) => (
-                  <option key={key} value={key}>
-                    {label}
-                  </option>
+                  <option key={key} value={key}>{label}</option>
                 ))}
               </select>
             </label>
@@ -471,9 +445,7 @@ export function ConfigPanel({ config, fields, onConfigChange }: ConfigPanelProps
                 className="px-1.5 py-0.5 bg-[var(--color-surface)] border border-[var(--color-border)] rounded text-xs focus:outline-none cursor-pointer"
               >
                 {Object.entries(SORT_ORDER_LABELS).map(([key, label]) => (
-                  <option key={key} value={key}>
-                    {label}
-                  </option>
+                  <option key={key} value={key}>{label}</option>
                 ))}
               </select>
             </label>
@@ -481,7 +453,6 @@ export function ConfigPanel({ config, fields, onConfigChange }: ConfigPanelProps
         </div>
       </div>
 
-      {/* Filter Modal */}
       {modalFieldInfo && (
         <FilterModal
           key={modalFieldInfo.name}
