@@ -281,9 +281,13 @@ describe('registerAggregator plugin API', () => {
   })
 
   it('getRegisteredPlugins returns registered plugin', () => {
-    // Plugin registered in earlier test is visible
+    registerAggregator({
+      type: '__test_registry_check__',
+      label: 'Registry Check',
+      factory: () => createAggregator('count'),
+    })
     const plugins = getRegisteredPlugins()
-    expect(plugins.has('__test_double__')).toBe(true)
+    expect(plugins.has('__test_registry_check__')).toBe(true)
   })
 
   it('getAllAggregations includes built-ins and custom plugins', () => {

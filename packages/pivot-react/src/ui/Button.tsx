@@ -9,6 +9,7 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant = 'primary', size = 'md', ...props }, ref) => (
     <button
+      type="button"
       ref={ref}
       className={cn(
         'inline-flex items-center justify-center font-medium transition-colors rounded-lg cursor-pointer focus:outline-none focus:ring-1 focus:ring-[var(--color-accent)]/50 disabled:opacity-50 disabled:pointer-events-none',

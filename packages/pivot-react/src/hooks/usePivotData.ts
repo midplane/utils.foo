@@ -7,7 +7,7 @@ export function usePivotData(
 ): PivotResult {
   return useMemo(() => {
     // Skip computation if no values configured
-    if (config.values.length === 0 || (config.rows.length === 0 && config.cols.length === 0)) {
+    if (config.values.length === 0) {
       return {
         rowKeys: [],
         colKeys: [],
