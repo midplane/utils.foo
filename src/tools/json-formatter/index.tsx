@@ -235,11 +235,22 @@ export default function JsonFormatterTool() {
   const handleUnescape = () => {
     const text = currentText;
     if (!text) return;
+    // Case 1: text is a quoted JSON string, e.g. "{\"type\":\"foo\"}"
+    try {
+      const parsed = JSON.parse(text);
+      if (typeof parsed === 'string') {
+        setEditorContent(parsed);
+        return;
+      }
+    } catch {
+      // not a quoted JSON string, fall through
+    }
+    // Case 2: text is escaped content without surrounding quotes, e.g. hello\\nworld
     try {
       const unescaped = JSON.parse('"' + text + '"') as string;
       setEditorContent(unescaped);
     } catch {
-      setValidState("invalid");
+      // already unescaped or not escape-encoded — do nothing silently
     }
   };
 
