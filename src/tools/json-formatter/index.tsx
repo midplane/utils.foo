@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Braces, AlignLeft, ChevronsLeftRight, CircleCheck, RefreshCw, Trash2, ListFilter, Play, X, HelpCircle } from "lucide-react";
+import { Braces, AlignLeft, ChevronsLeftRight, CircleCheck, RefreshCw, Trash2, ListFilter, Play, X, HelpCircle, Quote } from "lucide-react";
 import { basicSetup } from "codemirror";
 import { EditorView } from "@codemirror/view";
 import { EditorState, Compartment } from "@codemirror/state";
@@ -225,6 +225,35 @@ export default function JsonFormatterTool() {
     setValidState(result.valid ? "valid" : "invalid");
   };
 
+  const handleEscape = () => {
+    const text = currentText;
+    if (!text) return;
+    const escaped = JSON.stringify(text).slice(1, -1);
+    setEditorContent(escaped);
+  };
+
+  const handleUnescape = () => {
+    const text = currentText;
+    if (!text) return;
+    // Case 1: text is a quoted JSON string, e.g. "{\"type\":\"foo\"}"
+    try {
+      const parsed = JSON.parse(text);
+      if (typeof parsed === 'string') {
+        setEditorContent(parsed);
+        return;
+      }
+    } catch {
+      // not a quoted JSON string, fall through
+    }
+    // Case 2: text is escaped content without surrounding quotes, e.g. hello\\nworld
+    try {
+      const unescaped = JSON.parse('"' + text + '"') as string;
+      setEditorContent(unescaped);
+    } catch {
+      // already unescaped or not escape-encoded — do nothing silently
+    }
+  };
+
   const handleClear = () => {
     setEditorContent("");
     setValidState("idle");
@@ -292,6 +321,14 @@ export default function JsonFormatterTool() {
                    <ListFilter className="w-3 h-3" />
                    Filter
                  </Button>
+                <Button variant="secondary" size="sm" onClick={handleEscape} className="gap-1.5 text-xs h-7 px-3">
+                  <Quote className="w-3 h-3" />
+                  Escape
+                </Button>
+                <Button variant="secondary" size="sm" onClick={handleUnescape} className="gap-1.5 text-xs h-7 px-3">
+                  <Quote className="w-3 h-3" />
+                  Unescape
+                </Button>
 
                 {validState === "valid" && (
                   <Badge variant="success" className="text-[10px] animate-fade-in">Valid JSON</Badge>

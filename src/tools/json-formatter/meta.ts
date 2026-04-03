@@ -6,7 +6,7 @@ export const meta: ToolMeta = {
   name: 'JSON Formatter',
   description: 'Prettify, minify, and validate JSON with inline error highlighting',
   category: 'Formatting',
-  keywords: ['json', 'format', 'prettify', 'minify', 'validate', 'lint', 'formatter', 'beautify', 'parse'],
+  keywords: ['json', 'format', 'prettify', 'minify', 'validate', 'lint', 'formatter', 'beautify', 'parse', 'escape', 'unescape'],
   path: '/json',
   icon: Braces,
 }
