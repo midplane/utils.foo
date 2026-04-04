@@ -1,6 +1,5 @@
 import { useState, useCallback, useRef } from 'react'
 import { Card, CardContent, CardHeader } from '../../components/ui/Card'
-import { CopyButton } from '../../components/ui/CopyButton'
 import { InfoCard } from '../../components/ui/InfoCard'
 import { Badge } from '../../components/ui/Badge'
 import { ToolHeader } from '../../components/ui/ToolHeader'
@@ -74,10 +73,7 @@ function TagSection({ title, icon, data, defaultOpen = true }: TagSectionProps) 
               return (
                 <div key={key} className="flex items-center justify-between gap-4 py-1.5">
                   <span className="text-xs text-[var(--color-ink-muted)] shrink-0">{key}</span>
-                  <div className="flex items-center gap-1.5 min-w-0">
-                    <span className="text-xs font-mono text-[var(--color-ink)] truncate">{formatted}</span>
-                    <CopyButton text={formatted} className="shrink-0 !h-5 !w-5 !p-0 [&>svg]:!w-2.5 [&>svg]:!h-2.5" />
-                  </div>
+                  <span className="text-xs font-mono text-[var(--color-ink)] truncate">{formatted}</span>
                 </div>
               )
             })}
@@ -116,9 +112,8 @@ function GpsCard({ gps }: { gps: ExifData }) {
             <div className="text-sm font-mono text-[var(--color-ink)]">{lngDms}</div>
           </div>
         </div>
-        <div className="flex items-center gap-2 text-xs text-[var(--color-ink-muted)] font-mono">
-          <span>{coords.lat.toFixed(6)}, {coords.lng.toFixed(6)}</span>
-          <CopyButton text={`${coords.lat.toFixed(6)}, ${coords.lng.toFixed(6)}`} />
+        <div className="text-xs text-[var(--color-ink-muted)] font-mono">
+          {coords.lat.toFixed(6)}, {coords.lng.toFixed(6)}
         </div>
         {gps.GPSAltitude !== undefined && (
           <div className="text-xs text-[var(--color-ink-muted)]">
