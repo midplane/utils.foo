@@ -297,60 +297,68 @@ export default function JsonFormatterTool() {
         {/* Main Card */}
         <ExpandableCard expanded={expanded} onExpandedChange={setExpanded}>
           <ExpandableCardHeader>
-            <div className="flex items-center justify-between flex-wrap gap-2">
-              {/* Action buttons */}
-              <div className="flex items-center gap-1.5">
-                <Button variant="secondary" size="sm" onClick={handlePrettify} className="gap-1.5 text-xs h-7 px-3">
-                  <AlignLeft className="w-3 h-3" />
-                  Prettify
-                </Button>
-                <Button variant="secondary" size="sm" onClick={handleMinify} className="gap-1.5 text-xs h-7 px-3">
-                  <ChevronsLeftRight className="w-3 h-3" />
-                  Minify
-                </Button>
-                <Button variant="secondary" size="sm" onClick={handleValidate} className="gap-1.5 text-xs h-7 px-3">
-                   <CircleCheck className="w-3 h-3" />
-                   Validate
-                 </Button>
-                 <Button
-                   variant="secondary"
-                   size="sm"
-                   onClick={() => setFilterOpen((v) => !v)}
-                   className={cn("gap-1.5 text-xs h-7 px-3", filterOpen && "text-[var(--color-accent)] border-[var(--color-accent)]")}
-                 >
-                   <ListFilter className="w-3 h-3" />
-                   Filter
-                 </Button>
-                <Button variant="secondary" size="sm" onClick={handleEscape} className="gap-1.5 text-xs h-7 px-3">
-                  <Quote className="w-3 h-3" />
-                  Escape
-                </Button>
-                <Button variant="secondary" size="sm" onClick={handleUnescape} className="gap-1.5 text-xs h-7 px-3">
-                  <Quote className="w-3 h-3" />
-                  Unescape
-                </Button>
+            <div className="flex flex-col gap-1.5">
+              {/* Row 1: Primary actions */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5">
+                  <Button variant="secondary" size="sm" onClick={handlePrettify} className="gap-1.5 text-xs h-7 px-3">
+                    <AlignLeft className="w-3 h-3" />
+                    Prettify
+                  </Button>
+                  <Button variant="secondary" size="sm" onClick={handleMinify} className="gap-1.5 text-xs h-7 px-3">
+                    <ChevronsLeftRight className="w-3 h-3" />
+                    Minify
+                  </Button>
+                  <Button variant="secondary" size="sm" onClick={handleValidate} className="gap-1.5 text-xs h-7 px-3">
+                    <CircleCheck className="w-3 h-3" />
+                    Validate
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => setFilterOpen((v) => !v)}
+                    className={cn("gap-1.5 text-xs h-7 px-3", filterOpen && "text-[var(--color-accent)] border-[var(--color-accent)]")}
+                  >
+                    <ListFilter className="w-3 h-3" />
+                    Filter
+                  </Button>
+                </div>
 
-                {validState === "valid" && (
-                  <Badge variant="success" className="text-[10px] animate-fade-in">Valid JSON</Badge>
-                )}
-                {validState === "invalid" && (
-                  <Badge variant="error" className="text-[10px] animate-fade-in">Invalid JSON</Badge>
-                )}
+                <div className="flex items-center gap-1.5">
+                  {validState === "valid" && (
+                    <Badge variant="success" className="text-[10px] animate-fade-in">Valid JSON</Badge>
+                  )}
+                  {validState === "invalid" && (
+                    <Badge variant="error" className="text-[10px] animate-fade-in">Invalid JSON</Badge>
+                  )}
+                  <ExpandToggleButton />
+                </div>
               </div>
 
-              {/* Secondary actions */}
-              <div className="flex items-center gap-1">
-                <Button variant="ghost" size="sm" onClick={handleSample} className="gap-1 text-xs h-7 px-2">
-                  <RefreshCw className="w-3 h-3" />
-                  Sample
-                </Button>
-                <CopyButton text={currentText} />
-                <Button variant="ghost" size="sm" onClick={handleClear} className="gap-1 text-xs h-7 px-2">
-                  <Trash2 className="w-3 h-3" />
-                  Clear
-                </Button>
-                {/* Expand / collapse */}
-                <ExpandToggleButton />
+              {/* Row 2: Secondary actions */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5">
+                  <Button variant="secondary" size="sm" onClick={handleEscape} className="gap-1.5 text-xs h-7 px-3">
+                    <Quote className="w-3 h-3" />
+                    Escape
+                  </Button>
+                  <Button variant="secondary" size="sm" onClick={handleUnescape} className="gap-1.5 text-xs h-7 px-3">
+                    <Quote className="w-3 h-3" />
+                    Unescape
+                  </Button>
+                </div>
+
+                <div className="flex items-center gap-1">
+                  <Button variant="ghost" size="sm" onClick={handleSample} className="gap-1 text-xs h-7 px-2">
+                    <RefreshCw className="w-3 h-3" />
+                    Sample
+                  </Button>
+                  <CopyButton text={currentText} />
+                  <Button variant="ghost" size="sm" onClick={handleClear} className="gap-1 text-xs h-7 px-2">
+                    <Trash2 className="w-3 h-3" />
+                    Clear
+                  </Button>
+                </div>
               </div>
             </div>
           </ExpandableCardHeader>
