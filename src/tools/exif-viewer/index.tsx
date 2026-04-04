@@ -150,6 +150,7 @@ export default function ExifViewerTool() {
   const [error, setError] = useState<string>('')
   const [isDragging, setIsDragging] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const loadIdRef = useRef(0)
 
   const processFile = useCallback((file: File) => {
     setError('')
@@ -161,17 +162,23 @@ export default function ExifViewerTool() {
       return
     }
 
+    const currentLoadId = ++loadIdRef.current
+
     setFileName(file.name)
     setFileSize(file.size)
 
     // Create preview
     const previewReader = new FileReader()
-    previewReader.onload = () => setPreview(previewReader.result as string)
+    previewReader.onload = () => {
+      if (loadIdRef.current !== currentLoadId) return
+      setPreview(previewReader.result as string)
+    }
     previewReader.readAsDataURL(file)
 
     // Parse EXIF
     const reader = new FileReader()
     reader.onload = () => {
+      if (loadIdRef.current !== currentLoadId) return
       const result = parseExif(reader.result as ArrayBuffer)
       if (!result) {
         setError('No EXIF data found in this image. The metadata may have been stripped.')
@@ -320,7 +327,7 @@ export default function ExifViewerTool() {
       )}
 
       {/* Quick stats */}
-      {exif && (camera || exposure || fNumber || iso) && (
+      {exif && (camera || lens || exposure || fNumber || iso || focalLength) && (
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
           {camera && <StatCard icon={<Camera />} label="Camera" value={camera} />}
           {lens && <StatCard icon={<Ruler />} label="Lens" value={lens} />}

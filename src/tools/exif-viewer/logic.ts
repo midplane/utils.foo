@@ -332,10 +332,19 @@ function readIFD(
   littleEndian: boolean,
 ): ExifData {
   const result: ExifData = {}
-  const entryCount = view.getUint16(tiffStart + ifdOffset, littleEndian)
+  const ifdStart = tiffStart + ifdOffset
+
+  // Bounds check: need at least 2 bytes to read entry count
+  if (ifdStart < 0 || ifdStart + 2 > view.byteLength) return result
+
+  const entryCount = view.getUint16(ifdStart, littleEndian)
 
   for (let i = 0; i < entryCount; i++) {
-    const entryOffset = tiffStart + ifdOffset + 2 + i * 12
+    const entryOffset = ifdStart + 2 + i * 12
+
+    // Bounds check: each IFD entry is 12 bytes
+    if (entryOffset + 12 > view.byteLength) break
+
     const tag = view.getUint16(entryOffset, littleEndian)
     const format = view.getUint16(entryOffset + 2, littleEndian)
     const count = view.getUint32(entryOffset + 4, littleEndian)
@@ -364,41 +373,55 @@ function readIFD(
 }
 
 export function parseExif(buffer: ArrayBuffer): ParsedExif | null {
-  const view = new DataView(buffer)
+  try {
+    const view = new DataView(buffer)
 
-  // Find JPEG SOI
-  if (view.getUint16(0) !== 0xFFD8) return null
+    // Guard against tiny/truncated files
+    if (view.byteLength < 4) return null
 
-  // Walk JPEG segments to find APP1 (EXIF)
-  let offset = 2
-  while (offset < view.byteLength - 4) {
-    const marker = view.getUint16(offset)
-    if (marker === 0xFFE1) {
-      // APP1 found
-      const segLen = view.getUint16(offset + 2)
-      // Check "Exif\0\0" header
-      if (
-        view.getUint8(offset + 4) === 0x45 && // E
-        view.getUint8(offset + 5) === 0x78 && // x
-        view.getUint8(offset + 6) === 0x69 && // i
-        view.getUint8(offset + 7) === 0x66 && // f
-        view.getUint8(offset + 8) === 0x00 &&
-        view.getUint8(offset + 9) === 0x00
-      ) {
-        return parseExifFromTiff(view, offset + 10)
+    // Find JPEG SOI
+    if (view.getUint16(0) !== 0xFFD8) return null
+
+    // Walk JPEG segments to find APP1 (EXIF)
+    let offset = 2
+    while (offset + 4 <= view.byteLength) {
+      const marker = view.getUint16(offset)
+      if (marker === 0xFFE1) {
+        // APP1 found
+        const segLen = view.getUint16(offset + 2)
+        // Validate segment fits in buffer and is large enough for "Exif\0\0" header (8 bytes)
+        if (segLen < 8 || offset + 2 + segLen > view.byteLength) {
+          offset += 2 + segLen
+          continue
+        }
+        // Check "Exif\0\0" header
+        if (
+          view.getUint8(offset + 4) === 0x45 && // E
+          view.getUint8(offset + 5) === 0x78 && // x
+          view.getUint8(offset + 6) === 0x69 && // i
+          view.getUint8(offset + 7) === 0x66 && // f
+          view.getUint8(offset + 8) === 0x00 &&
+          view.getUint8(offset + 9) === 0x00
+        ) {
+          return parseExifFromTiff(view, offset + 10)
+        }
+        offset += 2 + segLen
+      } else if ((marker & 0xFF00) === 0xFF00) {
+        // Other marker — skip
+        if (marker === 0xFFDA) break // Start of scan, stop
+        if (offset + 4 > view.byteLength) break
+        const len = view.getUint16(offset + 2)
+        offset += 2 + len
+      } else {
+        break
       }
-      offset += 2 + segLen
-    } else if ((marker & 0xFF00) === 0xFF00) {
-      // Other marker — skip
-      if (marker === 0xFFDA) break // Start of scan, stop
-      const len = view.getUint16(offset + 2)
-      offset += 2 + len
-    } else {
-      break
     }
-  }
 
-  return null
+    return null
+  } catch {
+    // Malformed binary data — return null gracefully
+    return null
+  }
 }
 
 function parseExifFromTiff(view: DataView, tiffStart: number): ParsedExif {
