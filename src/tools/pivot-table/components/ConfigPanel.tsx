@@ -403,10 +403,15 @@ export function ConfigPanel({ config, fields, onConfigChange }: ConfigPanelProps
         {/* Row 3: Values and Options */}
         <div className="flex flex-wrap items-center gap-3 pt-2 border-t border-[var(--color-border)]">
           {/* Values */}
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1.5 flex-wrap">
             <span className="text-[10px] font-semibold text-[var(--color-ink-muted)] uppercase tracking-wider">
               Values:
             </span>
+            {config.values.length === 0 && (
+              <span className="text-[10px] text-[var(--color-ink-muted)] italic">
+                Add a value metric to see data
+              </span>
+            )}
             {config.values.map((vc, i) => (
               <ValueConfigInline
                 key={i}
@@ -420,6 +425,7 @@ export function ConfigPanel({ config, fields, onConfigChange }: ConfigPanelProps
             <button
               onClick={handleAddValue}
               className="inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[var(--color-accent)] hover:bg-[var(--color-accent)]/10 rounded"
+              title="Add value metric"
             >
               <Plus className="w-3 h-3" />
             </button>

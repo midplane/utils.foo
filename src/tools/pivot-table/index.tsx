@@ -133,8 +133,24 @@ export default function PivotTable() {
 
   const handleCsvChange = useCallback((newCsv: string) => {
     setCsvText(newCsv)
-    // Reset config to empty when data changes (fields may be different)
-    setConfig(EMPTY_CONFIG)
+    // Reset config when data changes, but pre-populate a default value metric
+    // so the table renders as soon as the user drags dimensions in.
+    const { fields: newFields } = parseCsvData(newCsv)
+    const firstNumeric = newFields.find((f) => f.isNumeric)
+    const firstField = newFields[0]
+    const defaultField = firstNumeric ?? firstField
+    const newConfig: PivotConfig = defaultField
+      ? {
+          ...EMPTY_CONFIG,
+          values: [
+            {
+              field: defaultField.name,
+              aggregation: defaultField.isNumeric ? 'sum' : 'count',
+            },
+          ],
+        }
+      : EMPTY_CONFIG
+    setConfig(newConfig)
   }, [])
 
   const handleLoadSample = useCallback(() => {
