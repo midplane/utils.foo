@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { decodeJWT, formatTimestamp, isExpired } from '../tools/jwt-decoder/logic'
+import { decodeJWT, formatPayloadValue, formatTimestamp, isExpired } from '../tools/jwt-decoder/logic'
 
 // Encode a plain object to base64url (no padding)
 function b64url(obj: unknown): string {
@@ -66,6 +66,18 @@ describe('decodeJWT', () => {
     const result = decodeJWT(token)
     expect(typeof result.payload.exp).toBe('number')
     expect(typeof result.payload.iat).toBe('number')
+  })
+})
+
+describe('formatPayloadValue', () => {
+  it('pretty-prints JSON encoded as a string', () => {
+    expect(formatPayloadValue('{"user":{"name":"Ada"},"roles":["admin"]}')).toBe(
+      '{\n  "user": {\n    "name": "Ada"\n  },\n  "roles": [\n    "admin"\n  ]\n}',
+    )
+  })
+
+  it('keeps ordinary string values unchanged', () => {
+    expect(formatPayloadValue('Ada Lovelace')).toBe('Ada Lovelace')
   })
 })
 
