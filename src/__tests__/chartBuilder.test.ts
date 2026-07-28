@@ -1,0 +1,180 @@
+import { describe, it, expect } from 'vitest'
+import {
+  parseInput,
+  toNumber,
+  isNumericColumn,
+  resolveSelection,
+  columnsKey,
+} from '../tools/chart-builder/chartData'
+import { buildOption, buildColorMap, readPalette } from '../tools/chart-builder/chartOption'
+import type { ParsedData } from '../tools/chart-builder/chartData'
+
+const rows = (csv: string) => parseInput(csv).data
+
+describe('numeric coercion', () => {
+  it('accepts the formats real exports contain', () => {
+    expect(toNumber(1200)).toBe(1200)
+    expect(toNumber('1,200')).toBe(1200)
+    expect(toNumber('$99.50')).toBe(99.5)
+    expect(toNumber('45%')).toBe(45)
+    expect(toNumber('  12 ')).toBe(12)
+    expect(toNumber('(250)')).toBe(-250) // accounting negative
+  })
+
+  it('returns null rather than 0 for anything unusable', () => {
+    // 0 would claim the value was zero; null leaves a gap.
+    expect(toNumber('')).toBeNull()
+    expect(toNumber(null)).toBeNull()
+    expect(toNumber('N/A')).toBeNull()
+    expect(toNumber('abc')).toBeNull()
+    expect(toNumber(Infinity)).toBeNull()
+  })
+})
+
+describe('column classification', () => {
+  it('tolerates a minority of junk values', () => {
+    const data = rows(`Month,Revenue\nJan,100\nFeb,N/A\nMar,300\nApr,400\nMay,500`)
+    expect(isNumericColumn('Revenue', data.rows)).toBe(true)
+  })
+
+  it('accepts thousands separators and currency', () => {
+    expect(isNumericColumn('Revenue', rows(`M,Revenue\na,"1,200"\nb,"1,400"`).rows)).toBe(true)
+    expect(isNumericColumn('Revenue', rows(`M,Revenue\na,$100\nb,$200`).rows)).toBe(true)
+  })
+
+  it('rejects a column that is blank in every row', () => {
+    // Previously vacuously true, so it was charted as a flat zero series.
+    const data = rows(`Month,Revenue,Notes\nJan,100,\nFeb,200,`)
+    expect(isNumericColumn('Notes', data.rows)).toBe(false)
+    expect(isNumericColumn('Revenue', data.rows)).toBe(true)
+  })
+
+  it('rejects a mostly-textual column', () => {
+    const data = rows(`M,Mixed\na,1\nb,x\nc,y\nd,z\ne,w`)
+    expect(isNumericColumn('Mixed', data.rows)).toBe(false)
+  })
+})
+
+describe('selection resolution', () => {
+  const data = rows(`Month,Revenue,Expenses,Profit\nJan,1,2,3\nFeb,4,5,6`)
+  const key = columnsKey(data.columns)
+
+  it('derives sensible defaults with no saved selection', () => {
+    const s = resolveSelection(data, null)
+    expect(s.xCol).toBe('Month')
+    expect(s.series).toEqual(['Revenue', 'Expenses', 'Profit'])
+  })
+
+  it('keeps the X axis when only the series are changed', () => {
+    // The regression: committing a series selection used to blank the X axis,
+    // which unmounted the chart entirely.
+    const s = resolveSelection(data, { key, xCol: 'Month', series: ['Revenue'] })
+    expect(s.xCol).toBe('Month')
+    expect(s.series).toEqual(['Revenue'])
+  })
+
+  it('ignores a selection saved against a different column set', () => {
+    const s = resolveSelection(data, { key: 'other', xCol: 'Nope', series: ['Gone'] })
+    expect(s.xCol).toBe('Month')
+    expect(s.series).toEqual(['Revenue', 'Expenses', 'Profit'])
+  })
+
+  it('drops saved series that are no longer numeric', () => {
+    // Same headers, but Expenses is now text: it must not stay selected and
+    // invisible, charted as zeros.
+    const swapped = rows(`Month,Revenue,Expenses,Profit\nJan,1,x,3\nFeb,4,y,6\nMar,7,z,9`)
+    const s = resolveSelection(swapped, {
+      key: columnsKey(swapped.columns),
+      xCol: 'Month',
+      series: ['Revenue', 'Expenses'],
+    })
+    expect(s.series).toEqual(['Revenue'])
+    expect(s.numeric).not.toContain('Expenses')
+  })
+
+  it('keeps series in chip order regardless of save order', () => {
+    const s = resolveSelection(data, { key, xCol: 'Month', series: ['Profit', 'Revenue'] })
+    expect(s.series).toEqual(['Revenue', 'Profit'])
+  })
+})
+
+describe('colour assignment', () => {
+  it('is stable when a series is deselected', () => {
+    // Chips and chart both key off the full numeric list, so deselecting one
+    // series no longer shifts every other series' colour.
+    const numeric = ['Revenue', 'Expenses', 'Profit']
+    const colors = buildColorMap(numeric)
+    expect(colors.get('Expenses')).toBe(buildColorMap(numeric).get('Expenses'))
+
+    const data = rows(`Month,Revenue,Expenses,Profit\nJan,1,2,3`)
+    const option = buildOption({
+      data, xCol: 'Month', series: ['Expenses', 'Profit'],
+      chartType: 'bar', orientation: 'vertical', showLegend: true,
+      colors, palette: readPalette(false),
+    })
+    const series = (option.series ?? []) as { name: string; itemStyle: { color: string } }[]
+    expect(series[0]!.itemStyle.color).toBe(colors.get('Expenses'))
+    expect(series[1]!.itemStyle.color).toBe(colors.get('Profit'))
+  })
+})
+
+describe('option building', () => {
+  const data: ParsedData = rows(`Month,Revenue\nJan,100\nFeb,\nMar,300`)
+  const colors = buildColorMap(['Revenue'])
+  const palette = readPalette(false)
+  const build = (over: Partial<Parameters<typeof buildOption>[0]> = {}) =>
+    buildOption({
+      data, xCol: 'Month', series: ['Revenue'], chartType: 'bar',
+      orientation: 'vertical', showLegend: true, colors, palette, ...over,
+    })
+
+  it('renders missing values as gaps, not zeros', () => {
+    const series = (build().series ?? []) as { data: (number | null)[] }[]
+    expect(series[0]!.data).toEqual([100, null, 300])
+  })
+
+  it('inverts the category axis for horizontal bars so order is preserved', () => {
+    const horizontal = build({ chartType: 'bar', orientation: 'horizontal' }) as {
+      yAxis: { inverse?: boolean }
+    }
+    expect(horizontal.yAxis.inverse).toBe(true)
+
+    const vertical = build() as { xAxis: { inverse?: boolean } }
+    expect(vertical.xAxis.inverse).toBeUndefined()
+  })
+
+  it('drops scatter points with an unusable coordinate', () => {
+    // 'Jan' is not a number; snapping it to 0 stacked every point on the axis.
+    const scatter = build({ chartType: 'scatter' })
+    const series = (scatter.series ?? []) as { data: [number, number][] }[]
+    expect(series[0]!.data).toEqual([])
+  })
+
+  it('plots scatter pairs when both coordinates are numeric', () => {
+    const numericData = rows(`Label,Hours,Score\nA,2,58\nB,3,65`)
+    const scatter = buildOption({
+      data: numericData, xCol: 'Hours', series: ['Score'], chartType: 'scatter',
+      orientation: 'vertical', showLegend: true,
+      colors: buildColorMap(['Score']), palette,
+    })
+    const series = (scatter.series ?? []) as { data: [number, number][] }[]
+    expect(series[0]!.data).toEqual([[2, 58], [3, 65]])
+  })
+})
+
+describe('palette', () => {
+  it('reads live theme tokens rather than hardcoded light values', () => {
+    document.documentElement.style.setProperty('--color-cream', '#000000')
+    document.documentElement.style.setProperty('--color-ink', '#ffffff')
+    const dark = readPalette(false)
+    expect(dark.background).toBe('#000000')
+    expect(dark.ink).toBe('#ffffff')
+
+    document.documentElement.style.removeProperty('--color-cream')
+    document.documentElement.style.removeProperty('--color-ink')
+    expect(readPalette(false).background).toBe('#FFFBF5')
+    // The fallback follows the theme instead of always being the light one.
+    expect(readPalette(true).background).toBe('#1C1917')
+    expect(readPalette(true).ink).toBe('#F2EDE8')
+  })
+})
