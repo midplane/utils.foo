@@ -15,6 +15,7 @@ import {
 import { cn } from '../../../lib/utils'
 import { PivotResult, PivotConfig, DataRecord, metricLabel } from '../types'
 import { DrillDownModal, DrillTarget } from './DrillDownModal'
+import { DisplayOptions } from './DisplayOptions'
 import { compositeKey, keyLabel } from '../engine/sorters'
 import { NO_VALUE } from '../engine/aggregators'
 import { escapeCsv, escapeTsv } from '../engine/export'
@@ -316,6 +317,7 @@ export function PivotGrid({
           )}
         </span>
         <div className="flex-1" />
+        <DisplayOptions config={config} onConfigChange={onConfigChange} />
         <Button variant="secondary" size="sm" onClick={handleDownloadCsv} className="gap-1">
           <Download className="w-3 h-3" />
           CSV

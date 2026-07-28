@@ -128,6 +128,14 @@ export interface ValueConfig {
   aggregation: AggregationType
   showAs: ShowAs
   format?: NumberFormat
+  /**
+   * Overrides the generated header, as Excel's custom caption does.
+   *
+   * The generated name is unavoidably verbose - "Sum/Sum of Profit / Sales" -
+   * and it repeats under every column group, so a short name like "Margin" is
+   * often the difference between a readable header and three wrapped lines.
+   */
+  caption?: string
 }
 
 // ─── Filters ──────────────────────────────────────────────────────────────────
@@ -379,12 +387,18 @@ export interface FieldInfo {
 
 // ─── Labels ───────────────────────────────────────────────────────────────────
 
-/** Human-readable description of a metric, including its Show Values As mode. */
-export function metricLabel(value: ValueConfig): string {
+/** The name generated from a metric's definition, ignoring any custom caption. */
+export function autoMetricLabel(value: ValueConfig): string {
   const base = `${AGGREGATION_LABELS[value.aggregation]} of ${value.field}${
     value.field2 ? ` / ${value.field2}` : ''
   }`
   return value.showAs === 'raw' ? base : `${base} — ${SHOW_AS_LABELS[value.showAs]}`
+}
+
+/** How a metric is labelled in headers and exports. */
+export function metricLabel(value: ValueConfig): string {
+  const caption = value.caption?.trim()
+  return caption ? caption : autoMetricLabel(value)
 }
 
 /** Calculations that walk down the row axis and therefore require row fields. */

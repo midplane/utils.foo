@@ -133,6 +133,7 @@ export default function PivotTable() {
   const [csvText, setCsvText] = useState('')
   const [config, setConfig] = useState<PivotConfig>(DEFAULT_SAMPLE.config)
   const [sampleState, setSampleState] = useState<SampleState>({ status: 'loading' })
+  const [sourceLabel, setSourceLabel] = useState('')
 
   // Parsing a large paste is not cheap. Deferring it keeps the textarea
   // responsive while React re-parses in the background.
@@ -175,6 +176,7 @@ export default function PivotTable() {
         if (cancelled) return
         setCsvText(csv)
         setConfig(sample.config)
+        setSourceLabel(sample.label)
         setSampleState({ status: 'ready' })
       })
       .catch((error: unknown) => {
@@ -188,6 +190,12 @@ export default function PivotTable() {
     return () => {
       cancelled = true
     }
+  }, [])
+
+  // Hand-edited or pasted data is no longer "the Sales orders sample".
+  const handleCsvChange = useCallback((next: string) => {
+    setCsvText(next)
+    setSourceLabel('')
   }, [])
 
   // Fetch the default sample once, after the tool has rendered.
@@ -204,13 +212,16 @@ export default function PivotTable() {
 
       <DataInput
         value={csvText}
-        onChange={setCsvText}
+        onChange={handleCsvChange}
         error={error}
         warning={warning}
         samples={SAMPLES}
         onLoadSample={handleLoadSample}
         loadingSample={sampleState.status === 'loading'}
         sampleError={sampleState.status === 'error' ? sampleState.message : ''}
+        recordCount={records.length}
+        fieldCount={fields.length}
+        sourceLabel={sourceLabel}
       />
 
       {fields.length > 0 && (

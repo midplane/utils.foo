@@ -7,6 +7,7 @@ import { analyzeData } from '../tools/pivot-table/hooks/usePivotData'
 import { derivedFieldInfo, looksLikeDate } from '../tools/pivot-table/engine/grouping'
 import { flattenRows, flattenCols } from '../tools/pivot-table/engine/axis'
 import { compositeKey, flattenKey } from '../tools/pivot-table/engine/sorters'
+import { autoMetricLabel, metricLabel } from '../tools/pivot-table/types'
 import type { DataRecord } from '../tools/pivot-table/types'
 
 /**
@@ -131,5 +132,26 @@ describe('sample delivery', () => {
       const text = readFileSync(`src/tools/pivot-table/${source}`, 'utf8')
       expect(text).not.toContain('OrderID,OrderDate')
     }
+  })
+})
+
+describe('metric captions', () => {
+  it('uses a custom caption in headers and exports when set', () => {
+    const sample = SAMPLES.find((s) => s.id === 'sales')!
+    const margin = sample.config.values.find((v) => v.aggregation === 'sumOverSum')!
+
+    // The generated name is the reason captions exist.
+    expect(autoMetricLabel(margin)).toBe('Sum/Sum of Profit / Sales')
+    expect(metricLabel(margin)).toBe('Margin')
+
+    // An unnamed metric still falls back to the generated label.
+    const sales = sample.config.values.find((v) => v.id === 'sales')!
+    expect(metricLabel(sales)).toBe('Sum of Sales')
+  })
+
+  it('treats a blank caption as unset', () => {
+    const base = { id: 'x', field: 'Sales', aggregation: 'sum', showAs: 'raw' } as const
+    expect(metricLabel({ ...base, caption: '   ' })).toBe('Sum of Sales')
+    expect(metricLabel({ ...base, caption: 'Revenue' })).toBe('Revenue')
   })
 })

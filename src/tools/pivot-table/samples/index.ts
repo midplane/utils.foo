@@ -61,6 +61,9 @@ export const SAMPLES: Sample[] = [
           aggregation: 'sumOverSum',
           showAs: 'raw',
           format: { style: 'percent', decimals: 1 },
+          // Without this the header reads "Sum/Sum of Profit / Sales", repeated
+          // under every year group.
+          caption: 'Margin',
         },
       ],
     },

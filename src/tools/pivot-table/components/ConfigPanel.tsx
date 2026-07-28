@@ -14,9 +14,6 @@ import {
 import {
   Alert,
   SectionLabel,
-  SegmentedControl,
-  SegmentedControlItem,
-  Toggle,
   Tooltip,
 } from '../../../components/ui'
 import { cn } from '../../../lib/utils'
@@ -37,12 +34,9 @@ import {
   ROW_AXIS_SHOW_AS,
   COL_AXIS_SHOW_AS,
   ShowAs,
-  SORT_ORDER_LABELS,
-  HEATMAP_LABELS,
-  LAYOUT_LABELS,
-  SUBTOTAL_LABELS,
   DUAL_FIELD_AGGREGATIONS,
   ANY_FIELD_AGGREGATIONS,
+  autoMetricLabel,
 } from '../types'
 
 type Zone = 'available' | 'rows' | 'cols' | 'filters'
@@ -361,6 +355,25 @@ function ValueConfigInline({ config, fields, onUpdate, onRemove }: ValueConfigIn
 
   return (
     <span className="inline-flex items-center gap-1 px-1.5 py-1 bg-[var(--color-surface)] border border-[var(--color-border)] rounded text-xs shadow-sm">
+      <input
+        value={config.caption ?? ''}
+        aria-label="Metric name"
+        title="Rename this metric"
+        placeholder={autoMetricLabel(config)}
+        onChange={(e) =>
+          onUpdate({ ...config, caption: e.target.value.trim() ? e.target.value : undefined })
+        }
+        className={cn(
+          'w-28 px-1 py-0.5 bg-transparent rounded text-[11px] truncate',
+          'border border-transparent hover:border-[var(--color-border)]',
+          'focus:outline-none focus:border-[var(--color-accent)]',
+          'placeholder:text-[var(--color-ink-muted)] placeholder:italic',
+          config.caption && 'font-semibold text-[var(--color-accent)]'
+        )}
+      />
+      <span className="text-[var(--color-ink-muted)]" aria-hidden="true">
+        =
+      </span>
       <select
         value={config.aggregation}
         aria-label="Aggregation"
@@ -711,9 +724,6 @@ export function ConfigPanel({
 
   const modalField = filterModalField ? fieldInfo.get(filterModalField) : undefined
 
-  // Layout and subtotals are only meaningful once an axis has a hierarchy.
-  const hasRowHierarchy = config.rows.length > 1
-  const hasColHierarchy = config.cols.length > 1
 
   // ─── Render ────────────────────────────────────────────────────────────────
 
@@ -828,150 +838,6 @@ export function ConfigPanel({
           </Tooltip>
         </div>
 
-        {/* Display options */}
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 pt-2 border-t border-[var(--color-border)]">
-          <OptionGroup label="Layout">
-            <SegmentedControl
-              value={config.layout}
-              onChange={(value) =>
-                update((current) => ({ ...current, layout: value as PivotConfig['layout'] }))
-              }
-            >
-              {Object.entries(LAYOUT_LABELS).map(([key, label]) => (
-                <SegmentedControlItem
-                  key={key}
-                  value={key}
-                  disabled={!hasRowHierarchy}
-                  title={
-                    hasRowHierarchy
-                      ? undefined
-                      : 'Layout only differs once there are two or more row fields'
-                  }
-                >
-                  {label}
-                </SegmentedControlItem>
-              ))}
-            </SegmentedControl>
-          </OptionGroup>
-
-          <OptionGroup label="Row subtotals">
-            <SegmentedControl
-              value={config.rowSubtotals}
-              onChange={(value) =>
-                update((current) => ({
-                  ...current,
-                  rowSubtotals: value as PivotConfig['rowSubtotals'],
-                }))
-              }
-            >
-              {Object.entries(SUBTOTAL_LABELS).map(([key, label]) => (
-                <SegmentedControlItem
-                  key={key}
-                  value={key}
-                  disabled={!hasRowHierarchy}
-                  title={
-                    hasRowHierarchy
-                      ? undefined
-                      : 'Subtotals need two or more row fields'
-                  }
-                >
-                  {label}
-                </SegmentedControlItem>
-              ))}
-            </SegmentedControl>
-          </OptionGroup>
-
-          <OptionGroup label="Column subtotals">
-            <SegmentedControl
-              value={config.colSubtotals}
-              onChange={(value) =>
-                update((current) => ({
-                  ...current,
-                  colSubtotals: value as PivotConfig['colSubtotals'],
-                }))
-              }
-            >
-              {Object.entries(SUBTOTAL_LABELS).map(([key, label]) => (
-                <SegmentedControlItem
-                  key={key}
-                  value={key}
-                  disabled={!hasColHierarchy}
-                  title={
-                    hasColHierarchy
-                      ? undefined
-                      : 'Subtotals need two or more column fields'
-                  }
-                >
-                  {label}
-                </SegmentedControlItem>
-              ))}
-            </SegmentedControl>
-          </OptionGroup>
-
-          <OptionGroup label="Heatmap">
-            <SegmentedControl
-              value={config.heatmap}
-              onChange={(value) =>
-                update((current) => ({ ...current, heatmap: value as PivotConfig['heatmap'] }))
-              }
-            >
-              {Object.entries(HEATMAP_LABELS).map(([key, label]) => (
-                <SegmentedControlItem key={key} value={key}>
-                  {label}
-                </SegmentedControlItem>
-              ))}
-            </SegmentedControl>
-          </OptionGroup>
-
-          <OptionGroup label="Sort rows">
-            <SortSelect
-              value={config.rowOrder}
-              ariaLabel="Sort rows"
-              // Choosing a global order clears any column-specific sort, so the
-              // two cannot silently disagree about what is being applied.
-              onChange={(value) =>
-                update((current) => ({ ...current, rowOrder: value, rowSortBy: undefined }))
-              }
-            />
-            {config.rowSortBy && (
-              <button
-                type="button"
-                onClick={() => update((current) => ({ ...current, rowSortBy: undefined }))}
-                className="text-[11px] text-[var(--color-accent)] hover:underline cursor-pointer"
-              >
-                Clear column sort
-              </button>
-            )}
-          </OptionGroup>
-
-          <OptionGroup label="Sort columns">
-            <SortSelect
-              value={config.colOrder}
-              ariaLabel="Sort columns"
-              onChange={(value) => update((current) => ({ ...current, colOrder: value }))}
-            />
-          </OptionGroup>
-
-          <label className="flex items-center gap-1.5 cursor-pointer">
-            <Toggle
-              checked={config.showRowTotals}
-              onChange={(e) =>
-                update((current) => ({ ...current, showRowTotals: e.target.checked }))
-              }
-            />
-            <span>Grand total column</span>
-          </label>
-
-          <label className="flex items-center gap-1.5 cursor-pointer">
-            <Toggle
-              checked={config.showColTotals}
-              onChange={(e) =>
-                update((current) => ({ ...current, showColTotals: e.target.checked }))
-              }
-            />
-            <span>Grand total row</span>
-          </label>
-        </div>
 
         {problems.length > 0 && (
           <Alert variant="warning" size="sm">
@@ -1018,39 +884,6 @@ export function ConfigPanel({
   )
 }
 
-function OptionGroup({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div className="flex items-center gap-1.5">
-      <SectionLabel>{label}</SectionLabel>
-      {children}
-    </div>
-  )
-}
-
-function SortSelect({
-  value,
-  ariaLabel,
-  onChange,
-}: {
-  value: PivotConfig['rowOrder']
-  ariaLabel: string
-  onChange: (value: PivotConfig['rowOrder']) => void
-}) {
-  return (
-    <select
-      value={value}
-      aria-label={ariaLabel}
-      onChange={(e) => onChange(e.target.value as PivotConfig['rowOrder'])}
-      className="px-1.5 py-1 bg-[var(--color-surface)] border border-[var(--color-border)] rounded text-xs cursor-pointer focus:outline-none focus-visible:ring-1 focus-visible:ring-[var(--color-accent)]"
-    >
-      {Object.entries(SORT_ORDER_LABELS).map(([key, label]) => (
-        <option key={key} value={key}>
-          {label}
-        </option>
-      ))}
-    </select>
-  )
-}
 
 /**
  * `crypto.randomUUID` is unavailable on insecure origins, which includes
