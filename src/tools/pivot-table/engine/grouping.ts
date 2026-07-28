@@ -1,5 +1,6 @@
 import { DataRecord, FieldGrouping, DatePart, FieldInfo } from '../types'
 import { orderedKey, normalizeKey, naturalSort, BLANK_KEY } from './sorters'
+import { toNumber } from './aggregators'
 
 // ─── Date part definitions ────────────────────────────────────────────────────
 
@@ -112,8 +113,8 @@ function pad(n: number): string {
 
 /** Bucket a number into a half-open bin, labelled by its range. */
 function binValue(value: unknown, size: number): string {
-  const num = typeof value === 'number' ? value : parseFloat(String(value))
-  if (isNaN(num) || !isFinite(num) || size <= 0) return BLANK_KEY
+  const num = toNumber(value)
+  if (isNaN(num) || size <= 0) return BLANK_KEY
 
   const lower = Math.floor(num / size) * size
   const upper = lower + size

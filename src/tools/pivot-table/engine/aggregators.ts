@@ -14,11 +14,21 @@ export const NO_VALUE = '—'
 
 // ─── Numeric Coercion ─────────────────────────────────────────────────────────
 
-/** Coerce a raw record value to a finite number, or NaN if it isn't one. */
-function toNumber(value: unknown): number {
+/**
+ * Coerce a raw record value to a finite number, or NaN if it isn't one.
+ *
+ * Deliberately stricter than `parseFloat`, which stops at the first invalid
+ * character: `parseFloat('2022-01-03')` is 2022, so an ISO date column would
+ * read as numeric and be offered for Sum.
+ */
+export function toNumber(value: unknown): number {
   if (typeof value === 'number') return isFinite(value) ? value : NaN
-  if (value === null || value === undefined || value === '') return NaN
-  const n = parseFloat(String(value))
+  if (value === null || value === undefined) return NaN
+
+  const text = String(value).trim()
+  if (text === '') return NaN
+
+  const n = Number(text)
   return isFinite(n) ? n : NaN
 }
 

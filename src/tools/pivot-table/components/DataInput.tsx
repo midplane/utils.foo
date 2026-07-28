@@ -1,20 +1,48 @@
 import { useCallback, useState } from 'react'
 import { Upload, FileSpreadsheet } from 'lucide-react'
-import { Card, CardContent, CardHeader, Button, Alert, SectionLabel } from '../../../components/ui'
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  Button,
+  Alert,
+  SectionLabel,
+  Spinner,
+} from '../../../components/ui'
 import { cn } from '../../../lib/utils'
 
 /** Reading much more than this in the browser is not a good experience. */
 const MAX_FILE_BYTES = 25 * 1024 * 1024
 
-interface DataInputProps {
+/** The shape DataInput needs; callers pass richer objects and get them back. */
+interface SampleOption {
+  id: string
+  label: string
+  description: string
+}
+
+interface DataInputProps<S extends SampleOption> {
   value: string
   onChange: (value: string) => void
   error: string
   warning: string
-  onLoadSample: () => void
+  samples: readonly S[]
+  onLoadSample: (sample: S) => void
+  /** A sample CSV is being fetched. */
+  loadingSample?: boolean
+  sampleError?: string
 }
 
-export function DataInput({ value, onChange, error, warning, onLoadSample }: DataInputProps) {
+export function DataInput<S extends SampleOption>({
+  value,
+  onChange,
+  error,
+  warning,
+  samples,
+  onLoadSample,
+  loadingSample = false,
+  sampleError = '',
+}: DataInputProps<S>) {
   const [fileError, setFileError] = useState('')
   const [loading, setLoading] = useState(false)
 
@@ -63,16 +91,17 @@ export function DataInput({ value, onChange, error, warning, onLoadSample }: Dat
           value={value}
           onChange={(e) => onChange(e.target.value)}
           rows={5}
-          placeholder="Paste CSV data here…"
+          placeholder={loadingSample ? 'Loading sample…' : 'Paste CSV data here…'}
           spellCheck={false}
           className="w-full px-3 py-2 text-xs font-mono bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg text-[var(--color-ink)] placeholder-[var(--color-ink-muted)] focus:outline-none focus:border-[var(--color-accent)] focus:ring-1 focus:ring-[var(--color-accent)]/20 resize-y transition-all"
         />
 
+        {sampleError && <Alert variant="error" size="sm">{sampleError}</Alert>}
         {fileError && <Alert variant="error" size="sm">{fileError}</Alert>}
         {error && <Alert variant="error" size="sm">{error}</Alert>}
         {!error && warning && <Alert variant="warning" size="sm">{warning}</Alert>}
 
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <label
             className={cn(
               'inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg border cursor-pointer transition-all',
@@ -90,9 +119,21 @@ export function DataInput({ value, onChange, error, warning, onLoadSample }: Dat
             <Upload className="w-3.5 h-3.5" aria-hidden="true" />
             {loading ? 'Reading…' : 'Upload file'}
           </label>
-          <Button variant="ghost" onClick={onLoadSample}>
-            Load sample
-          </Button>
+          <span className="ml-1 inline-flex items-center gap-1.5 text-[11px] text-[var(--color-ink-muted)]">
+            {loadingSample && <Spinner className="w-3 h-3" />}
+            or load a sample:
+          </span>
+          {samples.map((sample) => (
+            <Button
+              key={sample.id}
+              variant="ghost"
+              disabled={loadingSample}
+              title={sample.description}
+              onClick={() => onLoadSample(sample)}
+            >
+              {sample.label}
+            </Button>
+          ))}
         </div>
       </CardContent>
     </Card>

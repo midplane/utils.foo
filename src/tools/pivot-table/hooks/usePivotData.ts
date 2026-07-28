@@ -9,6 +9,7 @@ import {
 } from '../types'
 import { computeFilteredPivot } from '../engine/filters'
 import { naturalSort, normalizeKey } from '../engine/sorters'
+import { toNumber } from '../engine/aggregators'
 
 /** A fresh empty result; never a shared module-level object that could be mutated. */
 function emptyResult(values: ValueConfig[]): PivotResult {
@@ -72,8 +73,7 @@ export function analyzeData(records: DataRecord[]): FieldInfo[] {
 
       // Blanks are ignored when deciding whether a field is numeric.
       if (value === null || value === undefined || value === '') continue
-      const num = typeof value === 'number' ? value : parseFloat(String(value))
-      if (isNaN(num) || !isFinite(num)) {
+      if (isNaN(toNumber(value))) {
         sawNonNumber.add(name)
       } else {
         sawNumber.add(name)
