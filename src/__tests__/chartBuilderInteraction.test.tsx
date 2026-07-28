@@ -88,9 +88,20 @@ describe('chart builder interaction', () => {
     expect(seriesOf()).toBe('Population (millions)')
   })
 
-  it('warns instead of silently collapsing points when scatter X is not numeric', async () => {
+  it('draws a dot plot when scatter X is categorical', async () => {
     const user = await setup()
     await user.click(screen.getByRole('button', { name: 'scatter' }))
-    expect(screen.getByText(/cannot position points/)).toBeDefined()
+    // A categorical X is a valid dot plot, not an error.
+    expect(chart()).not.toBeNull()
+    expect(seriesOf()).toBe('Revenue,Expenses,Profit')
+  })
+
+  it('explains why nothing is drawn when no series remain', async () => {
+    const user = await setup()
+    for (const name of [/Revenue/, /Expenses/, /Profit/]) {
+      await user.click(screen.getByRole('button', { name }))
+    }
+    expect(chart()).toBeNull()
+    expect(screen.getByText(/Select at least one series/)).toBeDefined()
   })
 })

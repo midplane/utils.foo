@@ -1,5 +1,5 @@
 import type { EChartsOption } from 'echarts'
-import { ParsedData, toNumber } from './chartData'
+import { ParsedData, isNumericColumn, toNumber } from './chartData'
 
 // Bang Wong colorblind-safe 7-color palette.
 export const SERIES_COLORS = [
@@ -171,16 +171,23 @@ export function buildOption({
     legend,
   }
 
-  // ── Scatter: both axes are value axes and points are [x, y] pairs ──────────
+  // ── Scatter ────────────────────────────────────────────────────────────────
+  // A numeric X gives a true scatter plot. A categorical X is still perfectly
+  // meaningful - it is a dot plot - so it plots against a category axis rather
+  // than being refused. Coercing categories to numbers is what used to stack
+  // every point on x = 0.
   if (isScatter) {
+    const numericX = isNumericColumn(xCol, data.rows)
+
     const series = activeSeries.map((col) => ({
       name: col,
       type: 'scatter' as const,
-      // Points with an unusable coordinate are dropped rather than snapped to
-      // zero, which previously stacked every point on the axis silently.
-      data: data.rows
-        .map((r) => [toNumber(r[xCol]), toNumber(r[col])])
-        .filter((pair): pair is [number, number] => pair[0] !== null && pair[1] !== null),
+      data: numericX
+        ? data.rows
+            .map((r) => [toNumber(r[xCol]), toNumber(r[col])])
+            .filter((pair): pair is [number, number] => pair[0] !== null && pair[1] !== null)
+        : // Aligned to the category axis by index; null leaves a gap.
+          data.rows.map((r) => toNumber(r[col])),
       symbolSize: 8,
       itemStyle: { color: colors.get(col) },
     }))
@@ -192,19 +199,24 @@ export function buildOption({
         ...tooltip,
         trigger: 'item',
         formatter: (p: unknown) => {
-          const point = p as { seriesName: string; value: [number, number] }
+          const point = p as { seriesName: string; name: string; value: number | [number, number] }
           // seriesName, not a hardcoded first series - otherwise every series
           // after the first reported its Y under the wrong column name.
-          return `${point.seriesName}<br/>${xCol}: <b>${point.value[0]}</b><br/>${point.seriesName}: <b>${point.value[1]}</b>`
+          const [x, y] = Array.isArray(point.value)
+            ? [point.value[0], point.value[1]]
+            : [point.name, point.value]
+          return `${point.seriesName}<br/>${xCol}: <b>${x}</b><br/>${point.seriesName}: <b>${y}</b>`
         },
       },
-      xAxis: {
-        ...valueAxis,
-        name: xCol,
-        nameLocation: 'middle',
-        nameGap: 28,
-        nameTextStyle: { fontFamily: FONT, fontSize: 11, color: palette.inkMuted },
-      },
+      xAxis: numericX
+        ? {
+            ...valueAxis,
+            name: xCol,
+            nameLocation: 'middle',
+            nameGap: 28,
+            nameTextStyle: { fontFamily: FONT, fontSize: 11, color: palette.inkMuted },
+          }
+        : categoryAxis,
       yAxis: { ...valueAxis },
       series,
     } as EChartsOption

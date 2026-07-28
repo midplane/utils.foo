@@ -143,11 +143,17 @@ describe('option building', () => {
     expect(vertical.xAxis.inverse).toBeUndefined()
   })
 
-  it('drops scatter points with an unusable coordinate', () => {
-    // 'Jan' is not a number; snapping it to 0 stacked every point on the axis.
-    const scatter = build({ chartType: 'scatter' })
+  it('drops individual scatter points with an unusable coordinate', () => {
+    // X is numeric overall, but one row is junk. That single point is dropped
+    // rather than snapped to 0, which used to stack points on the axis.
+    const mixed = rows(`X,Y\n1,10\n2,20\n3,30\n4,40\nbad,50`)
+    const scatter = buildOption({
+      data: mixed, xCol: 'X', series: ['Y'], chartType: 'scatter',
+      orientation: 'vertical', showLegend: true,
+      colors: buildColorMap(['Y']), palette,
+    })
     const series = (scatter.series ?? []) as { data: [number, number][] }[]
-    expect(series[0]!.data).toEqual([])
+    expect(series[0]!.data).toEqual([[1, 10], [2, 20], [3, 30], [4, 40]])
   })
 
   it('plots scatter pairs when both coordinates are numeric', () => {
@@ -176,5 +182,35 @@ describe('palette', () => {
     // The fallback follows the theme instead of always being the light one.
     expect(readPalette(true).background).toBe('#1C1917')
     expect(readPalette(true).ink).toBe('#F2EDE8')
+  })
+})
+
+describe('scatter with a categorical X', () => {
+  // The Population sample: one numeric column, so a numeric X is impossible.
+  const data = rows(`Country,Population\nIndia,1429\nChina,1412\nBrazil,215`)
+  const option = buildOption({
+    data, xCol: 'Country', series: ['Population'], chartType: 'scatter',
+    orientation: 'vertical', showLegend: true,
+    colors: buildColorMap(['Population']), palette: readPalette(false),
+  }) as { xAxis: { type: string; data?: string[] }; series: { data: unknown[] }[] }
+
+  it('plots against a category axis rather than refusing', () => {
+    expect(option.xAxis.type).toBe('category')
+    expect(option.xAxis.data).toEqual(['India', 'China', 'Brazil'])
+  })
+
+  it('keeps every point instead of dropping or stacking them', () => {
+    expect(option.series[0]!.data).toEqual([1429, 1412, 215])
+  })
+
+  it('still uses value axes when X is numeric', () => {
+    const numeric = rows(`Label,Hours,Score\nA,2,58\nB,3,65`)
+    const scatter = buildOption({
+      data: numeric, xCol: 'Hours', series: ['Score'], chartType: 'scatter',
+      orientation: 'vertical', showLegend: true,
+      colors: buildColorMap(['Score']), palette: readPalette(false),
+    }) as { xAxis: { type: string }; series: { data: unknown[] }[] }
+    expect(scatter.xAxis.type).toBe('value')
+    expect(scatter.series[0]!.data).toEqual([[2, 58], [3, 65]])
   })
 })

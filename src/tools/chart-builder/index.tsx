@@ -18,7 +18,6 @@ import {
   parseInput,
   resolveSelection,
   columnsKey,
-  isNumericColumn,
   Selection,
 } from './chartData'
 import {
@@ -165,10 +164,6 @@ export default function ChartBuilderTool() {
   const isBar = chartType === 'bar' || chartType === 'stacked-bar'
   const showLongLabelHint =
     isBar && orientation === 'vertical' && hasLongLabels && !bannerDismissed
-
-  // Scatter needs a numeric X; a categorical one used to collapse every point.
-  const scatterNeedsNumericX =
-    chartType === 'scatter' && Boolean(xCol) && !isNumericColumn(xCol, data.rows)
 
   // ── Chart ──────────────────────────────────────────────────────────────────
 
@@ -417,13 +412,6 @@ export default function ChartBuilderTool() {
             </div>
           </CardHeader>
           <CardContent className="space-y-3">
-            {scatterNeedsNumericX && (
-              <Alert variant="warning" size="sm">
-                <span className="font-semibold">{xCol}</span> is not numeric, so it
-                cannot position points on a scatter plot. Pick a numeric X axis.
-              </Alert>
-            )}
-
             {showLongLabelHint && (
               <Alert variant="info" size="sm">
                 <span className="flex items-center justify-between gap-3 w-full">
@@ -461,6 +449,20 @@ export default function ChartBuilderTool() {
             <p className="text-center text-[10px] text-[var(--color-ink-muted)] font-mono">
               Hover over the chart for exact values
             </p>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Selecting the only numeric column as X leaves nothing to plot; say so
+          rather than silently dropping the preview. */}
+      {hasData && !option && (
+        <Card>
+          <CardContent className="py-6">
+            <Alert variant="info" size="sm">
+              {numericCols.length === 0
+                ? `No numeric columns left to plot. "${xCol}" is the X axis — pick a different one, or check that your measures are numeric.`
+                : 'Select at least one series to draw a chart.'}
+            </Alert>
           </CardContent>
         </Card>
       )}
