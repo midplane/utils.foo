@@ -1,386 +1,326 @@
 import {
   DataRecord,
-  PivotConfig,
+  PivotComputeConfig,
   PivotResult,
   CellValue,
   Aggregator,
+  AxisNode,
   ValueConfig,
   SortOrder,
-  DERIVED_AGGREGATIONS,
+  AxisSortTarget,
+  AxisExclusions,
 } from '../types'
-import { createAggregator, formatNumber, calculatePercentage } from './aggregators'
+import { createAggregator, formatNumber, resolveDecimals } from './aggregators'
+import { applyShowAs } from './showAs'
+import { buildRecordPredicate } from './predicate'
+import { createFieldResolver, FieldResolver } from './grouping'
 import {
   flattenKey,
   compositeKey,
   createKeyComparator,
-  createValueComparator,
+  sortKeysByValue,
+  normalizeKey,
 } from './sorters'
 
 // ─── Aggregator Group ─────────────────────────────────────────────────────────
-// Holds multiple aggregators (one per ValueConfig)
+// Holds one aggregator per ValueConfig, with memoised results.
 
-interface AggregatorGroup {
-  aggregators: Aggregator[]
-  push(record: DataRecord): void
-  getValues(): (number | null)[]
-  getRawValues(): (number | null)[]  // For percentage calculations
+class AggregatorGroup {
+  private aggregators: Aggregator[]
+  private cached: (number | null)[] | null = null
+
+  constructor(private valueConfigs: ValueConfig[]) {
+    this.aggregators = valueConfigs.map((vc) => createAggregator(vc.aggregation))
+  }
+
+  push(record: DataRecord, resolve: FieldResolver): void {
+    for (let i = 0; i < this.aggregators.length; i++) {
+      const vc = this.valueConfigs[i]!
+      this.aggregators[i]!.push(
+        resolve(record, vc.field),
+        vc.field2 === undefined ? undefined : resolve(record, vc.field2)
+      )
+    }
+  }
+
+  /**
+   * Aggregated values, computed at most once.
+   *
+   * Memoisation matters: totals are read once per cell during result assembly
+   * and again while sorting. Recomputing a median or a unique count on every
+   * read makes those passes quadratic.
+   */
+  values(): (number | null)[] {
+    if (this.cached === null) {
+      this.cached = this.aggregators.map((a) => a.value())
+    }
+    return this.cached
+  }
 }
 
-function createAggregatorGroup(valueConfigs: ValueConfig[]): AggregatorGroup {
-  const aggregators = valueConfigs.map((vc) => createAggregator(vc.aggregation))
+// ─── Mutable tree node used during construction ───────────────────────────────
 
+interface MutableNode extends AxisNode {
+  children: MutableNode[]
+  childIndex: Map<string, MutableNode>
+}
+
+function createNode(path: string[], flatKey: string): MutableNode {
   return {
-    aggregators,
-    push(record: DataRecord) {
-      for (let i = 0; i < valueConfigs.length; i++) {
-        const vc = valueConfigs[i]!
-        const value = record[vc.field]
-        const value2 = vc.field2 ? record[vc.field2] : undefined
-        aggregators[i]!.push(value, value2)
-      }
-    },
-    getValues() {
-      return aggregators.map((a) => a.value())
-    },
-    getRawValues() {
-      return aggregators.map((a) => a.value())
-    },
+    path,
+    flatKey,
+    label: path.length === 0 ? '' : path[path.length - 1]!,
+    depth: path.length,
+    children: [],
+    childIndex: new Map(),
   }
 }
 
-// ─── Pivot Engine ─────────────────────────────────────────────────────────────
+// ─── Pivot Computation ────────────────────────────────────────────────────────
 
-export class PivotEngine {
-  private records: DataRecord[]
-  private config: PivotConfig
+export interface ComputeOptions {
+  /**
+   * Skip "Show Values As" and formatting.
+   *
+   * Used by the filter pass that only needs raw aggregates to decide which
+   * items survive: ranking must compare the underlying numbers, not a derived
+   * rank or running total, and the throwaway result is never rendered.
+   */
+  raw?: boolean
+}
 
-  // Aggregation storage (using flat string keys for performance)
-  private cells = new Map<string, AggregatorGroup>()
-  private rowTotals = new Map<string, AggregatorGroup>()
-  private colTotals = new Map<string, AggregatorGroup>()
-  private grandTotal: AggregatorGroup
+export function computePivot(
+  records: DataRecord[],
+  config: PivotComputeConfig,
+  exclusions?: AxisExclusions,
+  options?: ComputeOptions
+): PivotResult {
+  const { rows, cols, values, rowOrder, colOrder } = config
+  const resolve = createFieldResolver(config.groupings ?? {})
 
-  // Unique keys (stored as arrays, flattened for lookup)
-  private rowKeySet = new Map<string, string[]>()
-  private colKeySet = new Map<string, string[]>()
+  const rowRoot = createNode([], '')
+  const colRoot = createNode([], '')
 
-  constructor(records: DataRecord[], config: PivotConfig) {
-    this.records = records
-    this.config = config
-    this.grandTotal = createAggregatorGroup(config.values)
+  // One aggregate per (row node, column node) pair. Because every prefix of a
+  // record's path gets pushed, this single map holds leaf cells, row and column
+  // subtotals, row/column grand totals and the overall grand total - all with
+  // identical lookup semantics.
+  const groups = new Map<string, AggregatorGroup>()
 
-    this.processRecords()
-  }
+  // Unticked values and label rules are ordinary record predicates. Shared with
+  // drill-down so both agree on which records back a cell.
+  const keepRecord = buildRecordPredicate(config, resolve)
 
-  private processRecords(): void {
-    const { rows, cols, values, filters } = this.config
+  const excludedRows = exclusions?.rows
+  const excludedCols = exclusions?.cols
+  const hasExclusions = (excludedRows?.size ?? 0) > 0 || (excludedCols?.size ?? 0) > 0
 
-    // Build filter lookup for fast checking
-    const filterMap = new Map<string, Set<string>>()
-    for (const f of filters) {
-      if (f.excludedValues.size > 0) {
-        filterMap.set(f.field, f.excludedValues)
-      }
+  // Scratch buffers reused across records to avoid per-record allocation.
+  const rowFlatKeys: string[] = new Array(rows.length + 1)
+  const colFlatKeys: string[] = new Array(cols.length + 1)
+
+  let matchedRecords = 0
+
+  for (const record of records) {
+    if (!keepRecord(record)) continue
+
+    // Measure rules (Top N, value comparisons) resolve to whole axis items
+    // being dropped. Records under them are removed outright so that totals
+    // reflect only what is displayed, as Excel does.
+    //
+    // The probe walk is skipped entirely when nothing can be excluded, which is
+    // the overwhelmingly common case - otherwise every record would be walked
+    // down both trees twice.
+    if (hasExclusions) {
+      collectPath(record, rows, rowRoot, rowFlatKeys, resolve, true)
+      collectPath(record, cols, colRoot, colFlatKeys, resolve, true)
+      if (isExcludedPath(rowFlatKeys, rows.length, excludedRows)) continue
+      if (isExcludedPath(colFlatKeys, cols.length, excludedCols)) continue
     }
 
-    // Single pass through all records
-    for (const record of this.records) {
-      // Check filters
-      let excluded = false
-      for (const [field, excludedValues] of filterMap) {
-        const val = String(record[field] ?? 'null')
-        if (excludedValues.has(val)) {
-          excluded = true
-          break
+    matchedRecords++
+
+    // Register the node paths now that the record is known to survive.
+    collectPath(record, rows, rowRoot, rowFlatKeys, resolve, false)
+    collectPath(record, cols, colRoot, colFlatKeys, resolve, false)
+
+    // Push into every prefix pair, so subtotal intersections are exact
+    // aggregates rather than sums of already-aggregated children.
+    for (let i = 0; i <= rows.length; i++) {
+      const rowFlat = rowFlatKeys[i]!
+      for (let j = 0; j <= cols.length; j++) {
+        const key = compositeKey(rowFlat, colFlatKeys[j]!)
+        let group = groups.get(key)
+        if (!group) {
+          group = new AggregatorGroup(values)
+          groups.set(key, group)
         }
-      }
-      if (excluded) continue
-
-      // Build row and column keys
-      const rowKey = rows.map((field) => String(record[field] ?? 'null'))
-      const colKey = cols.map((field) => String(record[field] ?? 'null'))
-
-      const flatRowKey = flattenKey(rowKey)
-      const flatColKey = flattenKey(colKey)
-      const cellKey = compositeKey(flatRowKey, flatColKey)
-
-      // Store unique keys
-      if (rows.length > 0 && !this.rowKeySet.has(flatRowKey)) {
-        this.rowKeySet.set(flatRowKey, rowKey)
-      }
-      if (cols.length > 0 && !this.colKeySet.has(flatColKey)) {
-        this.colKeySet.set(flatColKey, colKey)
-      }
-
-      // Update grand total
-      this.grandTotal.push(record)
-
-      // Update row totals
-      if (rows.length > 0) {
-        let rowTotal = this.rowTotals.get(flatRowKey)
-        if (!rowTotal) {
-          rowTotal = createAggregatorGroup(values)
-          this.rowTotals.set(flatRowKey, rowTotal)
-        }
-        rowTotal.push(record)
-      }
-
-      // Update column totals
-      if (cols.length > 0) {
-        let colTotal = this.colTotals.get(flatColKey)
-        if (!colTotal) {
-          colTotal = createAggregatorGroup(values)
-          this.colTotals.set(flatColKey, colTotal)
-        }
-        colTotal.push(record)
-      }
-
-      // Update cell
-      if (rows.length > 0 && cols.length > 0) {
-        let cell = this.cells.get(cellKey)
-        if (!cell) {
-          cell = createAggregatorGroup(values)
-          this.cells.set(cellKey, cell)
-        }
-        cell.push(record)
+        group.push(record, resolve)
       }
     }
   }
 
-  // ─── Sorting ──────────────────────────────────────────────────────────────────
+  // ── Order each level of both hierarchies ──────────────────────────────────
 
-  private sortKeys(
-    keys: string[][],
-    order: SortOrder,
-    totalsMap: Map<string, AggregatorGroup>
-  ): string[][] {
-    if (keys.length === 0) return keys
+  sortTree(rowRoot, rowOrder, config.rowSortBy, (node, target) =>
+    groups.get(compositeKey(node.flatKey, target))?.values()
+  )
+  sortTree(colRoot, colOrder, undefined, (node, target) =>
+    groups.get(compositeKey(target, node.flatKey))?.values()
+  )
 
-    const isDescending = order === 'key_desc' || order === 'value_desc'
-    const isValueSort = order === 'value_asc' || order === 'value_desc'
+  // ── Apply "Show Values As", then format with per-metric precision ─────────
 
-    if (isValueSort) {
-      // Sort by first aggregated value
-      const valueGetter = (key: string[]): number | null => {
-        const flatKey = flattenKey(key)
-        const group = totalsMap.get(flatKey)
-        if (!group) return null
-        const values = group.getValues()
-        return values[0] ?? null
-      }
-      return [...keys].sort(createValueComparator(valueGetter, isDescending))
-    } else {
-      return [...keys].sort(createKeyComparator(isDescending))
+  const raw = new Map<string, (number | null)[]>()
+  for (const [key, group] of groups) raw.set(key, group.values())
+
+  if (options?.raw) {
+    const cells = new Map<string, CellValue>()
+    for (const [key, vals] of raw) cells.set(key, { values: vals, formatted: [] })
+    return {
+      rowRoot: toPlain(rowRoot),
+      colRoot: toPlain(colRoot),
+      cells,
+      valueConfigs: values,
+      totalRecords: records.length,
+      matchedRecords,
     }
   }
 
-  // ─── Derived Value Calculation ────────────────────────────────────────────────
+  const derived = applyShowAs(raw, rowRoot, colRoot, values)
 
-  private computeDerivedValues(
-    rawValues: (number | null)[],
-    rowTotalValues: (number | null)[] | null,
-    colTotalValues: (number | null)[] | null,
-    grandTotalValues: (number | null)[]
-  ): (number | null)[] {
-    const { values } = this.config
-    
-    return rawValues.map((raw, i) => {
-      const agg = values[i]!.aggregation
-      
-      if (!DERIVED_AGGREGATIONS.has(agg)) {
-        return raw
-      }
+  // Precision is chosen once per metric across every value it will display, so
+  // a column never mixes "1,006" with "8.50" and `tabular-nums` stays aligned.
+  const decimals = values.map((vc, i) => {
+    const seen: (number | null)[] = []
+    for (const vals of derived.values()) seen.push(vals[i] ?? null)
+    return resolveDecimals(vc.aggregation, vc.showAs, seen)
+  })
 
-      // Determine which total to use based on aggregation type
-      switch (agg) {
-        case 'pctTotal':
-        case 'countPctTotal':
-          return calculatePercentage(raw, grandTotalValues[i] ?? null)
-        case 'pctRow':
-        case 'countPctRow':
-          return calculatePercentage(raw, rowTotalValues?.[i] ?? grandTotalValues[i] ?? null)
-        case 'pctCol':
-        case 'countPctCol':
-          return calculatePercentage(raw, colTotalValues?.[i] ?? grandTotalValues[i] ?? null)
-        default:
-          return raw
-      }
+  const cells = new Map<string, CellValue>()
+  for (const [key, vals] of derived) {
+    cells.set(key, {
+      values: vals,
+      formatted: vals.map((v, i) =>
+        formatNumber(v, values[i]!.showAs, decimals[i] ?? 0, values[i]!.format)
+      ),
     })
   }
 
-  // ─── Result Generation ────────────────────────────────────────────────────────
-
-  getResult(): PivotResult {
-    const { values, rowOrder, colOrder } = this.config
-
-    // Get sorted keys
-    const rowKeys = this.sortKeys(
-      Array.from(this.rowKeySet.values()),
-      rowOrder,
-      this.rowTotals
-    )
-    const colKeys = this.sortKeys(
-      Array.from(this.colKeySet.values()),
-      colOrder,
-      this.colTotals
-    )
-
-    // Get grand total raw values for percentage calculations
-    const grandTotalRaw = this.grandTotal.getRawValues()
-
-    // Build cells map with derived calculations
-    const cells = new Map<string, CellValue>()
-    for (const [key, group] of this.cells) {
-      // Parse the composite key to get row and col totals
-      const [flatRowKey, flatColKey] = key.split('|')
-      const rowTotalRaw = flatRowKey ? this.rowTotals.get(flatRowKey)?.getRawValues() ?? null : null
-      const colTotalRaw = flatColKey ? this.colTotals.get(flatColKey)?.getRawValues() ?? null : null
-      
-      const rawValues = group.getRawValues()
-      const computedValues = this.computeDerivedValues(rawValues, rowTotalRaw, colTotalRaw, grandTotalRaw)
-      
-      cells.set(key, {
-        values: computedValues,
-        formatted: computedValues.map((v, i) => formatNumber(v, values[i]!.aggregation)),
-      })
-    }
-
-    // Build row totals (for % row, the row total should show 100%)
-    const rowTotalsResult = new Map<string, CellValue>()
-    for (const [key, group] of this.rowTotals) {
-      const rawValues = group.getRawValues()
-      const computedValues = this.computeDerivedValues(rawValues, rawValues, null, grandTotalRaw)
-      
-      rowTotalsResult.set(key, {
-        values: computedValues,
-        formatted: computedValues.map((v, i) => formatNumber(v, values[i]!.aggregation)),
-      })
-    }
-
-    // Build column totals (for % col, the col total should show 100%)
-    const colTotalsResult = new Map<string, CellValue>()
-    for (const [key, group] of this.colTotals) {
-      const rawValues = group.getRawValues()
-      const computedValues = this.computeDerivedValues(rawValues, null, rawValues, grandTotalRaw)
-      
-      colTotalsResult.set(key, {
-        values: computedValues,
-        formatted: computedValues.map((v, i) => formatNumber(v, values[i]!.aggregation)),
-      })
-    }
-
-    // Grand total
-    const grandTotalComputed = this.computeDerivedValues(grandTotalRaw, grandTotalRaw, grandTotalRaw, grandTotalRaw)
-    const grandTotal: CellValue = {
-      values: grandTotalComputed,
-      formatted: grandTotalComputed.map((v, i) => formatNumber(v, values[i]!.aggregation)),
-    }
-
-    return {
-      rowKeys,
-      colKeys,
-      cells,
-      rowTotals: rowTotalsResult,
-      colTotals: colTotalsResult,
-      grandTotal,
-      valueConfigs: values,
-      isEmpty:
-        rowKeys.length === 0 &&
-        colKeys.length === 0 &&
-        this.records.length === 0,
-    }
-  }
-
-  // ─── Heatmap Utilities ────────────────────────────────────────────────────────
-
-  static getValueRange(
-    result: PivotResult,
-    valueIndex: number
-  ): { min: number; max: number } | null {
-    let min = Infinity
-    let max = -Infinity
-    let hasValues = false
-
-    for (const cell of result.cells.values()) {
-      const val = cell.values[valueIndex]
-      if (val !== null && val !== undefined && isFinite(val)) {
-        min = Math.min(min, val)
-        max = Math.max(max, val)
-        hasValues = true
-      }
-    }
-
-    return hasValues ? { min, max } : null
-  }
-
-  static getRowValueRange(
-    result: PivotResult,
-    rowKey: string[],
-    colKeys: string[][],
-    valueIndex: number
-  ): { min: number; max: number } | null {
-    const flatRowKey = flattenKey(rowKey)
-    let min = Infinity
-    let max = -Infinity
-    let hasValues = false
-
-    for (const colKey of colKeys) {
-      const flatColKey = flattenKey(colKey)
-      const cellKey = compositeKey(flatRowKey, flatColKey)
-      const cell = result.cells.get(cellKey)
-      if (cell) {
-        const val = cell.values[valueIndex]
-        if (val !== null && val !== undefined && isFinite(val)) {
-          min = Math.min(min, val)
-          max = Math.max(max, val)
-          hasValues = true
-        }
-      }
-    }
-
-    return hasValues ? { min, max } : null
-  }
-
-  static getColValueRange(
-    result: PivotResult,
-    colKey: string[],
-    rowKeys: string[][],
-    valueIndex: number
-  ): { min: number; max: number } | null {
-    const flatColKey = flattenKey(colKey)
-    let min = Infinity
-    let max = -Infinity
-    let hasValues = false
-
-    for (const rowKey of rowKeys) {
-      const flatRowKey = flattenKey(rowKey)
-      const cellKey = compositeKey(flatRowKey, flatColKey)
-      const cell = result.cells.get(cellKey)
-      if (cell) {
-        const val = cell.values[valueIndex]
-        if (val !== null && val !== undefined && isFinite(val)) {
-          min = Math.min(min, val)
-          max = Math.max(max, val)
-          hasValues = true
-        }
-      }
-    }
-
-    return hasValues ? { min, max } : null
+  return {
+    rowRoot: toPlain(rowRoot),
+    colRoot: toPlain(colRoot),
+    cells,
+    valueConfigs: values,
+    totalRecords: records.length,
+    matchedRecords,
   }
 }
 
-// ─── Heatmap Color Calculation ────────────────────────────────────────────────
+/**
+ * Walk a record's field values down the tree, creating nodes as needed, and
+ * write the flattened key of every prefix into `out` (index 0 is the root).
+ */
+function collectPath(
+  record: DataRecord,
+  fields: string[],
+  root: MutableNode,
+  out: string[],
+  resolve: FieldResolver,
+  keysOnly: boolean
+): void {
+  out[0] = ''
+  let node = root
+  const path: string[] = []
 
-export function getHeatmapColor(
-  value: number | null,
-  range: { min: number; max: number } | null
-): string | undefined {
-  if (value === null || range === null) return undefined
-  if (range.max === range.min) return 'rgba(59, 130, 246, 0.3)' // Single value
+  for (let i = 0; i < fields.length; i++) {
+    const segment = normalizeKey(resolve(record, fields[i]!))
+    path.push(segment)
 
-  const ratio = (value - range.min) / (range.max - range.min)
-  // Use blue color scale (matches accent color)
-  const alpha = 0.1 + ratio * 0.5
-  return `rgba(59, 130, 246, ${alpha.toFixed(2)})`
+    let child = node.childIndex.get(segment)
+    if (!child) {
+      // `keysOnly` computes the flattened keys without materialising nodes, so
+      // a record that is about to be filtered out never creates an axis item.
+      if (keysOnly) {
+        out[i + 1] = flattenKey(path)
+        for (let j = i + 1; j < fields.length; j++) {
+          path.push(normalizeKey(resolve(record, fields[j]!)))
+          out[j + 1] = flattenKey(path)
+        }
+        return
+      }
+      child = createNode([...path], flattenKey(path))
+      node.childIndex.set(segment, child)
+      node.children.push(child)
+    }
+    node = child
+    out[i + 1] = child.flatKey
+  }
+}
+
+function isExcludedPath(
+  flatKeys: string[],
+  depth: number,
+  excluded: ReadonlySet<string> | undefined
+): boolean {
+  if (!excluded || excluded.size === 0) return false
+  for (let i = 1; i <= depth; i++) {
+    if (excluded.has(flatKeys[i]!)) return true
+  }
+  return false
+}
+
+
+// ─── Sorting ──────────────────────────────────────────────────────────────────
+
+function sortTree(
+  root: MutableNode,
+  order: SortOrder,
+  sortBy: AxisSortTarget | undefined,
+  valuesOf: (node: MutableNode, opposingKey: string) => (number | null)[] | undefined
+): void {
+  // An explicit column target wins over the global order, matching Excel's
+  // "sort on this column" behaviour.
+  const descending = sortBy ? sortBy.descending : order === 'key_desc' || order === 'value_desc'
+  const byValue = sortBy !== undefined || order === 'value_asc' || order === 'value_desc'
+
+  // Without a target, "sort by value" means the node's own grand total, which
+  // lives at the opposing axis root.
+  const opposingKey = sortBy?.flatKey ?? ''
+  const valueIndex = sortBy?.valueIndex ?? 0
+  const keyComparator = createKeyComparator(descending)
+
+  const visit = (node: MutableNode) => {
+    if (node.children.length > 1) {
+      if (byValue) {
+        // `sortKeysByValue` reads each value exactly once instead of
+        // O(n log n) times from inside a comparator.
+        const byFlatKey = new Map(node.children.map((c) => [c.flatKey, c]))
+        const ordered = sortKeysByValue(
+          node.children.map((c) => c.path),
+          (path) => valuesOf(byFlatKey.get(flattenKey(path))!, opposingKey)?.[valueIndex] ?? null,
+          descending
+        )
+        node.children = ordered.map((path) => byFlatKey.get(flattenKey(path))!)
+      } else {
+        node.children.sort((a, b) => keyComparator(a.path, b.path))
+      }
+    }
+    for (const child of node.children) visit(child)
+  }
+
+  visit(root)
+}
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+/** Drop the construction-only child index so the result is a plain AxisNode. */
+function toPlain(node: MutableNode): AxisNode {
+  return {
+    path: node.path,
+    flatKey: node.flatKey,
+    label: node.label,
+    depth: node.depth,
+    children: node.children.map(toPlain),
+  }
 }

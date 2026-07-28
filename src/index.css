@@ -3,6 +3,10 @@
 
 /* Custom properties */
 @theme {
+  /* Height of the sticky app header. Anything that sticks to the top of the
+     page scroll must offset by this or it slides underneath. */
+  --app-header-height: 3.3125rem;
+
   --color-cream: #FFFBF5;
   --color-cream-dark: #FFF7ED;
   --color-ink: #1C1917;

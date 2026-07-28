@@ -1,332 +1,449 @@
 import { useMemo, useCallback, useState } from 'react'
-import { Table2, Copy, Check } from 'lucide-react'
-import { Card, CardContent, CardHeader } from '../../../components/ui/Card'
-import { EmptyState } from '../../../components/ui/EmptyState'
-import { PivotResult, PivotConfig, AGGREGATION_LABELS } from '../types'
-import { PivotEngine, getHeatmapColor } from '../engine/PivotEngine'
-import { flattenKey, compositeKey } from '../engine/sorters'
+import { Table2, ChevronRight, ChevronDown, Download, ArrowUp, ArrowDown, ChevronsUpDown } from 'lucide-react'
+import {
+  Alert,
+  Button,
+  CopyButton,
+  EmptyState,
+  ExpandableCard,
+  ExpandableCardHeader,
+  ExpandableCardContent,
+  ExpandToggleButton,
+  ExpandHint,
+  useExpandable,
+} from '../../../components/ui'
+import { cn } from '../../../lib/utils'
+import { PivotResult, PivotConfig, DataRecord, metricLabel } from '../types'
+import { DrillDownModal, DrillTarget } from './DrillDownModal'
+import { compositeKey, keyLabel } from '../engine/sorters'
+import { NO_VALUE } from '../engine/aggregators'
+import { escapeCsv, escapeTsv } from '../engine/export'
+import {
+  flattenRows,
+  flattenCols,
+  buildColHeaderRows,
+  computeRowLabelCells,
+
+  ColSlot,
+  RowLine,
+} from '../engine/axis'
+import { Heatmap } from '../engine/heatmap'
+
+/**
+ * Rows rendered before we stop and ask. A pivot this tall is almost always a
+ * mis-configured dimension, and rendering it janks the tab for seconds.
+ */
+const ROW_RENDER_LIMIT = 500
+
+/**
+ * Past this many data columns the table can no longer give each one a readable
+ * width, since it fits itself to the container rather than scrolling sideways.
+ */
+const WIDE_COLUMN_THRESHOLD = 20
 
 interface PivotGridProps {
   result: PivotResult
   config: PivotConfig
+  onConfigChange: (config: PivotConfig) => void
+  /** Source records, used for drill-down. */
+  records: DataRecord[]
+  /** Source column names, in file order. */
+  sourceColumns: string[]
 }
 
-export function PivotGrid({ result, config }: PivotGridProps) {
-  const { rowKeys, colKeys, valueConfigs } = result
+export function PivotGrid({
+  result,
+  config,
+  onConfigChange,
+  records,
+  sourceColumns,
+}: PivotGridProps) {
+  const { valueConfigs } = result
   const numValues = valueConfigs.length
   const numRowFields = config.rows.length
   const numColFields = config.cols.length
+  const isCompact = config.layout === 'compact'
 
-  const [copied, setCopied] = useState(false)
+  const { expanded, setExpanded } = useExpandable()
+  const [showAllFor, setShowAllFor] = useState<RowLine[] | null>(null)
+  const [drillTarget, setDrillTarget] = useState<DrillTarget | null>(null)
 
-  // ─── Copy as TSV ───────────────────────────────────────────────────────────
+  // ─── Visible structure ─────────────────────────────────────────────────────
 
-  const generateTSV = useCallback((): string => {
-    const lines: string[] = []
+  const collapsedRows = useMemo(
+    () => new Set(config.collapsedRows),
+    [config.collapsedRows]
+  )
+  const collapsedCols = useMemo(
+    () => new Set(config.collapsedCols),
+    [config.collapsedCols]
+  )
 
-    // Header row(s)
-    const headerRow: string[] = []
+  const lines = useMemo(
+    () =>
+      flattenRows(result.rowRoot, {
+        layout: config.layout,
+        subtotals: config.rowSubtotals,
+        collapsed: collapsedRows,
+        grandTotal: config.showColTotals,
+        numRowFields,
+      }),
+    [result.rowRoot, config.layout, config.rowSubtotals, collapsedRows, config.showColTotals, numRowFields]
+  )
 
-    // Row field headers
-    for (const field of config.rows) {
-      headerRow.push(field)
+  const slots = useMemo(
+    () =>
+      flattenCols(result.colRoot, {
+        subtotals: config.colSubtotals,
+        collapsed: collapsedCols,
+        grandTotal: config.showRowTotals,
+        numColFields,
+      }),
+    [result.colRoot, config.colSubtotals, collapsedCols, config.showRowTotals, numColFields]
+  )
+
+  const headerRows = useMemo(() => buildColHeaderRows(slots), [slots])
+
+  // The override is tied to the exact row set it was granted for, so changing a
+  // field silently revokes it - "show all" on a 600-row pivot must not go on to
+  // render 50,000 rows after a field swap.
+  const visibleLines =
+    showAllFor === lines ? lines : lines.slice(0, ROW_RENDER_LIMIT)
+  const truncated = lines.length - visibleLines.length
+  const dataColumns = slots.length * numValues
+
+  const labelCells = useMemo(
+    () => (isCompact ? null : computeRowLabelCells(visibleLines, numRowFields, collapsedRows)),
+    [isCompact, visibleLines, numRowFields, collapsedRows]
+  )
+
+  const heatmap = useMemo(
+    () => Heatmap.build(result.cells, visibleLines, slots, config.heatmap, numValues),
+    [result.cells, visibleLines, slots, config.heatmap, numValues]
+  )
+
+
+  // ─── Collapse toggles ──────────────────────────────────────────────────────
+
+  const toggleRow = useCallback(
+    (flatKey: string) => {
+      const next = config.collapsedRows.includes(flatKey)
+        ? config.collapsedRows.filter((k) => k !== flatKey)
+        : [...config.collapsedRows, flatKey]
+      onConfigChange({ ...config, collapsedRows: next })
+    },
+    [config, onConfigChange]
+  )
+
+  const toggleCol = useCallback(
+    (flatKey: string) => {
+      const next = config.collapsedCols.includes(flatKey)
+        ? config.collapsedCols.filter((k) => k !== flatKey)
+        : [...config.collapsedCols, flatKey]
+      onConfigChange({ ...config, collapsedCols: next })
+    },
+    [config, onConfigChange]
+  )
+
+  // ─── Sorting by a specific column ──────────────────────────────────────────
+
+  /**
+   * Cycle a column through descending → ascending → off, matching Excel's
+   * repeated-click behaviour on a value column.
+   */
+  const sortByColumn = useCallback(
+    (slot: ColSlot, valueIndex: number) => {
+      const current = config.rowSortBy
+      const isActive =
+        current?.flatKey === slot.node.flatKey && current.valueIndex === valueIndex
+
+      const next =
+        !isActive
+          ? { flatKey: slot.node.flatKey, valueIndex, descending: true }
+          : current.descending
+            ? { flatKey: slot.node.flatKey, valueIndex, descending: false }
+            : undefined
+
+      onConfigChange({ ...config, rowSortBy: next })
+    },
+    [config, onConfigChange]
+  )
+
+  const sortStateFor = useCallback(
+    (slot: ColSlot, valueIndex: number): 'asc' | 'desc' | undefined => {
+      const current = config.rowSortBy
+      if (current?.flatKey !== slot.node.flatKey || current.valueIndex !== valueIndex) {
+        return undefined
+      }
+      return current.descending ? 'desc' : 'asc'
+    },
+    [config.rowSortBy]
+  )
+
+  // ─── Export ────────────────────────────────────────────────────────────────
+
+  const buildMatrix = useCallback((): string[][] => {
+    const rows: string[][] = []
+    const labelColumns = isCompact ? 1 : Math.max(1, numRowFields)
+
+    // Header: one line per column-header row, then the value names if needed.
+    const columnLabel = (slot: ColSlot) =>
+      slot.headerPath.map(keyLabel).join(' / ') || 'Total'
+
+    const header: string[] = []
+    for (let i = 0; i < labelColumns; i++) {
+      header.push(isCompact ? config.rows.join(' / ') : config.rows[i] ?? '')
     }
-
-    // Column headers (with value sub-headers if multiple values)
-    if (numColFields > 0) {
-      for (const colKey of colKeys) {
-        const colLabel = colKey.join(' / ')
-        if (numValues > 1) {
-          for (const vc of valueConfigs) {
-            headerRow.push(`${colLabel} - ${AGGREGATION_LABELS[vc.aggregation]} of ${vc.field}`)
-          }
-        } else if (numValues === 1) {
-          headerRow.push(colLabel)
-        } else {
-          headerRow.push(colLabel)
-        }
-      }
-      // Row totals header
-      if (config.showRowTotals) {
-        if (numValues > 1) {
-          for (const vc of valueConfigs) {
-            headerRow.push(`Total - ${AGGREGATION_LABELS[vc.aggregation]} of ${vc.field}`)
-          }
-        } else {
-          headerRow.push('Total')
-        }
-      }
-    } else {
-      // No columns - show value headers directly
+    for (const slot of slots) {
       for (const vc of valueConfigs) {
-        headerRow.push(`${AGGREGATION_LABELS[vc.aggregation]} of ${vc.field}`)
+        const metric = metricLabel(vc)
+        const label = numColFields === 0 ? metric : columnLabel(slot)
+        header.push(numValues > 1 && numColFields > 0 ? `${label} - ${metric}` : label)
       }
     }
+    rows.push(header)
 
-    lines.push(headerRow.join('\t'))
-
-    // Data rows
-    for (const rowKey of rowKeys) {
+    for (const line of lines) {
       const row: string[] = []
-
-      // Row headers
-      for (const val of rowKey) {
-        row.push(val)
-      }
-
-      // Data cells
-      if (numColFields > 0) {
-        const flatRowKey = flattenKey(rowKey)
-        for (const colKey of colKeys) {
-          const flatColKey = flattenKey(colKey)
-          const cellKey = compositeKey(flatRowKey, flatColKey)
-          const cell = result.cells.get(cellKey)
-
-          for (let vi = 0; vi < numValues; vi++) {
-            row.push(cell?.formatted[vi] ?? '')
-          }
-        }
-        // Row totals
-        if (config.showRowTotals) {
-          const rowTotal = result.rowTotals.get(flatRowKey)
-          for (let vi = 0; vi < numValues; vi++) {
-            row.push(rowTotal?.formatted[vi] ?? '')
-          }
-        }
+      if (isCompact) {
+        // Preserve hierarchy with indentation, as the label column is merged.
+        row.push('  '.repeat(Math.max(0, line.depth - 1)) + keyLabel(line.label))
       } else {
-        // No columns - show aggregated values directly
-        const flatRowKey = flattenKey(rowKey)
-        const rowTotal = result.rowTotals.get(flatRowKey)
-        for (let vi = 0; vi < numValues; vi++) {
-          row.push(rowTotal?.formatted[vi] ?? '')
+        for (let f = 0; f < labelColumns; f++) {
+          if (line.kind === 'subtotal' || line.kind === 'grand') {
+            row.push(f === Math.max(0, line.depth - 1) ? keyLabel(line.label) : '')
+          } else {
+            row.push(keyLabel(line.node.path[f] ?? ''))
+          }
         }
       }
 
-      lines.push(row.join('\t'))
-    }
-
-    // Column totals row
-    if (config.showColTotals && numColFields > 0) {
-      const row: string[] = []
-
-      // "Total" label spanning row fields
-      row.push('Total')
-      for (let i = 1; i < numRowFields; i++) {
-        row.push('')
-      }
-
-      for (const colKey of colKeys) {
-        const flatColKey = flattenKey(colKey)
-        const colTotal = result.colTotals.get(flatColKey)
+      for (const slot of slots) {
+        const cell = line.showsValues
+          ? result.cells.get(compositeKey(line.node.flatKey, slot.node.flatKey))
+          : undefined
         for (let vi = 0; vi < numValues; vi++) {
-          row.push(colTotal?.formatted[vi] ?? '')
+          row.push(cell?.formatted[vi] ?? '')
         }
       }
-
-      // Grand total
-      if (config.showRowTotals) {
-        for (let vi = 0; vi < numValues; vi++) {
-          row.push(result.grandTotal.formatted[vi] ?? '')
-        }
-      }
-
-      lines.push(row.join('\t'))
+      rows.push(row)
     }
 
-    // Grand total row (when no columns)
-    if (config.showGrandTotal && numColFields === 0) {
-      const row: string[] = []
-      row.push('Grand Total')
-      for (let i = 1; i < numRowFields; i++) {
-        row.push('')
-      }
-      for (let vi = 0; vi < numValues; vi++) {
-        row.push(result.grandTotal.formatted[vi] ?? '')
-      }
-      lines.push(row.join('\t'))
-    }
+    return rows
+  }, [lines, slots, result.cells, valueConfigs, numValues, numColFields, numRowFields, isCompact, config.rows])
 
-    return lines.join('\n')
-  }, [result, config, rowKeys, colKeys, valueConfigs, numValues, numRowFields, numColFields])
+  // Built on demand: eagerly joining every line x slot into one string on each
+  // render produced megabytes of work whenever an unrelated display option
+  // changed, for a Copy the user may never click.
+  const buildTsv = useCallback(
+    () => buildMatrix().map((row) => row.map(escapeTsv).join('\t')).join('\n'),
+    [buildMatrix]
+  )
 
-  const handleCopy = useCallback(() => {
-    const tsv = generateTSV()
-    navigator.clipboard.writeText(tsv).then(() => {
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
-    })
-  }, [generateTSV])
+  const handleCellClick = useCallback(
+    (event: React.MouseEvent<HTMLTableSectionElement>) => {
+      const cell = (event.target as HTMLElement).closest('td')
+      const lineIdx = cell?.dataset.line
+      const slotIdx = cell?.dataset.slot
+      if (lineIdx === undefined || slotIdx === undefined) return
 
-  // ─── Heatmap ranges ────────────────────────────────────────────────────────
+      const line = visibleLines[Number(lineIdx)]
+      const slot = slots[Number(slotIdx)]
+      if (!line || !slot) return
 
-  const heatmapRanges = useMemo(() => {
-    if (config.heatmap === 'none') return null
+      setDrillTarget({
+        rowPath: line.node.path,
+        colPath: slot.node.path,
+        rowLabel: line.node.path.map(keyLabel).join(' / '),
+        colLabel: slot.node.path.map(keyLabel).join(' / '),
+        formatted:
+          result.cells.get(compositeKey(line.node.flatKey, slot.node.flatKey))
+            ?.formatted[0] ?? NO_VALUE,
+      })
+    },
+    [visibleLines, slots, result.cells]
+  )
 
-    const ranges: Map<string, { min: number; max: number } | null> = new Map()
+  const handleDownloadCsv = useCallback(() => {
+    const csv = buildMatrix().map((row) => row.map(escapeCsv).join(',')).join('\r\n')
+    const blob = new Blob([`\uFEFF${csv}`], { type: 'text/csv;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = 'pivot-table.csv'
+    link.click()
+    URL.revokeObjectURL(url)
+  }, [buildMatrix])
 
-    if (config.heatmap === 'full') {
-      for (let vi = 0; vi < numValues; vi++) {
-        const range = PivotEngine.getValueRange(result, vi)
-        ranges.set(`full-${vi}`, range)
-      }
-    } else if (config.heatmap === 'row') {
-      for (const rowKey of rowKeys) {
-        for (let vi = 0; vi < numValues; vi++) {
-          const range = PivotEngine.getRowValueRange(result, rowKey, colKeys, vi)
-          ranges.set(`${flattenKey(rowKey)}-${vi}`, range)
-        }
-      }
-    } else if (config.heatmap === 'col') {
-      for (const colKey of colKeys) {
-        for (let vi = 0; vi < numValues; vi++) {
-          const range = PivotEngine.getColValueRange(result, colKey, rowKeys, vi)
-          ranges.set(`${flattenKey(colKey)}-${vi}`, range)
-        }
-      }
-    }
+  // ─── Empty states ──────────────────────────────────────────────────────────
 
-    return ranges
-  }, [config.heatmap, result, rowKeys, colKeys, numValues])
-
-  const getHeatmapBg = (
-    rowKey: string[],
-    colKey: string[],
-    valueIndex: number,
-    value: number | null
-  ): string | undefined => {
-    if (!heatmapRanges || config.heatmap === 'none') return undefined
-
-    let rangeKey: string
-    if (config.heatmap === 'full') {
-      rangeKey = `full-${valueIndex}`
-    } else if (config.heatmap === 'row') {
-      rangeKey = `${flattenKey(rowKey)}-${valueIndex}`
-    } else {
-      rangeKey = `${flattenKey(colKey)}-${valueIndex}`
-    }
-
-    const range = heatmapRanges.get(rangeKey)
-    return getHeatmapColor(value, range ?? null)
+  if (numValues === 0 || (numRowFields === 0 && numColFields === 0)) {
+    return (
+      <GridShell>
+        <EmptyState message="Add a value metric and at least one row or column field to build a pivot table." />
+      </GridShell>
+    )
   }
 
-  // ─── Empty state ───────────────────────────────────────────────────────────
-
-  if (result.isEmpty || (rowKeys.length === 0 && colKeys.length === 0 && numValues === 0)) {
+  if (result.matchedRecords === 0) {
     return (
-      <Card>
-        <CardHeader>
-          <div className="flex items-center gap-2">
-            <Table2 className="w-4 h-4 text-[var(--color-ink-muted)]" />
-            <span className="text-xs font-semibold text-[var(--color-ink-muted)] uppercase tracking-wider">
-              Pivot Table
-            </span>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <EmptyState message="Configure rows, columns, and values above to generate a pivot table." />
-        </CardContent>
-      </Card>
+      <GridShell>
+        <Alert variant="warning" size="sm">
+          {result.totalRecords === 0
+            ? 'The source data has no rows.'
+            : `All ${result.totalRecords.toLocaleString()} rows were removed by the active filters.`}
+        </Alert>
+      </GridShell>
     )
   }
 
   // ─── Render ────────────────────────────────────────────────────────────────
 
+  const totalHeaderRows = Math.max(1, headerRows.length + (needsValueRow(numColFields, numValues) ? 1 : 0))
+  const cornerColSpan = isCompact ? 1 : Math.max(1, numRowFields)
+
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center gap-2">
-          <Table2 className="w-4 h-4 text-[var(--color-ink-muted)]" />
-          <span className="text-xs font-semibold text-[var(--color-ink-muted)] uppercase tracking-wider">
-            Pivot Table
-          </span>
-          <span className="text-[10px] text-[var(--color-ink-muted)] ml-2">
-            {rowKeys.length.toLocaleString()} rows × {colKeys.length.toLocaleString()} columns
-          </span>
-          <div className="flex-1" />
-          <button
-            onClick={handleCopy}
-            className="inline-flex items-center gap-1 px-2 py-1 text-xs text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] hover:bg-[var(--color-cream-dark)] rounded transition-colors"
-            title="Copy as TSV"
-          >
-            {copied ? (
-              <>
-                <Check className="w-3.5 h-3.5 text-green-600" />
-                <span className="text-green-600">Copied</span>
-              </>
-            ) : (
-              <>
-                <Copy className="w-3.5 h-3.5" />
-                <span>Copy</span>
-              </>
-            )}
-          </button>
-        </div>
-      </CardHeader>
-      <CardContent className="p-0">
-        <div className="overflow-x-auto border-t border-[var(--color-border)]">
+    <ExpandableCard expanded={expanded} onExpandedChange={setExpanded}>
+      <ExpandableCardHeader className="flex items-center gap-2">
+        <Table2 className="w-4 h-4 text-[var(--color-ink-muted)]" />
+        <span className="text-xs font-semibold text-[var(--color-ink-muted)] uppercase tracking-wider">
+          Pivot Table
+        </span>
+        <span className="text-[11px] text-[var(--color-ink-muted)]">
+          {lines.length.toLocaleString()} rows × {slots.length.toLocaleString()} columns
+          {result.matchedRecords < result.totalRecords && (
+            <> · {result.matchedRecords.toLocaleString()} of {result.totalRecords.toLocaleString()} records</>
+          )}
+        </span>
+        <div className="flex-1" />
+        <Button variant="secondary" size="sm" onClick={handleDownloadCsv} className="gap-1">
+          <Download className="w-3 h-3" />
+          CSV
+        </Button>
+        <CopyButton text={buildTsv} />
+        <ExpandToggleButton />
+      </ExpandableCardHeader>
+
+      <ExpandableCardContent className="p-0">
+        {/* No scroll container: the table sizes to its content and the page
+            scrolls. `w-full` lets columns compress to fit before the card is
+            forced to overflow. */}
+        <div className="border-t border-[var(--color-border)]">
           <table className="w-full text-xs font-mono border-collapse">
-            <thead className="bg-[var(--color-cream)]">
-              {/* Main header row */}
+            <caption className="sr-only">
+              Pivot table of {config.rows.join(', ') || 'no row fields'} by{' '}
+              {config.cols.join(', ') || 'no column fields'}
+            </caption>
+
+            <thead
+              className={cn(
+                'sticky z-20',
+                // When the card is expanded it becomes its own scroll
+                // container, so the header pins to the card rather than
+                // sitting below the app header.
+                expanded ? 'top-0' : 'top-[var(--app-header-height)]',
+                // Collapsed borders do not travel with a sticky element, so a
+                // shadow keeps the header visually separated while scrolling.
+                'shadow-[0_1px_0_0_var(--color-border)]'
+              )}
+            >
+              {/* First header row carries the corner cells alongside the top
+                  level of column headers. */}
               <tr>
-                {/* Row field headers */}
-                {config.rows.map((field, i) => (
+                {isCompact ? (
                   <th
-                    key={`row-field-${i}`}
-                    rowSpan={numColFields > 0 && numValues > 1 ? 2 : 1}
-                    className="px-3 py-2 text-left font-semibold text-[var(--color-ink-muted)] bg-[var(--color-cream-dark)] border-b border-r border-[var(--color-border)]"
+                    scope="col"
+                    rowSpan={totalHeaderRows}
+                    colSpan={cornerColSpan}
+                    className={cn(HEADER_BASE, 'text-left')}
                   >
-                    {field}
+                    {config.rows.join(' / ')}
+                  </th>
+                ) : (
+                  Array.from({ length: cornerColSpan }, (_, i) => (
+                    <th
+                      key={`corner-${i}`}
+                      scope="col"
+                      rowSpan={totalHeaderRows}
+                      className={cn(HEADER_BASE, 'text-left')}
+                    >
+                      {config.rows[i] ?? ''}
+                    </th>
+                  ))
+                )}
+
+                {headerRows[0]?.map((cell) => (
+                  <th
+                    key={cell.key}
+                    scope={cell.colSpan > 1 ? 'colgroup' : 'col'}
+                    colSpan={cell.colSpan * numValues}
+                    rowSpan={cell.rowSpan}
+                    aria-sort={ariaSort(cell.terminal && numValues === 1 ? sortStateFor(cell.slot, 0) : undefined)}
+                    className={cn(HEADER_BASE, 'text-center')}
+                  >
+                    <HeaderLabel
+                      cell={cell}
+                      onToggle={toggleCol}
+                      sortState={cell.terminal && numValues === 1 ? sortStateFor(cell.slot, 0) : undefined}
+                      onSort={
+                        cell.terminal && numValues === 1
+                          ? () => sortByColumn(cell.slot, 0)
+                          : undefined
+                      }
+                    />
                   </th>
                 ))}
 
-                {/* Column headers */}
-                {numColFields > 0 ? (
-                  <>
-                    {colKeys.map((colKey, colIdx) => (
-                      <th
-                        key={`col-${colIdx}`}
-                        colSpan={numValues > 0 ? numValues : 1}
-                        className="px-3 py-2 text-center font-semibold text-[var(--color-ink)] bg-[var(--color-cream-dark)] border-b border-r border-[var(--color-border)] whitespace-nowrap"
-                      >
-                        {colKey.join(' / ')}
-                      </th>
-                    ))}
-                    {/* Row totals header */}
-                    {config.showRowTotals && (
-                      <th
-                        rowSpan={numValues > 1 ? 2 : 1}
-                        colSpan={numValues > 0 ? numValues : 1}
-                        className="px-3 py-2 text-center font-semibold text-[var(--color-ink-muted)] bg-[var(--color-cream-dark)] border-b border-[var(--color-border)]"
-                      >
-                        Total
-                      </th>
-                    )}
-                  </>
-                ) : (
-                  <>
-                    {/* No columns - show value headers directly */}
-                    {valueConfigs.map((vc, vi) => (
-                      <th
-                        key={`val-header-${vi}`}
-                        className="px-3 py-2 text-center font-semibold text-[var(--color-ink)] bg-[var(--color-cream-dark)] border-b border-[var(--color-border)] whitespace-nowrap"
-                      >
-                        {AGGREGATION_LABELS[vc.aggregation]} of {vc.field}
-                      </th>
-                    ))}
-                  </>
-                )}
+                {/* No column fields: the value names are the only headers. */}
+                {numColFields === 0 &&
+                  valueConfigs.map((vc, vi) => (
+                    <th
+                      key={`v-${vc.id}`}
+                      scope="col"
+                      aria-sort={ariaSort(sortStateFor(slots[0]!, vi))}
+                      className={cn(HEADER_BASE, 'text-right')}
+                    >
+                      <SortButton
+                        label={metricLabel(vc)}
+                        state={sortStateFor(slots[0]!, vi)}
+                        onClick={() => sortByColumn(slots[0]!, vi)}
+                      />
+                    </th>
+                  ))}
               </tr>
 
-              {/* Value sub-headers (when columns exist and multiple values) */}
+              {headerRows.slice(1).map((row, depth) => (
+                <tr key={`hdr-${depth + 1}`}>
+                  {row.map((cell) => (
+                    <th
+                      key={cell.key}
+                      scope={cell.colSpan > 1 ? 'colgroup' : 'col'}
+                      colSpan={cell.colSpan * numValues}
+                      rowSpan={cell.rowSpan}
+                      className={cn(HEADER_BASE, 'text-center')}
+                    >
+                      <HeaderLabel cell={cell} onToggle={toggleCol} />
+                    </th>
+                  ))}
+                </tr>
+              ))}
+
+              {/* Metric names, repeated under every column group. */}
               {numColFields > 0 && numValues > 1 && (
                 <tr>
-                  {colKeys.map((_colKey, colIdx) =>
+                  {slots.map((slot) =>
                     valueConfigs.map((vc, vi) => (
                       <th
-                        key={`val-sub-${colIdx}-${vi}`}
-                        className="px-2 py-1 text-center text-[10px] font-medium text-[var(--color-ink-muted)] bg-[var(--color-cream)] border-b border-r border-[var(--color-border)] whitespace-nowrap"
+                        key={`${slot.key}-${vc.id}`}
+                        scope="col"
+                        aria-sort={ariaSort(sortStateFor(slot, vi))}
+                        className={cn(HEADER_BASE, 'text-right text-[11px] font-medium')}
                       >
-                        {AGGREGATION_LABELS[vc.aggregation]} of {vc.field}
+                        <SortButton
+                          label={metricLabel(vc)}
+                          state={sortStateFor(slot, vi)}
+                          onClick={() => sortByColumn(slot, vi)}
+                        />
                       </th>
                     ))
                   )}
@@ -334,143 +451,288 @@ export function PivotGrid({ result, config }: PivotGridProps) {
               )}
             </thead>
 
-            <tbody>
-              {/* Data rows */}
-              {rowKeys.map((rowKey, rowIdx) => {
-                const flatRowKey = flattenKey(rowKey)
-                const rowTotal = result.rowTotals.get(flatRowKey)
-
-                return (
-                  <tr
-                    key={flatRowKey}
-                    className={rowIdx % 2 === 1 ? 'bg-[var(--color-cream-dark)]/30' : ''}
-                  >
-                    {/* Row headers */}
-                    {rowKey.map((val, fieldIdx) => (
+            {/* One delegated handler rather than a button per cell: a 500x20
+                grid would otherwise put 10,000 identically-named buttons into
+                the tab order, which no keyboard or screen-reader user can get
+                past. */}
+            <tbody onClick={handleCellClick}>
+              {visibleLines.map((line, lineIdx) => (
+                <tr
+                  key={line.key}
+                  className={cn(
+                    line.kind === 'subtotal' && 'bg-[var(--color-cream-dark)]/60 font-semibold',
+                    line.kind === 'grand' &&
+                      'bg-[var(--color-cream-dark)] font-semibold border-t-2 border-[var(--color-border)]',
+                    line.kind === 'leaf' && lineIdx % 2 === 1 && 'bg-[var(--color-cream-dark)]/25'
+                  )}
+                >
+                  {isCompact ? (
+                    <th scope="row" className={ROW_HEADER_BASE}>
+                      <CollapseLabel
+                        text={keyLabel(line.label)}
+                        indent={line.kind === 'grand' ? 0 : Math.max(0, line.depth - 1)}
+                        collapsible={line.collapsible}
+                        collapsed={line.collapsed}
+                        onToggle={() => toggleRow(line.node.flatKey)}
+                      />
+                    </th>
+                  ) : (
+                    labelCells?.[lineIdx]?.map((cell) => (
                       <th
-                        key={`row-${rowIdx}-field-${fieldIdx}`}
-                        className="px-3 py-2 text-left font-medium text-[var(--color-ink)] bg-[var(--color-cream)] border-r border-b border-[var(--color-border)] whitespace-nowrap"
+                        key={`${line.key}-${cell.fieldIndex}`}
+                        scope="row"
+                        rowSpan={cell.rowSpan}
+                        colSpan={cell.colSpan}
+                        className={cn(ROW_HEADER_BASE, 'align-top')}
                       >
-                        {val}
+                        <CollapseLabel
+                          text={keyLabel(cell.label)}
+                          indent={0}
+                          collapsible={cell.collapsible}
+                          collapsed={cell.collapsed}
+                          onToggle={() => toggleRow(cell.flatKey)}
+                        />
                       </th>
-                    ))}
-
-                    {/* Data cells */}
-                    {numColFields > 0 ? (
-                      <>
-                        {colKeys.map((colKey, colIdx) => {
-                          const flatColKey = flattenKey(colKey)
-                          const cellKey = compositeKey(flatRowKey, flatColKey)
-                          const cell = result.cells.get(cellKey)
-
-                          return valueConfigs.map((_, vi) => {
-                            const value = cell?.values[vi] ?? null
-                            const formatted = cell?.formatted[vi] ?? '—'
-                            const bg = getHeatmapBg(rowKey, colKey, vi, value)
-
-                            return (
-                              <td
-                                key={`cell-${colIdx}-${vi}`}
-                                className="px-3 py-2 text-right border-r border-b border-[var(--color-border)] tabular-nums"
-                                style={{ backgroundColor: bg }}
-                              >
-                                {formatted}
-                              </td>
-                            )
-                          })
-                        })}
-                        {/* Row totals */}
-                        {config.showRowTotals &&
-                          valueConfigs.map((_, vi) => (
-                            <td
-                              key={`row-total-${vi}`}
-                              className="px-3 py-2 text-right font-semibold bg-[var(--color-cream-dark)]/50 border-b border-[var(--color-border)] tabular-nums"
-                            >
-                              {rowTotal?.formatted[vi] ?? '—'}
-                            </td>
-                          ))}
-                      </>
-                    ) : (
-                      <>
-                        {/* No columns - show aggregated values directly */}
-                        {valueConfigs.map((_, vi) => {
-                          const value = rowTotal?.values[vi] ?? null
-                          const formatted = rowTotal?.formatted[vi] ?? '—'
-                          const bg = getHeatmapBg(rowKey, [], vi, value)
-
-                          return (
-                            <td
-                              key={`val-${vi}`}
-                              className="px-3 py-2 text-right border-b border-[var(--color-border)] tabular-nums"
-                              style={{ backgroundColor: bg }}
-                            >
-                              {formatted}
-                            </td>
-                          )
-                        })}
-                      </>
-                    )}
-                  </tr>
-                )
-              })}
-
-              {/* Column Totals Row */}
-              {config.showColTotals && numColFields > 0 && (
-                <tr className="bg-[var(--color-cream-dark)]/50 font-semibold">
-                  <th
-                    colSpan={numRowFields > 0 ? numRowFields : 1}
-                    className="px-3 py-2 text-left text-[var(--color-ink-muted)] bg-[var(--color-cream-dark)] border-r border-b border-[var(--color-border)]"
-                  >
-                    Total
-                  </th>
-                  {colKeys.map((colKey, colIdx) => {
-                    const flatColKey = flattenKey(colKey)
-                    const colTotal = result.colTotals.get(flatColKey)
-
-                    return valueConfigs.map((_, vi) => (
-                      <td
-                        key={`col-total-${colIdx}-${vi}`}
-                        className="px-3 py-2 text-right border-r border-b border-[var(--color-border)] tabular-nums"
-                      >
-                        {colTotal?.formatted[vi] ?? '—'}
-                      </td>
                     ))
-                  })}
-                  {config.showRowTotals &&
-                    valueConfigs.map((_, vi) => (
-                      <td
-                        key={`grand-total-${vi}`}
-                        className="px-3 py-2 text-right bg-[var(--color-cream-dark)] border-b border-[var(--color-border)] tabular-nums"
-                      >
-                        {result.grandTotal.formatted[vi] ?? '—'}
-                      </td>
-                    ))}
-                </tr>
-              )}
+                  )}
 
-              {/* Grand total row (when no columns) */}
-              {config.showGrandTotal && numColFields === 0 && (
-                <tr className="bg-[var(--color-cream-dark)]/50 font-semibold">
-                  <th
-                    colSpan={numRowFields > 0 ? numRowFields : 1}
-                    className="px-3 py-2 text-left text-[var(--color-ink-muted)] bg-[var(--color-cream-dark)] border-r border-b border-[var(--color-border)]"
-                  >
-                    Grand Total
-                  </th>
-                  {valueConfigs.map((_, vi) => (
-                    <td
-                      key={`grand-total-${vi}`}
-                      className="px-3 py-2 text-right border-b border-[var(--color-border)] tabular-nums"
-                    >
-                      {result.grandTotal.formatted[vi] ?? '—'}
-                    </td>
-                  ))}
+                  {slots.map((slot, slotIdx) => {
+                    const cell = line.showsValues
+                      ? result.cells.get(compositeKey(line.node.flatKey, slot.node.flatKey))
+                      : undefined
+                    const isTotalColumn = slot.kind !== 'leaf'
+
+                    return valueConfigs.map((vc, vi) => {
+                      const value = cell?.values[vi] ?? null
+                      const background =
+                        line.kind === 'leaf' && !isTotalColumn && slot.kind === 'leaf'
+                          ? heatmap?.background(line.key, slot.key, vi, value)
+                          : undefined
+
+                      return (
+                        <td
+                          key={`${slot.key}-${vc.id}`}
+                          data-line={line.showsValues ? lineIdx : undefined}
+                          data-slot={line.showsValues ? slotIdx : undefined}
+                          title={line.showsValues ? 'Click to show source rows' : undefined}
+                          className={cn(
+                            'px-3 py-1.5 text-right border-b border-r border-[var(--color-border)] tabular-nums',
+                            line.showsValues &&
+                              'cursor-pointer hover:text-[var(--color-accent)]',
+                            isTotalColumn && 'bg-[var(--color-cream-dark)]/60 font-semibold'
+                          )}
+                          style={background ? { backgroundColor: background } : undefined}
+                        >
+                          {line.showsValues ? cell?.formatted[vi] ?? NO_VALUE : ''}
+                        </td>
+                      )
+                    })
+                  })}
                 </tr>
-              )}
+              ))}
             </tbody>
           </table>
         </div>
-      </CardContent>
-    </Card>
+
+        {truncated > 0 && (
+          <div className="flex items-center gap-3 p-3 border-t border-[var(--color-border)]">
+            <Alert variant="info" size="sm" className="flex-1">
+              Showing the first {ROW_RENDER_LIMIT.toLocaleString()} of{' '}
+              {lines.length.toLocaleString()} rows. Collapsing groups or adding a
+              filter usually works better than rendering them all.
+            </Alert>
+            <Button variant="secondary" size="sm" onClick={() => setShowAllFor(lines)}>
+              Show all
+            </Button>
+          </div>
+        )}
+
+        {dataColumns > WIDE_COLUMN_THRESHOLD && (
+          <div className="p-3 border-t border-[var(--color-border)]">
+            <Alert variant="info" size="sm">
+              {dataColumns.toLocaleString()} data columns are competing for the
+              available width. Collapse a column group, or move a column field to
+              Rows, to make the values readable.
+            </Alert>
+          </div>
+        )}
+
+        <ExpandHint />
+      </ExpandableCardContent>
+
+      {drillTarget && (
+        <DrillDownModal
+          open
+          onClose={() => setDrillTarget(null)}
+          target={drillTarget}
+          records={records}
+          config={config}
+          columns={sourceColumns}
+          exclusions={result.axisExclusions}
+        />
+      )}
+    </ExpandableCard>
   )
+}
+
+// ─── Sub-components ───────────────────────────────────────────────────────────
+
+const HEADER_BASE =
+  'px-3 py-1.5 font-semibold text-[var(--color-ink)] bg-[var(--color-cream-dark)] border-b border-r border-[var(--color-border)]'
+
+// Labels wrap rather than forcing the table wider than its container.
+const ROW_HEADER_BASE =
+  'px-3 py-1.5 text-left font-medium text-[var(--color-ink)] border-r border-b border-[var(--color-border)]'
+
+function CollapseLabel({
+  text,
+  indent,
+  collapsible,
+  collapsed,
+  onToggle,
+}: {
+  text: string
+  indent: number
+  collapsible: boolean
+  collapsed: boolean
+  onToggle: () => void
+}) {
+  const padding = indent > 0 ? { paddingLeft: `${indent * 0.875}rem` } : undefined
+
+  if (!collapsible) {
+    return <span style={padding}>{text}</span>
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      aria-expanded={!collapsed}
+      aria-label={`${collapsed ? 'Expand' : 'Collapse'} ${text}`}
+      className="inline-flex items-center gap-0.5 hover:text-[var(--color-accent)] transition-colors cursor-pointer"
+      style={padding}
+    >
+      {collapsed ? (
+        <ChevronRight className="w-3 h-3 shrink-0" aria-hidden="true" />
+      ) : (
+        <ChevronDown className="w-3 h-3 shrink-0" aria-hidden="true" />
+      )}
+      {text}
+    </button>
+  )
+}
+
+function HeaderLabel({
+  cell,
+  onToggle,
+  sortState,
+  onSort,
+}: {
+  cell: {
+    label: string
+    collapsible: boolean
+    collapsed: boolean
+    toggleKey: string
+    slot: ColSlot
+  }
+  onToggle: (flatKey: string) => void
+  sortState?: SortState
+  onSort?: () => void
+}) {
+  const text = keyLabel(cell.label)
+
+  if (!cell.collapsible) {
+    return onSort ? (
+      <SortButton label={text} state={sortState} onClick={onSort} />
+    ) : (
+      <>{text}</>
+    )
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={() => onToggle(cell.toggleKey)}
+      aria-expanded={!cell.collapsed}
+      aria-label={`${cell.collapsed ? 'Expand' : 'Collapse'} ${text}`}
+      className="inline-flex items-center gap-0.5 hover:text-[var(--color-accent)] transition-colors cursor-pointer"
+    >
+      {cell.collapsed ? (
+        <ChevronRight className="w-3 h-3 shrink-0" aria-hidden="true" />
+      ) : (
+        <ChevronDown className="w-3 h-3 shrink-0" aria-hidden="true" />
+      )}
+      {text}
+    </button>
+  )
+}
+
+function GridShell({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="border border-[var(--color-border)] rounded-lg overflow-hidden">
+      <div className="flex items-center gap-2 px-3 py-2 bg-[var(--color-cream)] border-b border-[var(--color-border)]">
+        <Table2 className="w-4 h-4 text-[var(--color-ink-muted)]" />
+        <span className="text-xs font-semibold text-[var(--color-ink-muted)] uppercase tracking-wider">
+          Pivot Table
+        </span>
+      </div>
+      <div className="p-3">{children}</div>
+    </div>
+  )
+}
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function needsValueRow(numColFields: number, numValues: number): boolean {
+  return numColFields === 0 || numValues > 1
+}
+
+
+// ─── Sorting affordances ──────────────────────────────────────────────────────
+
+type SortState = 'asc' | 'desc' | undefined
+
+/**
+ * A column heading that sorts the rows by that column's values, cycling
+ * descending → ascending → off. The neutral icon only appears on hover so the
+ * header does not look cluttered by default.
+ */
+function SortButton({
+  label,
+  state,
+  onClick,
+}: {
+  label: string
+  state: SortState
+  onClick: () => void
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      title={`Sort rows by ${label}`}
+      className={cn(
+        'group inline-flex items-center gap-1 hover:text-[var(--color-accent)] transition-colors cursor-pointer',
+        state && 'text-[var(--color-accent)]'
+      )}
+    >
+      <span>{label}</span>
+      {state === 'desc' ? (
+        <ArrowDown className="w-3 h-3 shrink-0" aria-hidden="true" />
+      ) : state === 'asc' ? (
+        <ArrowUp className="w-3 h-3 shrink-0" aria-hidden="true" />
+      ) : (
+        <ChevronsUpDown
+          className="w-3 h-3 shrink-0 opacity-0 group-hover:opacity-40 transition-opacity"
+          aria-hidden="true"
+        />
+      )}
+    </button>
+  )
+}
+
+function ariaSort(state: SortState): 'ascending' | 'descending' | undefined {
+  if (state === 'asc') return 'ascending'
+  if (state === 'desc') return 'descending'
+  return undefined
 }

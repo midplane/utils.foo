@@ -85,37 +85,110 @@ export function createKeyComparator(descending: boolean): Comparator<string[]> {
   }
 }
 
-export function createValueComparator(
+/**
+ * Sort keys by an associated numeric value.
+ *
+ * Uses a Schwartzian transform: `valueGetter` is invoked exactly once per key
+ * rather than O(n log n) times from inside the comparator. This matters a lot
+ * because value lookup can be expensive (e.g. median requires sorting).
+ */
+export function sortKeysByValue(
+  keys: string[][],
   valueGetter: (key: string[]) => number | null,
   descending: boolean
-): Comparator<string[]> {
-  return (a, b) => {
-    const valA = valueGetter(a)
-    const valB = valueGetter(b)
+): string[][] {
+  const decorated = keys.map((key, index) => ({
+    key,
+    index,
+    value: valueGetter(key),
+  }))
 
-    // Nulls go to the end
-    if (valA === null && valB === null) return 0
+  decorated.sort((a, b) => {
+    const valA = a.value
+    const valB = b.value
+
+    // Nulls always sort to the end, regardless of direction
+    if (valA === null && valB === null) return a.index - b.index
     if (valA === null) return 1
     if (valB === null) return -1
 
+    if (valA === valB) return a.index - b.index
     const diff = valA - valB
     return descending ? -diff : diff
-  }
+  })
+
+  return decorated.map((d) => d.key)
 }
 
 // ─── Key Utilities ────────────────────────────────────────────────────────────
 
-// Use null character as delimiter (won't appear in normal data)
-const KEY_DELIMITER = '\0'
+// Unit separator - a control character that cannot appear in CSV field values.
+const KEY_DELIMITER = '\u001F'
+
+// Record separator - distinct from KEY_DELIMITER so composite keys are unambiguous.
+const COMPOSITE_DELIMITER = '\u001E'
 
 export function flattenKey(key: string[]): string {
   return key.join(KEY_DELIMITER)
 }
 
-export function expandKey(flatKey: string): string[] {
-  return flatKey.split(KEY_DELIMITER)
+export function compositeKey(rowKey: string, colKey: string): string {
+  return `${rowKey}${COMPOSITE_DELIMITER}${colKey}`
 }
 
-export function compositeKey(rowKey: string, colKey: string): string {
-  return `${rowKey}|${colKey}`
+
+// ─── Null / Blank Handling ────────────────────────────────────────────────────
+
+/**
+ * Sentinel used for null, undefined and empty values. Uses a control-character
+ * prefix so it can never collide with a genuine data value such as the literal
+ * string "null".
+ */
+export const BLANK_KEY = '\u0000blank'
+
+/** Label shown to the user wherever BLANK_KEY appears. */
+export const BLANK_LABEL = '(blank)'
+
+/**
+ * Separates a sort prefix from the label in an ordered key.
+ *
+ * Grouped values such as month names have to sort chronologically but display
+ * as "Jan", "Feb". Encoding the ordinal into the key keeps a single sort path -
+ * plain natural sort - rather than threading a parallel sort value through the
+ * whole axis tree.
+ */
+const ORDER_SEPARATOR = '\u0001'
+
+// Encode the sort ordinal as a fixed-width, always-positive integer.
+//
+// Padding a signed decimal with '-' reverses the ordering of negatives (more
+// dashes sorts earlier, so -60 landed after -50), and truncating discards
+// fractional bin boundaries. Scaling then biasing avoids both: every key is the
+// same width and strictly monotonic in `order`.
+const ORDER_SCALE = 1e6
+const ORDER_BIAS = 4e15 // Keeps ORDER_BIAS + order * ORDER_SCALE under 2^53.
+const ORDER_WIDTH = 16
+
+/**
+ * Build a key that sorts by `order` but displays as `label`.
+ * Handles negative and fractional ordinals.
+ */
+export function orderedKey(order: number, label: string): string {
+  const scaled = Math.round(order * ORDER_SCALE) + ORDER_BIAS
+  const padded = String(scaled).padStart(ORDER_WIDTH, '0')
+  return `${padded}${ORDER_SEPARATOR}${label}`
+}
+
+/** Normalise a raw record value into a stable string grouping key. */
+export function normalizeKey(value: unknown): string {
+  if (value === null || value === undefined) return BLANK_KEY
+  const str = String(value)
+  return str === '' ? BLANK_KEY : str
+}
+
+/** Convert a grouping key back into something displayable. */
+export function keyLabel(key: string): string {
+  if (key === BLANK_KEY) return BLANK_LABEL
+  const at = key.indexOf(ORDER_SEPARATOR)
+  return at === -1 ? key : key.slice(at + 1)
 }

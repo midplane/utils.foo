@@ -3,7 +3,13 @@ import { Button, ButtonProps } from './Button'
 import { cn } from '../../lib/utils'
 
 interface CopyButtonProps extends Omit<ButtonProps, 'onClick'> {
-  text: string
+  /**
+   * Text to copy, or a function returning it.
+   *
+   * Pass a function when the text is expensive to build - it is only called on
+   * click, rather than on every render of the parent.
+   */
+  text: string | (() => string)
 }
 
 export function CopyButton({ text, className, children, ...props }: CopyButtonProps) {
@@ -11,7 +17,7 @@ export function CopyButton({ text, className, children, ...props }: CopyButtonPr
 
   const handleCopy = async () => {
     try {
-      await navigator.clipboard.writeText(text)
+      await navigator.clipboard.writeText(typeof text === 'function' ? text() : text)
       setCopied(true)
       setTimeout(() => setCopied(false), 1500)
     } catch (err) {
