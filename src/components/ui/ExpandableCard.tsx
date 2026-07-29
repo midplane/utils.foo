@@ -73,6 +73,17 @@ export function useExpandable(
   return { expanded, toggle, setExpanded, collapse, expand };
 }
 
+// ─── Shared sizing ────────────────────────────────────────────────────────────
+
+/**
+ * Height for a scrollable pane inside an expanded (fullscreen) ExpandableCard.
+ *
+ * The expanded card is edge-to-edge (`inset-0`), so the only chrome to subtract
+ * is the card's own: ~45px header + 24px content padding + ~26px footer/stats
+ * row. Tools share this constant so the value lives in exactly one place.
+ */
+export const EXPANDED_PANE_HEIGHT = 'calc(100vh - 95px)'
+
 // ─── ExpandableCard context ───────────────────────────────────────────────────
 
 interface ExpandableCardContextValue {
@@ -103,21 +114,19 @@ export interface ExpandableCardProps {
   children: ReactNode;
   /** Additional class name for the card */
   className?: string;
-  /**
-   * Offset from top when expanded (default: '42px' for header height).
-   * The card will be positioned 8px below this value.
-   */
-  topOffset?: string;
 }
 
 /**
- * A Card that can expand to fill the viewport with a backdrop overlay.
+ * A Card that can expand to fill the entire viewport.
  *
  * Features:
- * - Fullscreen expansion with backdrop blur
+ * - True fullscreen expansion — covers the site header, edge to edge
  * - Escape key to collapse
- * - Click outside to collapse
+ * - Locks background scroll while expanded
  * - Provides context for child components to access expanded state
+ *
+ * Note: because the expanded card covers the whole viewport there is no
+ * click-outside target; Escape is the collapse affordance (see ExpandHint).
  *
  * @example
  * const { expanded, setExpanded } = useExpandable()
@@ -137,7 +146,6 @@ export function ExpandableCard({
   onExpandedChange,
   children,
   className,
-  topOffset = "42px",
 }: ExpandableCardProps) {
   const toggle = useCallback(
     () => onExpandedChange(!expanded),
@@ -148,25 +156,31 @@ export function ExpandableCard({
     [onExpandedChange],
   );
 
+  // While fullscreen: lock background scroll, and flag the document so CSS can
+  // lift <main> above the sticky site header. A portal would be the textbook
+  // fix for the stacking context, but relocating the DOM subtree remounts
+  // children — which would destroy and rebuild editor instances (CodeMirror et
+  // al.) and discard the user's input.
+  useEffect(() => {
+    if (!expanded) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    document.body.dataset.expandedCard = "true";
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      delete document.body.dataset.expandedCard;
+    };
+  }, [expanded]);
+
   return (
     <ExpandableCardContext.Provider value={{ expanded, toggle, collapse }}>
-      {/* Backdrop */}
-      {expanded && (
-        <div
-          className="fixed left-0 right-0 bottom-0 bg-black/40 z-40 backdrop-blur-sm"
-          style={{ top: topOffset }}
-          onClick={collapse}
-        />
-      )}
-
-      {/* Card */}
       <Card
         className={cn(
           expanded &&
-            "fixed left-4 right-4 bottom-4 z-50 shadow-2xl overflow-auto",
+            // z-[60] clears the sticky site header (z-50) so the card covers it.
+            "fixed inset-0 z-[60] rounded-none border-0 overflow-auto",
           className,
         )}
-        style={expanded ? { top: `calc(${topOffset} + 8px)` } : undefined}
       >
         {children}
       </Card>
@@ -256,7 +270,7 @@ export interface ExpandHintProps {
 }
 
 /**
- * Shows "Press Esc or click outside to collapse" hint when expanded.
+ * Shows "Press Esc to collapse" hint when expanded.
  * Only renders when the card is expanded.
  *
  * @example
@@ -278,7 +292,7 @@ export function ExpandHint({ className }: ExpandHintProps) {
       <kbd className="px-1 py-0.5 bg-[var(--color-cream-dark)] border border-[var(--color-border)] rounded text-[9px]">
         Esc
       </kbd>{" "}
-      or click outside to collapse
+      to collapse
     </span>
   );
 }

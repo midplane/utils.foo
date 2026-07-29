@@ -130,6 +130,16 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* Fullscreen ExpandableCard support.
+   <main> is `relative z-10`, which creates a stacking context — so a card
+   inside it can never paint above the sibling <header> (z-50), no matter how
+   high its own z-index. While a card is expanded we lift <main> above the
+   header so the card can cover the full viewport. Scoped to the expanded
+   state so normal layering is untouched. */
+body[data-expanded-card='true'] main {
+  z-index: 60;
+}
+
 /* Dot grid background pattern */
 .bg-dotgrid {
   background-image: radial-gradient(circle, var(--color-border) 1px, transparent 1px);

@@ -9,4 +9,5 @@ export const meta: ToolMeta = {
   keywords: ['markdown', 'preview', 'render', 'md', 'gfm', 'table', 'code block', 'commonmark', 'html'],
   path: '/markdown',
   icon: FileText,
+  wide: true,
 }

@@ -1,5 +1,4 @@
 import { useState, useMemo, useEffect, useRef, useCallback } from 'react'
-import { marked } from 'marked'
 import { basicSetup } from 'codemirror'
 import { EditorView } from '@codemirror/view'
 import { Compartment } from '@codemirror/state'
@@ -16,15 +15,13 @@ import {
   ExpandableCardContent,
   ExpandToggleButton,
   ExpandHint,
+  EXPANDED_PANE_HEIGHT,
 } from '../../components/ui/ExpandableCard'
 import { FileText, Trash2, RefreshCw, Code, Eye, Columns2 } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import { appTheme, appThemeDark } from '../../lib/codemirrorTheme'
 import { useTheme } from '../../contexts/ThemeContext'
-
-// ─── marked configuration ─────────────────────────────────────────────────────
-
-marked.setOptions({ gfm: true, breaks: true })
+import { renderMarkdown } from './render'
 
 // ─── Sample content ───────────────────────────────────────────────────────────
 
@@ -90,6 +87,36 @@ const PROSE_STYLES = `
   .md-body img { max-width: 100%; border-radius: 6px; }
   .md-body hr { border: none; border-top: 1px solid #E7E5E4; margin: 1.2em 0; }
 
+  /* ── Syntax highlighting (highlight.js tokens) ──
+     Code blocks sit on a dark surface in both themes, so a single
+     dark-background palette serves light and dark mode alike. */
+  .md-body .hljs-comment,
+  .md-body .hljs-quote { color: #8A817A; font-style: italic; }
+  .md-body .hljs-keyword,
+  .md-body .hljs-selector-tag,
+  .md-body .hljs-literal,
+  .md-body .hljs-type { color: #FF9E64; }
+  .md-body .hljs-string,
+  .md-body .hljs-regexp,
+  .md-body .hljs-addition { color: #9ECE6A; }
+  .md-body .hljs-number,
+  .md-body .hljs-symbol,
+  .md-body .hljs-bullet { color: #E0AF68; }
+  .md-body .hljs-title,
+  .md-body .hljs-title.function_,
+  .md-body .hljs-section,
+  .md-body .hljs-name { color: #7AA2F7; }
+  .md-body .hljs-attr,
+  .md-body .hljs-attribute,
+  .md-body .hljs-variable,
+  .md-body .hljs-template-variable { color: #73DACA; }
+  .md-body .hljs-built_in,
+  .md-body .hljs-class .hljs-title { color: #BB9AF7; }
+  .md-body .hljs-meta,
+  .md-body .hljs-deletion { color: #F7768E; }
+  .md-body .hljs-emphasis { font-style: italic; }
+  .md-body .hljs-strong { font-weight: 700; }
+
   /* ── Dark mode overrides ── */
   .dark .md-body { color: #F2EDE8; }
   .dark .md-body h1,.dark .md-body h2,.dark .md-body h3,.dark .md-body h4 { color: #F2EDE8; }
@@ -124,8 +151,8 @@ export default function MarkdownPreviewTool() {
   const editorViewRef = useRef<EditorView | null>(null)
   const themeComp = useRef(new Compartment())
 
-  // Render markdown → HTML (synchronous with marked v15)
-  const html = useMemo(() => marked.parse(source) as string, [source])
+  // Render markdown → sanitised HTML (see render.ts)
+  const html = useMemo(() => renderMarkdown(source), [source])
 
   // Build CodeMirror editor once on mount
   useEffect(() => {
@@ -174,7 +201,9 @@ export default function MarkdownPreviewTool() {
     view.dispatch({ changes: { from: 0, to: view.state.doc.length, insert: SAMPLE_MD } })
   }, [])
 
-  const EDITOR_HEIGHT = expanded ? 'calc(100vh - 161px)' : 560
+  // Expanded fills the viewport; otherwise scale with viewport height but stay
+  // within sensible bounds so short laptops and tall monitors both behave.
+  const EDITOR_HEIGHT = expanded ? EXPANDED_PANE_HEIGHT : 'clamp(420px, 62vh, 760px)'
 
   return (
     <>
@@ -244,12 +273,8 @@ export default function MarkdownPreviewTool() {
                 style={{ height: EDITOR_HEIGHT }}
               >
                 <style>{PROSE_STYLES}</style>
-                <div
-                  className="md-body"
-                  // marked output is sanitised — no user-controlled script injection
-                  // possible since we use default marked with no raw HTML passthrough
-                  dangerouslySetInnerHTML={{ __html: html }}
-                />
+                {/* html is sanitised by renderMarkdown() via DOMPurify */}
+                <div className="md-body" dangerouslySetInnerHTML={{ __html: html }} />
               </div>
             </div>
 

@@ -32,4 +32,5 @@ export {
   ExpandToggleButton,
   ExpandHint,
   useExpandableCard,
+  EXPANDED_PANE_HEIGHT,
 } from './ExpandableCard'

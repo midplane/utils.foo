@@ -1,12 +1,16 @@
 import { ReactNode } from 'react'
 import { Header } from './Header'
 import { Footer } from './Footer'
+import { useContentWidth } from './useContentWidth'
+import { cn } from '../../lib/utils'
 
 interface LayoutProps {
   children: ReactNode
 }
 
 export function Layout({ children }: LayoutProps) {
+  const widthClass = useContentWidth()
+
   return (
     <div className="min-h-screen bg-[var(--color-cream)] flex flex-col relative">
       {/* Subtle dot grid background */}
@@ -18,7 +22,7 @@ export function Layout({ children }: LayoutProps) {
       <Header />
       
       <main className="flex-1 relative z-10">
-        <div className="max-w-5xl mx-auto px-4 py-4">
+        <div className={cn('mx-auto px-4 py-4', widthClass)}>
           {children}
         </div>
       </main>

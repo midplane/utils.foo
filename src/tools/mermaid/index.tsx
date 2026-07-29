@@ -17,6 +17,7 @@ import {
   ExpandableCardContent,
   ExpandToggleButton,
   ExpandHint,
+  EXPANDED_PANE_HEIGHT,
 } from '../../components/ui/ExpandableCard'
 import { Workflow, Trash2, Download, Code, Eye, Columns2, ZoomIn, ZoomOut, Shrink } from 'lucide-react'
 import { cn } from '../../lib/utils'
@@ -398,7 +399,7 @@ export default function MermaidTool() {
     img.src = url
   }, [svg])
 
-  const PANE_HEIGHT = expanded ? 'calc(100vh - 161px)' : 560
+  const PANE_HEIGHT = expanded ? EXPANDED_PANE_HEIGHT : 560
 
   return (
     <>

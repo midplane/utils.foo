@@ -1,10 +1,14 @@
 import { Link } from 'react-router-dom'
 import { sitePrefix, siteSuffix } from '../../lib/site'
+import { useContentWidth } from './useContentWidth'
+import { cn } from '../../lib/utils'
 
 export function Footer() {
+  const widthClass = useContentWidth()
+
   return (
     <footer className="border-t border-[var(--color-border)] bg-[var(--color-cream)] mt-auto">
-      <div className="max-w-5xl mx-auto px-4 py-3">
+      <div className={cn('mx-auto px-4 py-3', widthClass)}>
         <div className="flex items-center justify-between text-[10px] text-[var(--color-ink-muted)]">
           <Link to="/" className="flex items-center gap-1.5 hover:text-[var(--color-accent)] transition-colors">
             <span className="font-medium">

@@ -19,6 +19,7 @@ import {
   ExpandableCardHeader,
   ExpandableCardContent,
   ExpandToggleButton,
+  EXPANDED_PANE_HEIGHT,
 } from '../../components/ui/ExpandableCard'
 import { cn } from '../../lib/utils'
 import { appTheme, appThemeDark } from '../../lib/codemirrorTheme'
@@ -307,7 +308,7 @@ export default function DataConverterTool() {
 
   // ── Esc — handled by useExpandable ────────────────────────────────────────────
 
-  const editorHeight = expanded ? 'calc(100vh - 161px)' : '480px'
+  const editorHeight = expanded ? EXPANDED_PANE_HEIGHT : '480px'
   const canSwap = CONVERSIONS.some(c => c.id === `${conv.to.toLowerCase()}-${conv.from.toLowerCase()}`)
 
   return (

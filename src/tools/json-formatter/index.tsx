@@ -19,6 +19,7 @@ import {
   ExpandableCardContent,
   ExpandToggleButton,
   ExpandHint,
+  EXPANDED_PANE_HEIGHT,
 } from "../../components/ui/ExpandableCard";
 import { cn } from "../../lib/utils";
 import { appTheme, appThemeDark } from "../../lib/codemirrorTheme";
@@ -435,7 +436,7 @@ export default function JsonFormatterTool() {
               <div className="flex flex-col gap-1">
                 <div
                   ref={editorContainerRef}
-                  style={{ height: expanded ? "calc(100vh - 161px)" : "560px" }}
+                  style={{ height: expanded ? EXPANDED_PANE_HEIGHT : "560px" }}
                   className={cn(
                     "rounded-lg",
                     validState === "invalid" && "outline outline-2 outline-red-300",
@@ -458,7 +459,7 @@ export default function JsonFormatterTool() {
                 {/* Result editor */}
                 <div
                   ref={resultContainerRef}
-                  style={{ height: expanded ? "calc(100vh - 161px)" : "560px" }}
+                  style={{ height: expanded ? EXPANDED_PANE_HEIGHT : "560px" }}
                   className="rounded-lg border border-[var(--color-border)] overflow-auto"
                 />
                 {/* Result stats + copy */}

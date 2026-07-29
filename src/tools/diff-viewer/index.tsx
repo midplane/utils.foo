@@ -14,6 +14,7 @@ import {
   ExpandableCardHeader,
   ExpandableCardContent,
   ExpandToggleButton,
+  EXPANDED_PANE_HEIGHT,
 } from '../../components/ui/ExpandableCard'
 import { cn } from '../../lib/utils'
 import { diffTheme, diffThemeDark } from '../../lib/codemirrorTheme'
@@ -293,7 +294,7 @@ export default function DiffViewerTool() {
 
   const identical = leftText === rightText
   const hasDiff   = !identical && (leftText || rightText)
-  const editorHeight = expanded ? 'calc(100vh - 161px)' : '500px'
+  const editorHeight = expanded ? EXPANDED_PANE_HEIGHT : '500px'
 
   return (
     <>
