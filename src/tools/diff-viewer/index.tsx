@@ -18,6 +18,7 @@ import {
   ExpandToggleButton,
   ExpandHint,
   EXPANDED_PANE_HEIGHT,
+  DEFAULT_PANE_HEIGHT,
 } from '../../components/ui/ExpandableCard'
 import { cn } from '../../lib/utils'
 import { countLineChanges } from './stats'
@@ -300,7 +301,7 @@ export default function DiffViewerTool() {
 
   const identical = leftText === rightText
   const hasDiff   = !identical && (leftText || rightText)
-  const editorHeight = expanded ? EXPANDED_PANE_HEIGHT : '500px'
+  const editorHeight = expanded ? EXPANDED_PANE_HEIGHT : DEFAULT_PANE_HEIGHT
 
   return (
     <>

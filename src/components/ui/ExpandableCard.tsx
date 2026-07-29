@@ -84,6 +84,15 @@ export function useExpandable(
  */
 export const EXPANDED_PANE_HEIGHT = 'calc(100vh - 95px)'
 
+/**
+ * Height for a scrollable pane in the normal (non-expanded) state.
+ *
+ * Scales with the viewport so tall monitors do not leave dead space below the
+ * card and short laptops are not forced to scroll, while the bounds keep the
+ * pane usable at either extreme.
+ */
+export const DEFAULT_PANE_HEIGHT = 'clamp(420px, 62vh, 760px)'
+
 // ─── ExpandableCard context ───────────────────────────────────────────────────
 
 interface ExpandableCardContextValue {

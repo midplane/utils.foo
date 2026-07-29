@@ -33,4 +33,5 @@ export {
   ExpandHint,
   useExpandableCard,
   EXPANDED_PANE_HEIGHT,
+  DEFAULT_PANE_HEIGHT,
 } from './ExpandableCard'

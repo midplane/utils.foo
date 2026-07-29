@@ -16,6 +16,7 @@ import {
   ExpandToggleButton,
   ExpandHint,
   EXPANDED_PANE_HEIGHT,
+  DEFAULT_PANE_HEIGHT,
 } from '../../components/ui/ExpandableCard'
 import { FileText, Trash2, RefreshCw, Code, Eye, Columns2 } from 'lucide-react'
 import { cn } from '../../lib/utils'
@@ -201,9 +202,7 @@ export default function MarkdownPreviewTool() {
     view.dispatch({ changes: { from: 0, to: view.state.doc.length, insert: SAMPLE_MD } })
   }, [])
 
-  // Expanded fills the viewport; otherwise scale with viewport height but stay
-  // within sensible bounds so short laptops and tall monitors both behave.
-  const EDITOR_HEIGHT = expanded ? EXPANDED_PANE_HEIGHT : 'clamp(420px, 62vh, 760px)'
+  const EDITOR_HEIGHT = expanded ? EXPANDED_PANE_HEIGHT : DEFAULT_PANE_HEIGHT
 
   return (
     <>

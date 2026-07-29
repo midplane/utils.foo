@@ -99,6 +99,7 @@ import {
   ExpandToggleButton,
   ExpandHint,
   EXPANDED_PANE_HEIGHT,
+  DEFAULT_PANE_HEIGHT,
 } from '../../components/ui'
 
 function MyTool() {
@@ -111,7 +112,7 @@ function MyTool() {
         <ExpandToggleButton />
       </ExpandableCardHeader>
       <ExpandableCardContent>
-        <div style={{ height: expanded ? EXPANDED_PANE_HEIGHT : 560 }}>Content</div>
+        <div style={{ height: expanded ? EXPANDED_PANE_HEIGHT : DEFAULT_PANE_HEIGHT }}>Content</div>
         <ExpandHint /> {/* "Press Esc to collapse", only while expanded */}
       </ExpandableCardContent>
     </ExpandableCard>
@@ -125,10 +126,13 @@ function MyTool() {
 - Child components read state via context (no prop drilling)
 - **There is no click-outside-to-collapse** — a viewport-filling card has no outside
 
-**Sizing:** use the exported `EXPANDED_PANE_HEIGHT` for scrollable panes rather than
-hand-rolling a `calc(100vh - Npx)`. It encodes the card's chrome (header + padding +
-footer row) in one place; five tools previously duplicated the same magic number and all
-of them were wrong after a layout change.
+**Sizing:** use the two exported constants for scrollable panes rather than hand-rolling
+heights. `EXPANDED_PANE_HEIGHT` encodes the card's chrome (header + padding + footer row)
+for the fullscreen state; five tools previously duplicated the same `calc(100vh - Npx)`
+and all of them were wrong after a layout change. `DEFAULT_PANE_HEIGHT` is the collapsed
+state and scales with the viewport, so tall monitors do not leave dead space and short
+laptops are not forced to scroll. Some tools still carry hardcoded pixel defaults
+(`json-formatter`, `data-converter`, `mermaid`) — prefer the constant in new work.
 
 **Stacking-context gotcha:** `<main>` is `relative z-10`, which creates a stacking context.
 A descendant's `z-index` is only compared against siblings *inside* that context, so no
