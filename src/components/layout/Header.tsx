@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { Moon, Sun } from 'lucide-react'
 import { useTheme } from '../../contexts/ThemeContext'
+import { siteMark, sitePrefix, siteSuffix } from '../../lib/site'
 
 export function Header() {
   const { isDark, toggle } = useTheme()
@@ -11,12 +12,12 @@ export function Header() {
         <Link to="/" className="group flex items-center gap-2">
           <div className="relative">
             <div className="w-6 h-6 bg-[var(--color-ink)] rounded flex items-center justify-center group-hover:bg-[var(--color-accent)] transition-colors duration-300">
-              <span className="text-[var(--color-cream)] text-[10px] font-bold tracking-tight">u.f</span>
+              <span className="text-[var(--color-cream)] text-[10px] font-bold tracking-tight">{siteMark}</span>
             </div>
           </div>
-          <span className="text-sm font-semibold text-[var(--color-ink)] tracking-tight">
-            utils<span className="text-[var(--color-accent)]">.</span>foo
-          </span>
+            <span className="text-sm font-semibold text-[var(--color-ink)] tracking-tight">
+              {sitePrefix}{siteSuffix && <><span className="text-[var(--color-accent)]">.</span>{siteSuffix}</>}
+            </span>
         </Link>
 
         <div className="flex items-center gap-2">
