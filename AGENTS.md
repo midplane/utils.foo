@@ -5,35 +5,54 @@ This file documents conventions, commands, and patterns for the `utils.foo.v2` r
 ## Project Overview
 
 A Vite + React + TypeScript SPA providing developer utility tools (JWT decoder, JSON formatter, etc.).
-Each tool lives under `src/tools/<tool-name>/` and is lazy-loaded via `React.lazy()`.
+Each tool lives under `src/tools/<tool-name>/` and is lazy-loaded via `React.lazy()` from the registry.
 
-**Stack**: React 19, TypeScript 6, Vite 8, Tailwind CSS 4, React Router 7, CodeMirror 6, ESLint.
+**Stack**: React 19, TypeScript 6, Vite 8, Tailwind CSS 4, React Router 7, CodeMirror 6, Vitest 4, ESLint 10.
 
 ## Commands
 
 ```bash
 npm run dev          # Start Vite dev server with HMR
 npm run build        # tsc type-check + Vite production build (outputs to dist/)
+npm run preview      # Serve the production build locally
 npm run lint         # Run ESLint over src/
 npm run lint:fix     # Run ESLint with --fix
+npm run test         # Vitest in watch mode
+npm run test:run     # Vitest single run
 ```
 
-**No test suite exists.** Verification: `npm run lint && npm run build`.
+**Verification**: `npm run lint && npm run build && npm run test:run`.
+
+### Known-failing baseline
+
+Do not assume a clean run means you broke nothing — compare against these known failures:
+
+- **ESLint: 7 errors.** All `react-hooks/refs` ("Cannot access refs during render") in
+  `ThemeContext.tsx`, `data-converter`, `json-formatter`, `markdown-preview`, `mermaid` (×2).
+- **Vitest: 14 failures** of 226 tests across 10 files, all in `src/__tests__/useFavorites.test.ts`.
+  The jsdom environment provides `document` but not `localStorage`, so `localStorage.clear()`
+  throws in `beforeEach`.
+
+If your change adds failures beyond these, it regressed something.
 
 ## Repository Structure
 
 ```
 src/
-├── components/ui/        # Shared UI components (Button, Alert, ToolHeader, etc.)
-├── components/layout/    # Header, Footer, Layout
+├── __tests__/            # Vitest suites (flat directory, not co-located)
+├── components/ui/        # Shared UI components + barrel (index.ts)
+├── components/layout/    # Header, Footer, Layout, useContentWidth
+├── contexts/             # ThemeContext — useTheme() gives { isDark, toggle }
+├── hooks/                # useFavorites
 ├── lib/utils.ts          # cn() helper (clsx + tailwind-merge)
-├── lib/codemirrorTheme.ts # Shared CodeMirror theme
-├── pages/                # Home.tsx, Components.tsx
+├── lib/codemirrorTheme.ts # Shared CodeMirror themes
+├── lib/site.ts           # Site name/mark constants
+├── pages/                # Home.tsx, Components.tsx (component gallery)
 ├── tools/                # One directory per tool (kebab-case)
 │   ├── types.ts          # ToolMeta interface
-│   ├── registry.ts       # Central tool registry
+│   ├── registry.ts       # Central tool registry — lazy imports + metadata
 │   └── <tool-name>/      # index.tsx + meta.ts
-└── index.css             # CSS variables in @theme block
+└── index.css             # CSS variables in @theme block + global rules
 ```
 
 ## Component Library — ALWAYS REUSE
@@ -51,21 +70,25 @@ import { Button, Alert, ToolHeader, ResultBox, SegmentedControl } from '../../co
 |-----------|---------|
 | `ToolHeader` | Icon + title + optional accented suffix for tool pages |
 | `FlowDivider` | Horizontal divider with icon, supports `hasOutput` success state |
+| `Divider` | Plain horizontal rule |
 | `SectionLabel` | Standardized label styling (10px uppercase) |
 | `SearchInput` | Search box with icon and clear button |
 | `EmptyState` | "No results" message with `query`, `message`, `size` props |
 | `ResultBox` | Output container with label, empty state, optional `copyText` |
 | `InfoCard` | Icon + title + description card |
-| `ExpandableCard` | Card that expands to fill viewport with backdrop blur (see below) |
-| `Alert` | Status messages: `variant="info|success|warning|error"`, `size="sm|default"` |
-| `SegmentedControl` | Toggle groups: `variant="pill|accent|bordered|ink"` |
+| `ExpandableCard` | Card that expands to fill the viewport (see below) |
+| `Alert` | Status messages: `variant="info\|success\|warning\|error"`, `size="sm\|default"` |
+| `SegmentedControl` | Toggle groups: `variant="pill\|accent\|bordered\|ink"` |
 | `Button`, `Input`, `Textarea`, `Select` | Form primitives |
+| `Checkbox`, `Radio`, `Toggle` | Form controls |
 | `Card`, `Badge`, `Tabs`, `Modal`, `Tooltip` | Layout & feedback |
 | `CopyButton`, `Spinner`, `Skeleton`, `Kbd` | Utilities |
 
+`src/pages/Components.tsx` renders a live gallery of these — check it before building anything new.
+
 ### ExpandableCard Pattern
 
-For cards that need fullscreen expand/collapse functionality (code viewers, diff panels, previews):
+For tools that benefit from a fullscreen mode (editors, diff panels, previews):
 
 ```tsx
 import {
@@ -75,6 +98,7 @@ import {
   ExpandableCardContent,
   ExpandToggleButton,
   ExpandHint,
+  EXPANDED_PANE_HEIGHT,
 } from '../../components/ui'
 
 function MyTool() {
@@ -87,19 +111,32 @@ function MyTool() {
         <ExpandToggleButton />
       </ExpandableCardHeader>
       <ExpandableCardContent>
-        <div>Content here</div>
-        <ExpandHint /> {/* Shows "Press Esc or click outside to collapse" when expanded */}
+        <div style={{ height: expanded ? EXPANDED_PANE_HEIGHT : 560 }}>Content</div>
+        <ExpandHint /> {/* "Press Esc to collapse", only while expanded */}
       </ExpandableCardContent>
     </ExpandableCard>
   )
 }
 ```
 
-**Features:**
-- Backdrop blur overlay when expanded
-- Escape key to collapse (handled automatically by `useExpandable`)
-- Click outside to collapse
-- Child components access state via context (no prop drilling)
+**Behaviour:**
+- Expands edge-to-edge (`inset-0`), covering the site header
+- Escape collapses; background scroll is locked while expanded
+- Child components read state via context (no prop drilling)
+- **There is no click-outside-to-collapse** — a viewport-filling card has no outside
+
+**Sizing:** use the exported `EXPANDED_PANE_HEIGHT` for scrollable panes rather than
+hand-rolling a `calc(100vh - Npx)`. It encodes the card's chrome (header + padding +
+footer row) in one place; five tools previously duplicated the same magic number and all
+of them were wrong after a layout change.
+
+**Stacking-context gotcha:** `<main>` is `relative z-10`, which creates a stacking context.
+A descendant's `z-index` is only compared against siblings *inside* that context, so no
+value — however large — lets the card paint above the sibling `<header>` (`z-50`).
+`ExpandableCard` works around this by setting `data-expanded-card` on `<body>`, which a rule
+in `index.css` uses to lift `<main>` while expanded. A React portal would be the textbook
+fix, but relocating the subtree remounts children and would destroy live CodeMirror
+instances along with the user's input. **Do not "simplify" this into a portal.**
 
 ### CSS Variables (use instead of hardcoded colors)
 
@@ -111,12 +148,31 @@ className="bg-[var(--color-error-bg)] border-[var(--color-error-border)]"
 // Each has: -bg, -bg-subtle, -border, -text, -icon variants
 ```
 
+`--app-header-height` is the sticky header height; anything sticking to the top of the page
+scroll must offset by it or it slides underneath.
+
+## Page Width
+
+The content column is capped by `useContentWidth()`, consumed by `Layout`, `Header` and
+`Footer` so their edges stay aligned. Tools default to a narrow column and opt into a wider
+one via their meta:
+
+```ts
+export const meta: ToolMeta = { /* ... */, wide: true }
+```
+
+Use `wide` for split-pane or canvas-style tools (side-by-side editors, diagrams). Do not
+widen the shared default — it affects every tool at once.
+
 ## Adding a New Tool
 
 1. Create `src/tools/<tool-name>/meta.ts` — `export const meta: ToolMeta`
 2. Create `src/tools/<tool-name>/index.tsx` — `export default function ToolName()`
-3. Register in `src/tools/registry.ts`
-4. Add `React.lazy()` import and `<Route>` in `src/App.tsx`
+3. Register in `src/tools/registry.ts`: add the `lazy()` import, the `meta` import, and an
+   entry in the `tools` array (`{ ...meta, component: Tool }`)
+
+**No `App.tsx` change is needed.** Routing is a single dynamic `/:toolId` route that resolves
+through `getToolByPath()`; the registry is the only place tools are wired up.
 
 ## Code Style
 
@@ -156,12 +212,25 @@ className="bg-[var(--color-error-bg)] border-[var(--color-error-border)]"
   className={cn('base', isActive && 'active', className)}
   ```
 - Use CSS variables as arbitrary values: `text-[var(--color-accent)]`
-- No inline `style={{}}` unless absolutely necessary
+- No inline `style={{}}` unless absolutely necessary (computed heights are the common exception)
 
 ### TypeScript
 - Strict mode enabled (`noUncheckedIndexedAccess`, etc.)
 - No `@ts-ignore` or untyped `any` without comments
 - Fix all errors before committing
+
+### Comments
+Comments must describe what the code actually does. A stale or aspirational comment is worse
+than none — this file and the codebase have both shipped comments that actively misled later
+work (a "this is sanitised" note above unsanitised output, a hint advertising an interaction
+that did not exist). If you change behaviour, grep for prose describing it.
+
+## Rendering Untrusted HTML
+
+Anything reaching `dangerouslySetInnerHTML` must be sanitized first. `marked` does **not**
+sanitize — it passes raw HTML in the source straight through, so markdown containing
+`<img src=x onerror=...>` executes. See `src/tools/markdown-preview/render.ts` for the
+DOMPurify wrapper; reuse that path rather than calling `marked.parse()` directly into the DOM.
 
 ## Error Handling
 
@@ -183,16 +252,35 @@ if (!value.trim()) { setOutput(''); return }
 
 ## CodeMirror Integration
 
-Use the shared theme from `src/lib/codemirrorTheme.ts`:
+Themes live in `src/lib/codemirrorTheme.ts`, which exports `appTheme`, `appThemeDark`,
+`diffTheme` and `diffThemeDark`. Dark mode is swapped at runtime through a `Compartment`
+rather than by rebuilding the editor:
+
 ```tsx
-import { baseTheme, baseExtensions } from '../../lib/codemirrorTheme'
-const view = new EditorView({
-  parent: containerRef.current,
-  state: EditorState.create({ extensions: [...baseExtensions, lang()] })
+const themeComp = useRef(new Compartment())
+
+// On mount
+const state = EditorState.create({
+  doc: initial,
+  extensions: [
+    basicSetup,
+    markdown(),
+    themeComp.current.of(isDarkRef.current ? appThemeDark : appTheme),
+    EditorView.lineWrapping,
+    EditorView.updateListener.of((u) => { if (u.docChanged) setSource(u.state.doc.toString()) }),
+  ],
 })
+
+// When isDark changes
+view.dispatch({ effects: themeComp.current.reconfigure(isDark ? appThemeDark : appTheme) })
 ```
+
+Build the view once in a mount effect and mutate it via `dispatch`. Never key the editor on
+state that would remount it — that destroys the user's document.
 
 ## Dependency Notes
 
 - Use `npm install` only (`.npmrc` has `legacy-peer-deps=true`)
-- `dist/` is committed — run build and commit changes when deploying
+- Tools are lazy-loaded chunks, so a heavy dependency is paid only by the tool that imports
+  it. Still check the cost: `npm run build` prints per-chunk gzip sizes.
+- `dist/` is gitignored and not committed; deploys build from source.
