@@ -182,7 +182,7 @@ export default function UuidGeneratorTool() {
                 Generate V5 UUID
               </Button>
               {v5Error && (
-                <p className="text-xs text-red-600 font-mono">{v5Error}</p>
+                <p className="text-xs text-[var(--color-error-text)] font-mono">{v5Error}</p>
               )}
               {v5Result && (
                 <>

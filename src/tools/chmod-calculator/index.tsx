@@ -176,10 +176,10 @@ export default function ChmodCalculatorTool() {
                 label="Octal"
                 value={octalInput}
                 onChange={e => handleOctalChange(e.target.value)}
-                className={cn('font-mono text-2xl text-center tracking-widest', octalError && 'border-red-400')}
+                className={cn('font-mono text-2xl text-center tracking-widest', octalError && 'border-[var(--color-error-border)]')}
                 maxLength={3}
               />
-              {octalError && <p className="text-[10px] text-red-600 mt-0.5">{octalError}</p>}
+              {octalError && <p className="text-[10px] text-[var(--color-error-text)] mt-0.5">{octalError}</p>}
             </div>
             <div className="mb-0.5">
               <CopyButton text={octal} />
@@ -194,10 +194,10 @@ export default function ChmodCalculatorTool() {
                 label="Symbolic"
                 value={symbolicInput}
                 onChange={e => handleSymbolicChange(e.target.value)}
-                className={cn('font-mono text-sm text-center tracking-widest', symbolicError && 'border-red-400')}
+                className={cn('font-mono text-sm text-center tracking-widest', symbolicError && 'border-[var(--color-error-border)]')}
                 maxLength={9}
               />
-              {symbolicError && <p className="text-[10px] text-red-600 mt-0.5">{symbolicError}</p>}
+              {symbolicError && <p className="text-[10px] text-[var(--color-error-text)] mt-0.5">{symbolicError}</p>}
             </div>
             <div className="mb-0.5">
               <CopyButton text={symbolic} />

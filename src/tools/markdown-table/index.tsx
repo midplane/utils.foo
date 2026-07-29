@@ -212,7 +212,7 @@ export default function MarkdownTableTool() {
                           <button
                             onClick={() => removeColumn(col.id)}
                             title="Remove column"
-                            className="flex-shrink-0 w-5 h-5 flex items-center justify-center rounded text-[var(--color-ink-muted)] hover:text-red-500 hover:bg-red-50 transition-colors cursor-pointer"
+                            className="flex-shrink-0 w-5 h-5 flex items-center justify-center rounded text-[var(--color-ink-muted)] hover:text-[var(--color-error-icon)] hover:bg-[var(--color-error-bg)] transition-colors cursor-pointer"
                           >
                             <Trash2 className="w-3 h-3" />
                           </button>
@@ -264,7 +264,7 @@ export default function MarkdownTableTool() {
                         <button
                           onClick={() => removeRow(row.id)}
                           title="Remove row"
-                          className="w-6 h-6 flex items-center justify-center rounded text-[var(--color-ink-muted)] hover:text-red-500 hover:bg-red-50 transition-colors cursor-pointer mx-auto opacity-0 group-hover:opacity-100"
+                          className="w-6 h-6 flex items-center justify-center rounded text-[var(--color-ink-muted)] hover:text-[var(--color-error-icon)] hover:bg-[var(--color-error-bg)] transition-colors cursor-pointer mx-auto opacity-0 group-hover:opacity-100"
                         >
                           <Trash2 className="w-3 h-3" />
                         </button>
