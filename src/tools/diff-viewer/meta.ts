@@ -9,4 +9,5 @@ export const meta: ToolMeta = {
   keywords: ['diff', 'compare', 'difference', 'text', 'patch', 'changes', 'delta'],
   path: '/diff',
   icon: GitCompare,
+  wide: true,
 }

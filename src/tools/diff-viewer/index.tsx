@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
+import { createTwoFilesPatch } from 'diff'
 import { MergeView } from '@codemirror/merge'
 import { basicSetup } from 'codemirror'
 import { EditorView } from '@codemirror/view'
@@ -7,6 +8,7 @@ import { LanguageDescription } from '@codemirror/language'
 import { languages } from '@codemirror/language-data'
 import { Button } from '../../components/ui/Button'
 import { Badge } from '../../components/ui/Badge'
+import { CopyButton } from '../../components/ui/CopyButton'
 import { ToolHeader } from '../../components/ui/ToolHeader'
 import {
   useExpandable,
@@ -14,9 +16,11 @@ import {
   ExpandableCardHeader,
   ExpandableCardContent,
   ExpandToggleButton,
+  ExpandHint,
   EXPANDED_PANE_HEIGHT,
 } from '../../components/ui/ExpandableCard'
 import { cn } from '../../lib/utils'
+import { countLineChanges } from './stats'
 import { diffTheme, diffThemeDark } from '../../lib/codemirrorTheme'
 import { useTheme } from '../../contexts/ThemeContext'
 import { ArrowLeftRight, GitCompare, Sparkles, Trash2 } from 'lucide-react'
@@ -162,7 +166,9 @@ export default function DiffViewerTool() {
 
   // 'auto' means follow detection; any other value is a manual override
   const [langOverride, setLangOverride] = useState<string>('auto')
-  const [detectedLang, setDetectedLang] = useState<string>('plaintext')
+  // 'Plain' (not 'plaintext' — that fuzzy-matches LaTeX in @codemirror/language-data,
+  // which briefly applied LaTeX highlighting on mount)
+  const [detectedLang, setDetectedLang] = useState<string>('Plain')
 
   // The effective language name used for highlighting
   const activeLang = langOverride === 'auto' ? detectedLang : langOverride
@@ -244,20 +250,20 @@ export default function DiffViewerTool() {
   }, [leftText, rightText, langOverride])
 
   // ── Sync stats from text ────────────────────────────────────────────────────
+  // Counts come from a real line diff. Comparing line N to line N positionally
+  // looks correct only for in-place edits: inserting a single line at the top
+  // shifts every following line and reports the whole file as rewritten.
+  // Debounced because diffing is O(ND) and this runs while the user types.
   useEffect(() => {
-    const leftLines  = leftText.split('\n')
-    const rightLines = rightText.split('\n')
-    const maxLen = Math.max(leftLines.length, rightLines.length)
-    let added = 0, removed = 0
-    for (let i = 0; i < maxLen; i++) {
-      if (leftLines[i] !== rightLines[i]) {
-        if (i >= leftLines.length) added++
-        else if (i >= rightLines.length) removed++
-        else { added++; removed++ }
-      }
-    }
-    setStats({ added, removed })
+    const id = setTimeout(() => setStats(countLineChanges(leftText, rightText)), 250)
+    return () => clearTimeout(id)
   }, [leftText, rightText])
+
+  // ── Unified diff, built only when the copy button is clicked ────────────────
+  const buildPatch = useCallback(
+    () => createTwoFilesPatch('Original', 'Modified', leftText, rightText, '', ''),
+    [leftText, rightText],
+  )
 
   // ── Swap ────────────────────────────────────────────────────────────────────
   const handleSwap = () => {
@@ -350,6 +356,15 @@ export default function DiffViewerTool() {
                   <ArrowLeftRight className="w-3 h-3" />
                   Swap
                 </Button>
+                <CopyButton
+                  text={buildPatch}
+                  variant="ghost"
+                  disabled={!hasDiff}
+                  title="Copy as a unified diff patch"
+                  className="text-xs h-7 px-2"
+                >
+                  Diff
+                </CopyButton>
                 <Button variant="ghost" size="sm" onClick={handleClear} className="gap-1 text-xs h-7 px-2">
                   <Trash2 className="w-3 h-3" />
                   Clear
@@ -372,12 +387,14 @@ export default function DiffViewerTool() {
               style={{ height: editorHeight }}
               className="rounded-lg border border-[var(--color-border)] overflow-auto"
             />
+
+            <div className="flex items-center gap-4 mt-2">
+              <ExpandHint />
+            </div>
           </ExpandableCardContent>
         </ExpandableCard>
       </div>
     </>
   )
 }
-
-// ─── Icons ────────────────────────────────────────────────────────────────────
 
