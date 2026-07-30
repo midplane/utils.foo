@@ -1,5 +1,5 @@
-import { useCallback, useState } from 'react'
-import { Upload, FileSpreadsheet, ChevronDown, ChevronUp } from 'lucide-react'
+import { useCallback, useRef, useState } from 'react'
+import { Upload, FileSpreadsheet, ChevronDown, ChevronUp, FileDown } from 'lucide-react'
 import { Card, CardContent, CardHeader } from './Card'
 import { Button } from './Button'
 import { Alert } from './Alert'
@@ -60,6 +60,7 @@ export function DataInput<S extends SampleOption>({
 }: DataInputProps<S>) {
   const [fileError, setFileError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [dragging, setDragging] = useState(false)
   const [userExpanded, setUserExpanded] = useState(false)
 
   // Collapse once there is usable data. Anything unresolved - no rows yet, or a
@@ -70,13 +71,9 @@ export function DataInput<S extends SampleOption>({
   const expanded =
     userExpanded || (!hasData && !loadingSample) || !!fileError || !!sampleError
 
-  const handleFile = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0]
-      // Reset immediately so the same file can be re-selected.
-      e.target.value = ''
-      if (!file) return
-
+  /** One ingest path, so the picker and a drop cannot diverge. */
+  const ingest = useCallback(
+    (file: File) => {
       if (file.size > MAX_FILE_BYTES) {
         setFileError(
           `"${file.name}" is ${formatBytes(file.size)}. The limit is ${formatBytes(MAX_FILE_BYTES)}.`
@@ -101,8 +98,81 @@ export function DataInput<S extends SampleOption>({
     [onChange]
   )
 
+  const handleFile = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0]
+      // Reset immediately so the same file can be re-selected.
+      e.target.value = ''
+      if (file) ingest(file)
+    },
+    [ingest]
+  )
+
+  // ── Drag and drop ─────────────────────────────────────────────────────────
+  // dragenter/dragleave also fire when crossing child elements, so a boolean
+  // flickers as the pointer moves over the card's contents. Counting depth is
+  // what keeps the highlight steady.
+  const dragDepth = useRef(0)
+
+  const handleDragEnter = useCallback((e: React.DragEvent) => {
+    if (!Array.from(e.dataTransfer.types).includes('Files')) return
+    e.preventDefault()
+    dragDepth.current += 1
+    setDragging(true)
+  }, [])
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    if (!Array.from(e.dataTransfer.types).includes('Files')) return
+    // Without this the browser navigates to the file instead of dropping it.
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'copy'
+  }, [])
+
+  const handleDragLeave = useCallback(() => {
+    dragDepth.current = Math.max(0, dragDepth.current - 1)
+    if (dragDepth.current === 0) setDragging(false)
+  }, [])
+
+  const handleDrop = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault()
+      dragDepth.current = 0
+      setDragging(false)
+
+      const file = e.dataTransfer.files?.[0]
+      if (!file) return
+
+      // Extensions rather than MIME: browsers report CSV variously as text/csv,
+      // application/vnd.ms-excel or an empty string depending on the OS.
+      if (!/\.(csv|tsv|txt|tab)$/i.test(file.name)) {
+        setFileError(`"${file.name}" is not a CSV, TSV or text file.`)
+        return
+      }
+      ingest(file)
+    },
+    [ingest]
+  )
+
   return (
-    <Card>
+    <Card
+      onDragEnter={handleDragEnter}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+      className={cn(
+        'relative transition-colors',
+        dragging && 'border-[var(--color-accent)] bg-[var(--color-accent)]/5'
+      )}
+    >
+      {dragging && (
+        <div className="absolute inset-0 z-20 flex items-center justify-center rounded-lg bg-[var(--color-surface)]/85 pointer-events-none">
+          <span className="inline-flex items-center gap-2 text-sm font-medium text-[var(--color-accent)]">
+            <FileDown className="w-4 h-4" aria-hidden="true" />
+            Drop a CSV or TSV file
+          </span>
+        </div>
+      )}
+
       <CardHeader>
         <div className="flex items-center gap-2">
           <FileSpreadsheet className="w-4 h-4 text-[var(--color-ink-muted)]" aria-hidden="true" />
@@ -198,6 +268,12 @@ export function DataInput<S extends SampleOption>({
                 <Upload className="w-3.5 h-3.5" aria-hidden="true" />
                 {loading ? 'Reading…' : 'Upload file'}
               </label>
+
+              {/* Drag and drop is invisible unless advertised. Hidden on touch,
+                  where there is nothing to drag from. */}
+              <span className="hidden sm:inline text-[11px] text-[var(--color-ink-muted)]">
+                or drop one anywhere here
+              </span>
 
               <span className="ml-1 text-[11px] text-[var(--color-ink-muted)]">
                 or load a sample:
