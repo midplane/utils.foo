@@ -7,6 +7,6 @@ export const meta: ToolMeta = {
   description: 'Evaluate mathematical formulas with variables and visualize results as you adjust values',
   category: 'Visualize',
   keywords: ['formula', 'math', 'calculator', 'equation', 'graph', 'plot', 'chart', 'variables', 'sweep', 'visualize'],
-  path: '/formula-visualizer',
+  path: '/formula',
   icon: Calculator,
 }

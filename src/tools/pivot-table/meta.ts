@@ -7,6 +7,6 @@ export const meta: ToolMeta = {
   description: 'Excel-style pivot table for CSV data — subtotals, grouping, running totals, Top-N filters and drill-down',
   category: 'Data',
   keywords: ['pivot', 'table', 'csv', 'excel', 'aggregate', 'group', 'subtotal', 'summarize', 'data', 'analysis', 'heatmap', 'filter', 'sort', 'drill down'],
-  path: '/pivot-table',
+  path: '/pivot',
   icon: Table2,
 }

@@ -279,7 +279,7 @@ export function PivotGrid({
   const handleChart = useCallback(() => {
     const csv = buildMatrix().map((row) => row.map(escapeCsv).join(',')).join('\r\n')
     writeHandoff({ csv, source: 'Pivot Table' })
-    navigate('/chart-builder')
+    navigate('/chart')
   }, [buildMatrix, navigate])
 
   const handleDownloadCsv = useCallback(() => {

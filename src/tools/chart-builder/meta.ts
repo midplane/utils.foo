@@ -7,7 +7,7 @@ export const meta: ToolMeta = {
   description: 'Load CSV or TSV data, aggregate and filter it, and chart it as bar, line, area, scatter or pie',
   category: 'Visualization',
   keywords: ['chart', 'graph', 'bar', 'line', 'area', 'pie', 'donut', 'scatter', 'csv', 'tsv', 'visualize', 'plot', 'echarts', 'data', 'aggregate', 'group by', 'time series'],
-  path: '/chart-builder',
+  path: '/chart',
   icon: BarChart2,
   wide: true,
 }
