@@ -195,6 +195,42 @@ export function formatValue(value: number, c: Cosmetics): string {
   }
 }
 
+// ─── Label contrast ───────────────────────────────────────────────────────────
+
+/** Relative luminance per WCAG, used to decide what a label sits on. */
+function luminance(hex: string): number {
+  const clean = hex.replace('#', '')
+  const full = clean.length === 3 ? clean.split('').map((c) => c + c).join('') : clean
+  const parts = [0, 2, 4].map((i) => parseInt(full.slice(i, i + 2), 16) / 255)
+  const [r, g, b] = parts.map((v) => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4))
+  return 0.2126 * (r ?? 0) + 0.7152 * (g ?? 0) + 0.0722 * (b ?? 0)
+}
+
+/**
+ * Where white and black give the same contrast ratio against a background.
+ *
+ * Solving (L + 0.05)^2 = 0.05 x 1.05. Picking the lighter-looking option by eye
+ * puts white on mid-tones like #E69F00, where it scores 2.3:1 against black's
+ * 9.3:1.
+ */
+const CONTRAST_PIVOT = 0.179
+
+/**
+ * Text colour for a label drawn on top of a filled shape.
+ *
+ * Computed rather than hardcoded to white: the Mono palette is pale, several
+ * palette entries are mid-tone, and a custom colour can be anything the user
+ * picks from the swatch.
+ */
+export function contrastTextOn(fill: string | undefined, palette: Palette): string {
+  if (!fill) return palette.ink
+  try {
+    return luminance(fill) > CONTRAST_PIVOT ? '#1C1917' : '#FFFFFF'
+  } catch {
+    return palette.ink
+  }
+}
+
 /** Axis label for a time axis, chosen to suit the span being displayed. */
 function formatTimeLabel(stamp: number): string {
   const d = new Date(stamp)
@@ -307,6 +343,7 @@ export function buildOption({
 
   const isBarLike = chartType === 'bar' || chartType === 'stacked-bar'
   const isHorizontal = isBarLike && orientation === 'horizontal'
+  const stacked = chartType === 'stacked-bar' || chartType === 'stacked-area'
   const usesRightAxis = seriesNames.some((n) => styles[n]?.axis === 'right')
 
   const categoryAxis = {
@@ -354,12 +391,43 @@ export function buildOption({
     ? [makeValueAxis(c.yLabel, true), makeValueAxis(c.yRightLabel, false)]
     : [makeValueAxis(c.yLabel, true)]
 
-  const dataLabel = {
-    show: c.showDataLabels,
-    fontFamily: FONT,
-    fontSize: 10,
-    color: palette.inkLight,
-    formatter: (p: { value: number | null }) => (p.value === null ? '' : formatValue(p.value as number, c)),
+  const labelFormatter = (p: { value: number | null | (number | null)[] }) => {
+    const raw = Array.isArray(p.value) ? p.value[p.value.length - 1] : p.value
+    return raw === null || raw === undefined ? '' : formatValue(raw as number, c)
+  }
+
+  /**
+   * Data labels for a series.
+   *
+   * ECharts defaults bar labels to `inside`, which is wrong twice over here:
+   * the text lands on a saturated fill where the ink colour is unreadable, and
+   * a bar shorter than its own label spills the text across the neighbouring
+   * axis. Outside is the default instead, and only stacked charts - where there
+   * is no outside to speak of - keep labels within the segment, with a colour
+   * chosen against the fill.
+   */
+  const labelFor = (mark: SeriesMark, fill: string | undefined) => {
+    if (!c.showDataLabels) return { show: false }
+
+    if (stacked) {
+      return {
+        show: true,
+        position: 'inside' as const,
+        fontFamily: FONT,
+        fontSize: 10,
+        color: contrastTextOn(fill, palette),
+        formatter: labelFormatter,
+      }
+    }
+
+    return {
+      show: true,
+      position: (mark === 'bar' && isHorizontal ? 'right' : 'top') as 'right' | 'top',
+      fontFamily: FONT,
+      fontSize: 10,
+      color: palette.ink,
+      formatter: labelFormatter,
+    }
   }
 
   // ── Scatter ───────────────────────────────────────────────────────────────
@@ -376,7 +444,7 @@ export function buildOption({
       }),
       symbolSize: 8,
       itemStyle: { color: colors.get(col) },
-      label: dataLabel,
+      label: labelFor('line', colors.get(col)),
     }))
 
     return {
@@ -406,8 +474,6 @@ export function buildOption({
   }
 
   // ── Bar / line / area / stacked / combo ───────────────────────────────────
-  const stacked = chartType === 'stacked-bar' || chartType === 'stacked-area'
-
   const series = seriesNames.map((col) => {
     const color = colors.get(col)
     const mark = markFor(chartType, col, styles)
@@ -431,7 +497,7 @@ export function buildOption({
       itemStyle: { color },
       lineStyle: isLine ? { width: 2.5, color } : undefined,
       areaStyle: isArea ? { color, opacity: 0.25 } : undefined,
-      label: dataLabel,
+      label: labelFor(mark, color),
     }
   })
 

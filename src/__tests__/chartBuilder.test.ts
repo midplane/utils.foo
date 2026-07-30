@@ -11,6 +11,7 @@ import {
   buildColorMap,
   readPalette,
   DEFAULT_COSMETICS,
+  contrastTextOn,
   type BuildOptionArgs,
 } from '../tools/chart-builder/chartOption'
 import { transform, DEFAULT_TRANSFORM, type TransformConfig } from '../tools/chart-builder/transform'
@@ -228,5 +229,72 @@ describe('scatter with a categorical X', () => {
     }) as unknown as { xAxis: { type: string }; series: { data: unknown[] }[] }
     expect(scatter.xAxis.type).toBe('value')
     expect(scatter.series[0]!.data).toEqual([[2, 58], [3, 65]])
+  })
+})
+
+describe('data labels', () => {
+  const data = rows(`Cat,Value\nBig,1160000\nTiny,4452`)
+  const cos = { ...DEFAULT_COSMETICS, showDataLabels: true }
+
+  type Labelled = { series: { label: { position?: string; color?: string; show?: boolean } }[] }
+
+  const labelOf = (bo: Parameters<typeof build>[2]) =>
+    (build(data, { xCol: 'Cat', series: ['Value'] }, bo) as unknown as Labelled).series[0]!.label
+
+  it('places bar labels outside the bar, not inside it', () => {
+    // Inside is the ECharts default and put ink-coloured text on a saturated
+    // fill; on a bar shorter than its own label the text also spilled across
+    // the neighbouring axis.
+    expect(labelOf({ cosmetics: cos }).position).toBe('top')
+  })
+
+  it('places horizontal bar labels to the right of the bar', () => {
+    expect(labelOf({ cosmetics: cos, orientation: 'horizontal' }).position).toBe('right')
+  })
+
+  it('keeps stacked labels inside, where there is no outside', () => {
+    expect(labelOf({ cosmetics: cos, chartType: 'stacked-bar' }).position).toBe('inside')
+  })
+
+  it('uses page ink for outside labels, since they sit on the background', () => {
+    expect(labelOf({ cosmetics: cos }).color).toBe(readPalette(false).ink)
+  })
+
+  it('picks stacked label colour by contrast against the fill', () => {
+    const dark = build(data, { xCol: 'Cat', series: ['Value'] }, {
+      cosmetics: cos,
+      chartType: 'stacked-bar',
+      colors: new Map([['Value', '#0072B2']]),
+    }) as unknown as Labelled
+    expect(dark.series[0]!.label.color).toBe('#FFFFFF')
+
+    const light = build(data, { xCol: 'Cat', series: ['Value'] }, {
+      cosmetics: cos,
+      chartType: 'stacked-bar',
+      colors: new Map([['Value', '#F0E442']]),
+    }) as unknown as Labelled
+    expect(light.series[0]!.label.color).toBe('#1C1917')
+  })
+
+  it('draws no label when the toggle is off', () => {
+    expect(labelOf({}).show).toBe(false)
+  })
+})
+
+describe('contrast helper', () => {
+  it('switches at the point where white and black are equally readable', () => {
+    const p = readPalette(false)
+    // Mid-tones that look light but score far better with dark text.
+    expect(contrastTextOn('#E69F00', p)).toBe('#1C1917')
+    expect(contrastTextOn('#A8A29E', p)).toBe('#1C1917')
+    expect(contrastTextOn('#009E73', p)).toBe('#1C1917')
+    // Genuinely dark fills.
+    expect(contrastTextOn('#0072B2', p)).toBe('#FFFFFF')
+    expect(contrastTextOn('#1C1917', p)).toBe('#FFFFFF')
+  })
+
+  it('falls back to ink rather than throwing on a bad value', () => {
+    const p = readPalette(false)
+    expect(contrastTextOn(undefined, p)).toBe(p.ink)
   })
 })
