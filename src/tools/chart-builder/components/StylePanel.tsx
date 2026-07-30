@@ -47,7 +47,7 @@ function Toggle({
 export function StylePanel({ cosmetics: c, usesRightAxis, supportsAxes, onChange }: StylePanelProps) {
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      <div className="space-y-2.5">
         <Field label="Title">
           <input
             value={c.title}
@@ -68,7 +68,7 @@ export function StylePanel({ cosmetics: c, usesRightAxis, supportsAxes, onChange
 
       {supportsAxes && (
         <>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="space-y-2.5">
             <Field label="X axis label">
               <input
                 value={c.xLabel}
@@ -97,7 +97,7 @@ export function StylePanel({ cosmetics: c, usesRightAxis, supportsAxes, onChange
             )}
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 gap-2">
             <Field label="Scale">
               <select
                 value={c.scale}
@@ -142,7 +142,7 @@ export function StylePanel({ cosmetics: c, usesRightAxis, supportsAxes, onChange
         </>
       )}
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+      <div className="space-y-2.5">
         <Field label="Number format">
           <select
             value={c.numberStyle}

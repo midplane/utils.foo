@@ -1,11 +1,8 @@
 import { useState, useRef, useMemo, useCallback } from 'react'
-import { BarChart2, SlidersHorizontal, Palette as PaletteIcon } from 'lucide-react'
+import { BarChart2, PanelLeftClose, PanelLeftOpen } from 'lucide-react'
 import ReactECharts from 'echarts-for-react'
 import {
   Alert,
-  SectionLabel,
-  SegmentedControl,
-  SegmentedControlItem,
   ToolHeader,
   DataInput,
   useExpandable,
@@ -19,10 +16,12 @@ import {
 } from '../../components/ui'
 import { useTheme } from '../../contexts/ThemeContext'
 import { parseInput, numericColumns, columnsKey } from './chartData'
+import { AGGREGATION_LABELS } from '../pivot-table/types'
 import {
   transform,
   isDateColumn,
   DEFAULT_TRANSFORM,
+  DATE_BIN_LABELS,
   MAX_PLOT_POINTS,
   type TransformConfig,
   type FilterRule,
@@ -42,13 +41,13 @@ import {
 } from './chartOption'
 import { SAMPLES, loadSample, type ChartSample } from './samples'
 import { encodeState, readStateFromLocation, consumeHandoff } from './shareState'
+import { ChartTypePicker } from './components/ChartTypePicker'
+import { RailSection } from './components/RailSection'
 import { ShapePanel } from './components/ShapePanel'
 import { SeriesPanel } from './components/SeriesPanel'
 import { FilterEditor } from './components/FilterEditor'
 import { StylePanel } from './components/StylePanel'
-import { ExportBar } from './components/ExportBar'
-
-const CHART_TYPES = Object.keys(CHART_TYPE_LABELS) as ChartType[]
+import { ExportMenu } from './components/ExportMenu'
 
 /**
  * Resolve the starting state once, before first paint.
@@ -80,10 +79,11 @@ export default function ChartBuilderTool() {
   const [orientation, setOrientation] = useState<Orientation>(boot.shared?.orientation ?? 'vertical')
   const [cosmetics, setCosmetics] = useState<Cosmetics>(boot.shared?.cosmetics ?? DEFAULT_COSMETICS)
   const [styles, setStyles] = useState<Record<string, SeriesStyle>>(boot.shared?.styles ?? {})
-  const [tab, setTab] = useState('shape')
   const [sampleState, setSampleState] = useState<{ loading: boolean; error: string }>({
     loading: false, error: '',
   })
+  /** The rail can be folded away to hand the full width to the chart. */
+  const [railOpen, setRailOpen] = useState(true)
 
   /**
    * Shaping choices, tagged with the column set they were made against, so a
@@ -276,6 +276,84 @@ export default function ChartBuilderTool() {
     return { width: box?.width ?? 900, height: box?.height ?? 480 }
   }, [])
 
+  // Collapsed-section summaries, so the rail still reports its state when folded.
+  const shapeSummary = [
+    config.xCol,
+    config.aggregation === 'none' ? null : AGGREGATION_LABELS[config.aggregation],
+    config.dateBin === 'none' ? null : DATE_BIN_LABELS[config.dateBin],
+  ].filter(Boolean).join(' · ')
+
+  const rail = (
+    <div className="divide-y divide-[var(--color-border)]">
+      <RailSection title="Chart type" summary={CHART_TYPE_LABELS[chartType]}>
+        <ChartTypePicker
+          value={chartType}
+          orientation={orientation}
+          onChange={setChartType}
+          onOrientationChange={setOrientation}
+        />
+      </RailSection>
+
+      <RailSection title="Data" summary={shapeSummary}>
+        <ShapePanel
+          columns={data.columns}
+          activeSeries={effectiveSeries}
+          config={config}
+          xIsDate={xIsDate}
+          onChange={patchConfig}
+        />
+      </RailSection>
+
+      <RailSection
+        title="Series"
+        summary={
+          effectiveSeries.length === 0
+            ? 'none'
+            : `${effectiveSeries.length} of ${numericCols.length}`
+        }
+      >
+        {SINGLE_SERIES_TYPES.has(chartType) && activeSeries.length > 1 && (
+          <p className="mb-1.5 text-[10px] font-mono text-[var(--color-ink-muted)]">
+            {CHART_TYPE_LABELS[chartType]} shows one measure — using “{effectiveSeries[0]}”
+          </p>
+        )}
+        <SeriesPanel
+          numericCols={numericCols}
+          active={config.series}
+          colors={colors}
+          styles={styles}
+          chartType={chartType}
+          palette={cosmetics.palette}
+          onToggle={toggleSeries}
+          onStyleChange={setSeriesStyle}
+        />
+      </RailSection>
+
+      <RailSection
+        title="Filters"
+        defaultOpen={config.filters.length > 0}
+        summary={config.filters.length === 0 ? 'none' : `${config.filters.length} active`}
+      >
+        <FilterEditor
+          columns={data.columns}
+          filters={config.filters}
+          matchedRows={result.filteredRows}
+          totalRows={data.rows.length}
+          onChange={(filters: FilterRule[]) => patchConfig({ filters })}
+        />
+      </RailSection>
+
+      <RailSection title="Style" defaultOpen={false} summary={cosmetics.title || 'defaults'}>
+        <StylePanel
+          cosmetics={cosmetics}
+          usesRightAxis={usesRightAxis}
+          supportsAxes={supportsAxes}
+          onChange={(patch) => setCosmetics((prev) => ({ ...prev, ...patch }))}
+        />
+      </RailSection>
+    </div>
+  )
+
   return (
     <div className="space-y-4 animate-fade-in">
       {!expanded && <ToolHeader icon={<BarChart2 />} title="Chart" accentedSuffix="Builder" />}
@@ -305,161 +383,104 @@ export default function ChartBuilderTool() {
       {hasData && (
         <ExpandableCard expanded={expanded} onExpandedChange={setExpanded}>
           <ExpandableCardHeader>
-            <div className="flex items-center justify-between flex-wrap gap-2">
-              <SegmentedControl
-                value={chartType}
-                onChange={(v) => setChartType(v as ChartType)}
-                variant="bordered"
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setRailOpen((v) => !v)}
+                aria-expanded={railOpen}
+                aria-controls="chart-control-rail"
+                title={railOpen ? 'Hide controls' : 'Show controls'}
+                className="hidden lg:inline-flex items-center justify-center w-7 h-7 rounded-lg text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] hover:bg-[var(--color-cream-dark)] transition-colors cursor-pointer"
               >
-                {CHART_TYPES.map((t) => (
-                  <SegmentedControlItem key={t} value={t} className="font-mono text-[11px]">
-                    {CHART_TYPE_LABELS[t]}
-                  </SegmentedControlItem>
-                ))}
-              </SegmentedControl>
+                {railOpen
+                  ? <PanelLeftClose className="w-3.5 h-3.5" aria-hidden="true" />
+                  : <PanelLeftOpen className="w-3.5 h-3.5" aria-hidden="true" />}
+              </button>
 
-              <div className="flex items-center gap-1">
-                {option && (
-                  <ExportBar
-                    option={option}
-                    background={palette.background}
-                    measured={measured}
-                    onShare={handleShare}
-                  />
-                )}
-                <ExpandToggleButton />
-              </div>
-            </div>
-          </ExpandableCardHeader>
+              <span className="text-xs font-semibold text-[var(--color-ink)]">
+                {cosmetics.title || CHART_TYPE_LABELS[chartType]}
+              </span>
 
-          <ExpandableCardContent className="space-y-3">
-            {isBar && (
-              <div className="flex items-center gap-2">
-                <SectionLabel>Orientation</SectionLabel>
-                <SegmentedControl
-                  value={orientation}
-                  onChange={(o) => setOrientation(o as Orientation)}
-                  variant="pill"
-                >
-                  {(['vertical', 'horizontal'] as Orientation[]).map((o) => (
-                    <SegmentedControlItem key={o} value={o} className="font-mono capitalize text-[11px]">
-                      {o}
-                    </SegmentedControlItem>
-                  ))}
-                </SegmentedControl>
-              </div>
-            )}
-
-            {hasLongLabels && isBar && orientation === 'vertical' && (
-              <Alert variant="info" size="sm">
-                Long labels detected — a{' '}
-                <button
-                  type="button"
-                  onClick={() => setOrientation('horizontal')}
-                  className="underline underline-offset-2 cursor-pointer font-semibold"
-                >
-                  horizontal bar chart
-                </button>{' '}
-                may be easier to read.
-              </Alert>
-            )}
-
-            {result.truncated && (
-              <Alert variant="info" size="sm">
-                Showing {result.categories.length} of {result.totalCategories.toLocaleString()} groups.
-                {config.topN > 0 && !config.groupOther && ' Enable “Group as Other” to account for the rest.'}
-              </Alert>
-            )}
-
-            <div ref={chartBoxRef} style={{ height: chartHeight }}>
-              {option ? (
-                <ReactECharts
-                  ref={echartsRef}
-                  option={option}
-                  style={{ height: '100%', width: '100%' }}
-                  opts={{ renderer: 'canvas' }}
-                  notMerge
-                />
-              ) : (
-                <div className="h-full flex items-center justify-center">
-                  <Alert variant="info" size="sm">
-                    {numericCols.length === 0
-                      ? `No numeric columns left to plot. “${config.xCol}” is the X axis — pick a different one, or check that your measures are numeric.`
-                      : effectiveSeries.length === 0
-                        ? 'Select at least one series to draw a chart.'
-                        : 'No rows match the current filters.'}
-                  </Alert>
-                </div>
-              )}
-            </div>
-
-            <div className="flex items-center gap-4">
-              <span className="text-[10px] font-mono text-[var(--color-ink-muted)]">
+              <span className="text-[11px] font-mono text-[var(--color-ink-muted)]">
                 {result.filteredRows.toLocaleString()} rows
                 {result.aggregated && ` · ${result.totalCategories.toLocaleString()} groups`}
               </span>
-              <ExpandHint />
+
+              <div className="flex-1" />
+
+              {option && (
+                <ExportMenu
+                  option={option}
+                  background={palette.background}
+                  measured={measured}
+                  onShare={handleShare}
+                />
+              )}
+              <ExpandToggleButton />
             </div>
+          </ExpandableCardHeader>
 
-            {/* ── Controls ─────────────────────────────────────────────── */}
-            <SegmentedControl value={tab} onChange={setTab} variant="pill">
-              <SegmentedControlItem value="shape" className="font-mono text-[11px]">
-                <SlidersHorizontal className="w-3 h-3" />
-                Data
-              </SegmentedControlItem>
-              <SegmentedControlItem value="style" className="font-mono text-[11px]">
-                <PaletteIcon className="w-3 h-3" />
-                Style
-              </SegmentedControlItem>
-            </SegmentedControl>
-
-            {tab === 'shape' ? (
-              <div className="space-y-4 pt-1">
-                <ShapePanel
-                  columns={data.columns}
-                  activeSeries={effectiveSeries}
-                  config={config}
-                  xIsDate={xIsDate}
-                  onChange={patchConfig}
-                />
-                <div className="space-y-1.5">
-                  <div className="flex items-center gap-2">
-                    <SectionLabel>Series</SectionLabel>
-                    {SINGLE_SERIES_TYPES.has(chartType) && activeSeries.length > 1 && (
-                      <span className="text-[10px] font-mono text-[var(--color-ink-muted)]">
-                        {CHART_TYPE_LABELS[chartType]} shows one measure — using “{effectiveSeries[0]}”
-                      </span>
-                    )}
-                  </div>
-                  <SeriesPanel
-                    numericCols={numericCols}
-                    active={config.series}
-                    colors={colors}
-                    styles={styles}
-                    chartType={chartType}
-                    palette={cosmetics.palette}
-                    onToggle={toggleSeries}
-                    onStyleChange={setSeriesStyle}
-                  />
+          <ExpandableCardContent className="p-0">
+            {/* Rail beside the canvas from lg up; stacked below it on narrow
+                screens, where a 300px rail would leave nothing for the chart. */}
+            <div className="flex flex-col lg:flex-row lg:items-stretch">
+              {railOpen && (
+                <div
+                  id="chart-control-rail"
+                  className="lg:w-[300px] lg:shrink-0 lg:border-r border-b lg:border-b-0 border-[var(--color-border)] lg:overflow-y-auto order-2 lg:order-1"
+                  style={{ maxHeight: expanded ? EXPANDED_PANE_HEIGHT : undefined }}
+                >
+                  {rail}
                 </div>
-                <FilterEditor
-                  columns={data.columns}
-                  filters={config.filters}
-                  matchedRows={result.filteredRows}
-                  totalRows={data.rows.length}
-                  onChange={(filters: FilterRule[]) => patchConfig({ filters })}
-                />
+              )}
+
+              <div className="flex-1 min-w-0 p-3 space-y-2 order-1 lg:order-2">
+                {hasLongLabels && isBar && orientation === 'vertical' && (
+                  <Alert variant="info" size="sm">
+                    Long labels detected — a{' '}
+                    <button
+                      type="button"
+                      onClick={() => setOrientation('horizontal')}
+                      className="underline underline-offset-2 cursor-pointer font-semibold"
+                    >
+                      horizontal bar chart
+                    </button>{' '}
+                    may be easier to read.
+                  </Alert>
+                )}
+
+                {result.truncated && (
+                  <Alert variant="info" size="sm">
+                    Showing {result.categories.length} of {result.totalCategories.toLocaleString()} groups.
+                    {config.topN > 0 && !config.groupOther && ' Enable “Other” to account for the rest.'}
+                  </Alert>
+                )}
+
+                <div ref={chartBoxRef} style={{ height: chartHeight }}>
+                  {option ? (
+                    <ReactECharts
+                      ref={echartsRef}
+                      option={option}
+                      style={{ height: '100%', width: '100%' }}
+                      opts={{ renderer: 'canvas' }}
+                      notMerge
+                    />
+                  ) : (
+                    <div className="h-full flex items-center justify-center">
+                      <Alert variant="info" size="sm">
+                        {numericCols.length === 0
+                          ? `No numeric columns left to plot. “${config.xCol}” is the X axis — pick a different one, or check that your measures are numeric.`
+                          : effectiveSeries.length === 0
+                            ? 'Select at least one series to draw a chart.'
+                            : 'No rows match the current filters.'}
+                      </Alert>
+                    </div>
+                  )}
+                </div>
+
+                <ExpandHint />
               </div>
-            ) : (
-              <div className="pt-1">
-                <StylePanel
-                  cosmetics={cosmetics}
-                  usesRightAxis={usesRightAxis}
-                  supportsAxes={supportsAxes}
-                  onChange={(patch) => setCosmetics((prev) => ({ ...prev, ...patch }))}
-                />
-              </div>
-            )}
+            </div>
           </ExpandableCardContent>
         </ExpandableCard>
       )}

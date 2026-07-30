@@ -52,7 +52,7 @@ export function ShapePanel({ columns, activeSeries, config, xIsDate, onChange }:
   const valueSorted = config.sort === 'value-desc' || config.sort === 'value-asc'
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+    <div className="space-y-2.5">
       <Field label="X axis">
         <select
           aria-label="X axis column"
@@ -130,6 +130,7 @@ export function ShapePanel({ columns, activeSeries, config, xIsDate, onChange }:
         </Field>
       )}
 
+      <div className="grid grid-cols-2 gap-2">
       <Field label="Top N" hint={config.topN > 0 ? undefined : 'Showing all'}>
         <input
           aria-label="Top N"
@@ -154,10 +155,11 @@ export function ShapePanel({ columns, activeSeries, config, xIsDate, onChange }:
               onChange={(e) => onChange({ groupOther: e.target.checked })}
               className="accent-[var(--color-accent)] cursor-pointer"
             />
-            Group as “Other”
+            “Other”
           </label>
         </Field>
       )}
+      </div>
     </div>
   )
 }
