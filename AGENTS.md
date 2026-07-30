@@ -83,6 +83,7 @@ import { Button, Alert, ToolHeader, ResultBox, SegmentedControl } from '../../co
 | `Checkbox`, `Radio`, `Toggle` | Form controls |
 | `Card`, `Badge`, `Tabs`, `Modal`, `Tooltip` | Layout & feedback |
 | `CopyButton`, `Spinner`, `Skeleton`, `Kbd` | Utilities |
+| `DataInput` | CSV/TSV entry: paste, file upload, drag-drop, sample loading, collapses once parsed |
 
 `src/pages/Components.tsx` renders a live gallery of these — check it before building anything new.
 
@@ -165,8 +166,19 @@ one via their meta:
 export const meta: ToolMeta = { /* ... */, wide: true }
 ```
 
-Use `wide` for split-pane or canvas-style tools (side-by-side editors, diagrams). Do not
-widen the shared default — it affects every tool at once.
+Use `wide` for split-pane or canvas-style tools (side-by-side editors, diagrams, charts).
+Do not widen the shared default — it affects every tool at once.
+
+## Reusing the Pivot Table engine
+
+`src/tools/pivot-table/engine/` is not private to that tool. Chart Builder consumes
+`createAggregator` (sum/average/median/count/…), `parseDate` and `looksLikeDate` from it
+rather than reimplementing them. Before writing aggregation, date parsing, filtering or
+number formatting anywhere, check that directory first.
+
+One caveat: the engine's own `toNumber` is deliberately strict (it rejects `"$1,200"` so
+that ISO dates are not mistaken for numbers). Chart Builder coerces with its own lenient
+parser *before* pushing into an aggregator, so currency and percent columns still sum.
 
 ## Adding a New Tool
 

@@ -29,6 +29,10 @@ async function setup() {
   return user
 }
 
+/** Series chips carry a settings button, so match the toggle specifically. */
+const chip = (name: RegExp) =>
+  screen.getAllByRole('button', { name }).find((el) => el.hasAttribute('aria-pressed'))!
+
 const chart = () => screen.queryByTestId('chart')
 const seriesOf = () => chart()?.getAttribute('data-series')
 const colorsOf = () => chart()!.getAttribute('data-colors')!.split(',')
@@ -38,19 +42,19 @@ describe('chart builder interaction', () => {
     const user = await setup()
     expect(seriesOf()).toBe('Revenue,Expenses,Profit')
 
-    await user.click(screen.getByRole('button', { name: /Profit/ }))
+    await user.click(chip(/Profit/))
 
     // Previously the chart unmounted entirely at this point.
     expect(chart()).not.toBeNull()
     expect(seriesOf()).toBe('Revenue,Expenses')
-    expect((screen.getByLabelText('X Axis') as HTMLSelectElement).value).toBe('Month')
+    expect((screen.getByLabelText('X axis column') as HTMLSelectElement).value).toBe('Month')
   })
 
   it('keeps each series on its own colour when another is deselected', async () => {
     const user = await setup()
     const [, expensesColor, profitColor] = colorsOf()
 
-    await user.click(screen.getByRole('button', { name: /Revenue/ }))
+    await user.click(chip(/Revenue/))
 
     // Colours used to shift left, so chips and chart disagreed.
     expect(colorsOf()).toEqual([expensesColor, profitColor])
@@ -60,8 +64,8 @@ describe('chart builder interaction', () => {
     const user = await setup()
     const before = { series: seriesOf(), colors: colorsOf() }
 
-    await user.click(screen.getByRole('button', { name: /Revenue/ }))
-    await user.click(screen.getByRole('button', { name: /Revenue/ }))
+    await user.click(chip(/Revenue/))
+    await user.click(chip(/Revenue/))
 
     // Re-enabling used to append, permanently reordering series and colours.
     expect(seriesOf()).toBe(before.series)
@@ -70,27 +74,30 @@ describe('chart builder interaction', () => {
 
   it('exposes series chips as toggle buttons', async () => {
     const user = await setup()
-    const chip = screen.getByRole('button', { name: /Profit/ })
-    expect(chip.getAttribute('aria-pressed')).toBe('true')
-    await user.click(chip)
-    expect(chip.getAttribute('aria-pressed')).toBe('false')
+    const profit = chip(/Profit/)
+    expect(profit.getAttribute('aria-pressed')).toBe('true')
+    await user.click(profit)
+    expect(chip(/Profit/).getAttribute('aria-pressed')).toBe('false')
   })
 
   it('resets stale selections when a different dataset is loaded', async () => {
     const user = await setup()
-    await user.click(screen.getByRole('button', { name: /Profit/ }))
+    await user.click(chip(/Profit/))
     expect(seriesOf()).toBe('Revenue,Expenses')
 
-    await user.selectOptions(
-      screen.getByLabelText('Load sample data'),
-      'Population (single-series)'
-    )
-    expect(seriesOf()).toBe('Population (millions)')
+    // Replacing the data outright: the previous selection names columns that
+    // no longer exist and must not survive. The editor collapses once data
+    // parses, so it has to be reopened first.
+    await user.click(screen.getByRole('button', { name: /Change data/ }))
+    await user.clear(screen.getByLabelText('Data'))
+    await user.click(screen.getByLabelText('Data'))
+    await user.paste('Country,Population\nIndia,1429\nChina,1412')
+    expect(seriesOf()).toBe('Population')
   })
 
   it('draws a dot plot when scatter X is categorical', async () => {
     const user = await setup()
-    await user.click(screen.getByRole('button', { name: 'scatter' }))
+    await user.click(screen.getByRole('button', { name: 'Scatter' }))
     // A categorical X is a valid dot plot, not an error.
     expect(chart()).not.toBeNull()
     expect(seriesOf()).toBe('Revenue,Expenses,Profit')
@@ -99,7 +106,7 @@ describe('chart builder interaction', () => {
   it('explains why nothing is drawn when no series remain', async () => {
     const user = await setup()
     for (const name of [/Revenue/, /Expenses/, /Profit/]) {
-      await user.click(screen.getByRole('button', { name }))
+      await user.click(chip(name))
     }
     expect(chart()).toBeNull()
     expect(screen.getByText(/Select at least one series/)).toBeDefined()

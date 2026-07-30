@@ -1,5 +1,5 @@
 import { useMemo, useCallback, useState } from 'react'
-import { Table2, ChevronRight, ChevronDown, Download, ArrowUp, ArrowDown, ChevronsUpDown } from 'lucide-react'
+import { Table2, ChevronRight, ChevronDown, Download, ArrowUp, ArrowDown, ChevronsUpDown, BarChart2 } from 'lucide-react'
 import {
   Alert,
   Button,
@@ -19,6 +19,8 @@ import { DisplayOptions } from './DisplayOptions'
 import { compositeKey, keyLabel } from '../engine/sorters'
 import { NO_VALUE } from '../engine/aggregators'
 import { escapeCsv, escapeTsv } from '../engine/export'
+import { useNavigate } from 'react-router-dom'
+import { writeHandoff } from '../../chart-builder/shareState'
 import {
   flattenRows,
   flattenCols,
@@ -66,6 +68,7 @@ export function PivotGrid({
   const isCompact = config.layout === 'compact'
 
   const { expanded, setExpanded } = useExpandable()
+  const navigate = useNavigate()
   const [showAllFor, setShowAllFor] = useState<RowLine[] | null>(null)
   const [drillTarget, setDrillTarget] = useState<DrillTarget | null>(null)
 
@@ -265,6 +268,20 @@ export function PivotGrid({
     [visibleLines, slots, result.cells]
   )
 
+  /**
+   * Send the rendered grid to Chart Builder.
+   *
+   * The aggregated grid is already exactly chart-shaped — one row per category,
+   * measures in columns — which is the shape Chart Builder needs and the shape
+   * raw data almost never arrives in. Handed over as CSV through
+   * sessionStorage, since a pivot result routinely exceeds any usable URL.
+   */
+  const handleChart = useCallback(() => {
+    const csv = buildMatrix().map((row) => row.map(escapeCsv).join(',')).join('\r\n')
+    writeHandoff({ csv, source: 'Pivot Table' })
+    navigate('/chart-builder')
+  }, [buildMatrix, navigate])
+
   const handleDownloadCsv = useCallback(() => {
     const csv = buildMatrix().map((row) => row.map(escapeCsv).join(',')).join('\r\n')
     const blob = new Blob([`\uFEFF${csv}`], { type: 'text/csv;charset=utf-8' })
@@ -318,6 +335,10 @@ export function PivotGrid({
         </span>
         <div className="flex-1" />
         <DisplayOptions config={config} onConfigChange={onConfigChange} />
+        <Button variant="secondary" size="sm" onClick={handleChart} className="gap-1" title="Chart this pivot table">
+          <BarChart2 className="w-3 h-3" />
+          Chart
+        </Button>
         <Button variant="secondary" size="sm" onClick={handleDownloadCsv} className="gap-1">
           <Download className="w-3 h-3" />
           CSV

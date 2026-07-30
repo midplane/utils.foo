@@ -1,15 +1,11 @@
 import { useCallback, useState } from 'react'
 import { Upload, FileSpreadsheet, ChevronDown, ChevronUp } from 'lucide-react'
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  Button,
-  Alert,
-  SectionLabel,
-  Spinner,
-} from '../../../components/ui'
-import { cn } from '../../../lib/utils'
+import { Card, CardContent, CardHeader } from './Card'
+import { Button } from './Button'
+import { Alert } from './Alert'
+import { SectionLabel } from './SectionLabel'
+import { Spinner } from './Spinner'
+import { cn } from '../../lib/utils'
 
 /** Reading much more than this in the browser is not a good experience. */
 const MAX_FILE_BYTES = 25 * 1024 * 1024
@@ -35,6 +31,13 @@ interface DataInputProps<S extends SampleOption> {
   recordCount: number
   fieldCount: number
   sourceLabel: string
+  /**
+   * Distinguishes instances in the DOM. Shared by more than one tool, so the
+   * ids cannot be hardcoded to any single one of them.
+   */
+  inputId?: string
+  /** Heading above the editor. */
+  label?: string
 }
 
 export function DataInput<S extends SampleOption>({
@@ -49,6 +52,8 @@ export function DataInput<S extends SampleOption>({
   recordCount,
   fieldCount,
   sourceLabel,
+  inputId = 'data-input',
+  label = 'CSV Data',
 }: DataInputProps<S>) {
   const [fileError, setFileError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -98,7 +103,7 @@ export function DataInput<S extends SampleOption>({
       <CardHeader>
         <div className="flex items-center gap-2">
           <FileSpreadsheet className="w-4 h-4 text-[var(--color-ink-muted)]" aria-hidden="true" />
-          <SectionLabel htmlFor="pivot-csv">CSV Data</SectionLabel>
+          <SectionLabel htmlFor={inputId}>{label}</SectionLabel>
 
           {loadingSample ? (
             <span className="inline-flex items-center gap-1.5 text-[11px] text-[var(--color-ink-muted)]">
@@ -122,7 +127,7 @@ export function DataInput<S extends SampleOption>({
               size="sm"
               onClick={() => setUserExpanded((v) => !v)}
               aria-expanded={expanded}
-              aria-controls="pivot-csv-editor"
+              aria-controls={`${inputId}-editor`}
               className="gap-1"
             >
               {expanded ? (
@@ -161,9 +166,9 @@ export function DataInput<S extends SampleOption>({
         )}
 
         {expanded && (
-          <div id="pivot-csv-editor" className="space-y-2">
+          <div id={`${inputId}-editor`} className="space-y-2">
             <textarea
-              id="pivot-csv"
+              id={inputId}
               value={value}
               onChange={(e) => onChange(e.target.value)}
               rows={5}

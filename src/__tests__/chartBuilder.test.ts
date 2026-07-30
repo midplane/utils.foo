@@ -6,10 +6,42 @@ import {
   resolveSelection,
   columnsKey,
 } from '../tools/chart-builder/chartData'
-import { buildOption, buildColorMap, readPalette } from '../tools/chart-builder/chartOption'
+import {
+  buildOption,
+  buildColorMap,
+  readPalette,
+  DEFAULT_COSMETICS,
+  type BuildOptionArgs,
+} from '../tools/chart-builder/chartOption'
+import { transform, DEFAULT_TRANSFORM, type TransformConfig } from '../tools/chart-builder/transform'
 import type { ParsedData } from '../tools/chart-builder/chartData'
 
 const rows = (csv: string) => parseInput(csv).data
+
+/**
+ * Data shaping now lives in transform(); buildOption consumes its result.
+ * This helper runs the same pipeline the component does so these tests keep
+ * asserting end-to-end behaviour rather than a hand-built intermediate.
+ */
+function build(
+  data: ParsedData,
+  tc: Partial<TransformConfig>,
+  bo: Partial<Omit<BuildOptionArgs, 'result'>> = {}
+) {
+  const config: TransformConfig = { ...DEFAULT_TRANSFORM, ...tc }
+  const result = transform(data, config)
+  return buildOption({
+    result,
+    xCol: config.xCol,
+    chartType: 'bar',
+    orientation: 'vertical',
+    cosmetics: DEFAULT_COSMETICS,
+    colors: buildColorMap(config.series),
+    styles: {},
+    palette: readPalette(false),
+    ...bo,
+  })
+}
 
 describe('numeric coercion', () => {
   it('accepts the formats real exports contain', () => {
@@ -107,12 +139,8 @@ describe('colour assignment', () => {
     expect(colors.get('Expenses')).toBe(buildColorMap(numeric).get('Expenses'))
 
     const data = rows(`Month,Revenue,Expenses,Profit\nJan,1,2,3`)
-    const option = buildOption({
-      data, xCol: 'Month', series: ['Expenses', 'Profit'],
-      chartType: 'bar', orientation: 'vertical', showLegend: true,
-      colors, palette: readPalette(false),
-    })
-    const series = (option.series ?? []) as { name: string; itemStyle: { color: string } }[]
+    const option = build(data, { xCol: 'Month', series: ['Expenses', 'Profit'] }, { colors })
+    const series = (option!.series ?? []) as { name: string; itemStyle: { color: string } }[]
     expect(series[0]!.itemStyle.color).toBe(colors.get('Expenses'))
     expect(series[1]!.itemStyle.color).toBe(colors.get('Profit'))
   })
@@ -120,26 +148,22 @@ describe('colour assignment', () => {
 
 describe('option building', () => {
   const data: ParsedData = rows(`Month,Revenue\nJan,100\nFeb,\nMar,300`)
-  const colors = buildColorMap(['Revenue'])
-  const palette = readPalette(false)
-  const build = (over: Partial<Parameters<typeof buildOption>[0]> = {}) =>
-    buildOption({
-      data, xCol: 'Month', series: ['Revenue'], chartType: 'bar',
-      orientation: 'vertical', showLegend: true, colors, palette, ...over,
-    })
 
   it('renders missing values as gaps, not zeros', () => {
-    const series = (build().series ?? []) as { data: (number | null)[] }[]
+    const option = build(data, { xCol: 'Month', series: ['Revenue'] })
+    const series = (option!.series ?? []) as { data: (number | null)[] }[]
     expect(series[0]!.data).toEqual([100, null, 300])
   })
 
   it('inverts the category axis for horizontal bars so order is preserved', () => {
-    const horizontal = build({ chartType: 'bar', orientation: 'horizontal' }) as {
-      yAxis: { inverse?: boolean }
-    }
+    const horizontal = build(data, { xCol: 'Month', series: ['Revenue'] }, {
+      orientation: 'horizontal',
+    }) as unknown as { yAxis: { inverse?: boolean } }
     expect(horizontal.yAxis.inverse).toBe(true)
 
-    const vertical = build() as { xAxis: { inverse?: boolean } }
+    const vertical = build(data, { xCol: 'Month', series: ['Revenue'] }) as unknown as {
+      xAxis: { inverse?: boolean }
+    }
     expect(vertical.xAxis.inverse).toBeUndefined()
   })
 
@@ -147,23 +171,19 @@ describe('option building', () => {
     // X is numeric overall, but one row is junk. That single point is dropped
     // rather than snapped to 0, which used to stack points on the axis.
     const mixed = rows(`X,Y\n1,10\n2,20\n3,30\n4,40\nbad,50`)
-    const scatter = buildOption({
-      data: mixed, xCol: 'X', series: ['Y'], chartType: 'scatter',
-      orientation: 'vertical', showLegend: true,
-      colors: buildColorMap(['Y']), palette,
+    const scatter = build(mixed, { xCol: 'X', series: ['Y'], numericX: true }, {
+      chartType: 'scatter',
     })
-    const series = (scatter.series ?? []) as { data: [number, number][] }[]
+    const series = (scatter!.series ?? []) as { data: [number, number][] }[]
     expect(series[0]!.data).toEqual([[1, 10], [2, 20], [3, 30], [4, 40]])
   })
 
   it('plots scatter pairs when both coordinates are numeric', () => {
     const numericData = rows(`Label,Hours,Score\nA,2,58\nB,3,65`)
-    const scatter = buildOption({
-      data: numericData, xCol: 'Hours', series: ['Score'], chartType: 'scatter',
-      orientation: 'vertical', showLegend: true,
-      colors: buildColorMap(['Score']), palette,
+    const scatter = build(numericData, { xCol: 'Hours', series: ['Score'], numericX: true }, {
+      chartType: 'scatter',
     })
-    const series = (scatter.series ?? []) as { data: [number, number][] }[]
+    const series = (scatter!.series ?? []) as { data: [number, number][] }[]
     expect(series[0]!.data).toEqual([[2, 58], [3, 65]])
   })
 })
@@ -188,11 +208,9 @@ describe('palette', () => {
 describe('scatter with a categorical X', () => {
   // The Population sample: one numeric column, so a numeric X is impossible.
   const data = rows(`Country,Population\nIndia,1429\nChina,1412\nBrazil,215`)
-  const option = buildOption({
-    data, xCol: 'Country', series: ['Population'], chartType: 'scatter',
-    orientation: 'vertical', showLegend: true,
-    colors: buildColorMap(['Population']), palette: readPalette(false),
-  }) as { xAxis: { type: string; data?: string[] }; series: { data: unknown[] }[] }
+  const option = build(data, { xCol: 'Country', series: ['Population'], numericX: true }, {
+    chartType: 'scatter',
+  }) as unknown as { xAxis: { type: string; data?: string[] }; series: { data: unknown[] }[] }
 
   it('plots against a category axis rather than refusing', () => {
     expect(option.xAxis.type).toBe('category')
@@ -205,11 +223,9 @@ describe('scatter with a categorical X', () => {
 
   it('still uses value axes when X is numeric', () => {
     const numeric = rows(`Label,Hours,Score\nA,2,58\nB,3,65`)
-    const scatter = buildOption({
-      data: numeric, xCol: 'Hours', series: ['Score'], chartType: 'scatter',
-      orientation: 'vertical', showLegend: true,
-      colors: buildColorMap(['Score']), palette: readPalette(false),
-    }) as { xAxis: { type: string }; series: { data: unknown[] }[] }
+    const scatter = build(numeric, { xCol: 'Hours', series: ['Score'], numericX: true }, {
+      chartType: 'scatter',
+    }) as unknown as { xAxis: { type: string }; series: { data: unknown[] }[] }
     expect(scatter.xAxis.type).toBe('value')
     expect(scatter.series[0]!.data).toEqual([[2, 58], [3, 65]])
   })

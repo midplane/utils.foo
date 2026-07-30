@@ -1,479 +1,473 @@
 import { useState, useRef, useMemo, useCallback } from 'react'
-import { BarChart2, Trash2, Download, X } from 'lucide-react'
+import { BarChart2, SlidersHorizontal, Palette as PaletteIcon } from 'lucide-react'
 import ReactECharts from 'echarts-for-react'
 import {
-  Card,
-  CardContent,
-  CardHeader,
-  Button,
   Alert,
   SectionLabel,
   SegmentedControl,
   SegmentedControlItem,
   ToolHeader,
+  DataInput,
+  useExpandable,
+  ExpandableCard,
+  ExpandableCardHeader,
+  ExpandableCardContent,
+  ExpandToggleButton,
+  ExpandHint,
+  EXPANDED_PANE_HEIGHT,
+  DEFAULT_PANE_HEIGHT,
 } from '../../components/ui'
-import { cn } from '../../lib/utils'
 import { useTheme } from '../../contexts/ThemeContext'
+import { parseInput, numericColumns, columnsKey } from './chartData'
 import {
-  parseInput,
-  resolveSelection,
-  columnsKey,
-  Selection,
-} from './chartData'
+  transform,
+  isDateColumn,
+  DEFAULT_TRANSFORM,
+  MAX_PLOT_POINTS,
+  type TransformConfig,
+  type FilterRule,
+} from './transform'
 import {
   buildOption,
   buildColorMap,
   readPalette,
+  CHART_TYPE_LABELS,
+  SINGLE_SERIES_TYPES,
+  DEFAULT_COSMETICS,
   LABEL_TRUNCATE,
-  ChartType,
-  Orientation,
+  type ChartType,
+  type Cosmetics,
+  type Orientation,
+  type SeriesStyle,
 } from './chartOption'
+import { SAMPLES, loadSample, type ChartSample } from './samples'
+import { encodeState, readStateFromLocation, consumeHandoff } from './shareState'
+import { ShapePanel } from './components/ShapePanel'
+import { SeriesPanel } from './components/SeriesPanel'
+import { FilterEditor } from './components/FilterEditor'
+import { StylePanel } from './components/StylePanel'
+import { ExportBar } from './components/ExportBar'
 
-// ─── Sample data ──────────────────────────────────────────────────────────────
+const CHART_TYPES = Object.keys(CHART_TYPE_LABELS) as ChartType[]
 
-const SAMPLE_REVENUE = `Month,Revenue,Expenses,Profit
-Jan,42000,31000,11000
-Feb,38000,29000,9000
-Mar,51000,34000,17000
-Apr,47000,32000,15000
-May,55000,37000,18000
-Jun,62000,40000,22000
-Jul,58000,38000,20000
-Aug,64000,41000,23000
-Sep,70000,44000,26000
-Oct,67000,42000,25000
-Nov,73000,46000,27000
-Dec,80000,50000,30000`
-
-const SAMPLE_POPULATION = `Country,Population (millions)
-India,1429
-China,1412
-United States,335
-Indonesia,277
-Pakistan,231
-Brazil,215
-Nigeria,220
-Bangladesh,172
-Russia,144
-Ethiopia,126`
-
-const SAMPLE_SCATTER = `Label,Study Hours,Exam Score
-Alice,2,58
-Bob,3,65
-Carol,4,70
-Dave,5,75
-Eve,6,80
-Frank,7,84
-Grace,8,88
-Hank,9,91
-Iris,10,94
-Jack,11,96`
-
-const SAMPLES: Record<string, string> = {
-  'Revenue (multi-series)': SAMPLE_REVENUE,
-  'Population (single-series)': SAMPLE_POPULATION,
-  'Study Hours vs Score (scatter)': SAMPLE_SCATTER,
+/**
+ * Resolve the starting state once, before first paint.
+ *
+ * A Pivot Table handoff wins over a shared link: it is the more deliberate
+ * action, and it is consumed on read so a later reload does not resurrect it.
+ * Doing this here rather than in a mount effect avoids a render with empty
+ * state followed by a cascading update.
+ */
+function bootState() {
+  const handoff = consumeHandoff()
+  if (handoff) {
+    return { raw: handoff.csv, source: handoff.source, shared: null }
+  }
+  const shared = readStateFromLocation()
+  return {
+    raw: shared?.data ?? '',
+    source: shared?.data ? 'Shared link' : '',
+    shared,
+  }
 }
 
-// ─── Component ────────────────────────────────────────────────────────────────
-
 export default function ChartBuilderTool() {
-  const [raw, setRaw] = useState('')
-  const [chartType, setChartType] = useState<ChartType>('bar')
-  const [orientation, setOrientation] = useState<Orientation>('vertical')
-  const [showLegend, setShowLegend] = useState(true)
-  const [bannerDismissed, setBannerDismissed] = useState(false)
+  const [boot] = useState(bootState)
+
+  const [raw, setRaw] = useState(boot.raw)
+  const [sourceLabel, setSourceLabel] = useState(boot.source)
+  const [chartType, setChartType] = useState<ChartType>(boot.shared?.chartType ?? 'bar')
+  const [orientation, setOrientation] = useState<Orientation>(boot.shared?.orientation ?? 'vertical')
+  const [cosmetics, setCosmetics] = useState<Cosmetics>(boot.shared?.cosmetics ?? DEFAULT_COSMETICS)
+  const [styles, setStyles] = useState<Record<string, SeriesStyle>>(boot.shared?.styles ?? {})
+  const [tab, setTab] = useState('shape')
+  const [sampleState, setSampleState] = useState<{ loading: boolean; error: string }>({
+    loading: false, error: '',
+  })
 
   /**
-   * The user's explicit choices, tagged with the column set they were made
-   * against. Storing both halves together is what stops committing one from
-   * promoting the other's uninitialised value - previously toggling a series
-   * blanked the X axis and unmounted the chart.
+   * Shaping choices, tagged with the column set they were made against, so a
+   * new dataset does not inherit a selection that no longer means anything.
    */
-  const [saved, setSaved] = useState<(Selection & { key: string }) | null>(null)
+  /**
+   * The user's shaping choices, tagged with the column set they were made
+   * against. The tag is what separates "not configured yet" from "deliberately
+   * emptied": without it, deselecting the last series looks identical to a
+   * fresh dataset and the defaults immediately reselect everything.
+   *
+   * A null tag means the config came from a sample or a shared link and has not
+   * been matched against real columns yet.
+   */
+  const [stored, setStored] = useState<{ config: TransformConfig; key: string | null }>(() => ({
+    config: boot.shared?.transform ?? DEFAULT_TRANSFORM,
+    key: null,
+  }))
 
-  const echartsRef = useRef<ReactECharts>(null)
+  const { expanded, setExpanded } = useExpandable()
   const { isDark } = useTheme()
+  const echartsRef = useRef<ReactECharts>(null)
+  const chartBoxRef = useRef<HTMLDivElement>(null)
 
   const { data, error: parseError } = useMemo(() => parseInput(raw), [raw])
-  const { xCol, series: activeSeries, numeric: numericCols } = useMemo(
-    () => resolveSelection(data, saved),
-    [data, saved]
+
+  /**
+   * The configuration actually in force.
+   *
+   * Derived rather than synchronised through an effect: when the data changes
+   * the stored selection may name columns that no longer exist, and defaulting
+   * it here means there is never a render where the two disagree.
+   */
+  const dataKey = useMemo(() => columnsKey(data.columns), [data.columns])
+
+  const config = useMemo<TransformConfig>(() => {
+    if (data.columns.length === 0) return stored.config
+
+    // Owned by this dataset: honour it exactly, including an empty series list.
+    if (stored.key === dataKey) return stored.config
+
+    const prev = stored.config
+    const xCol = prev.xCol && data.columns.includes(prev.xCol) ? prev.xCol : data.columns[0] ?? ''
+    const numeric = numericColumns(data, xCol)
+    const carried = prev.series.filter((s) => numeric.includes(s))
+    return { ...prev, xCol, series: carried.length > 0 ? carried : numeric }
+  }, [data, dataKey, stored])
+
+  const numericCols = useMemo(
+    () => numericColumns(data, config.xCol),
+    [data, config.xCol]
   )
 
-  // Re-sampled whenever the theme flips, since ECharts cannot read CSS variables.
+  // Drop series that are no longer numeric, without disturbing the rest.
+  const activeSeries = useMemo(
+    () => config.series.filter((s) => numericCols.includes(s)),
+    [config.series, numericCols]
+  )
+
   const palette = useMemo(() => readPalette(isDark), [isDark])
-  const colors = useMemo(() => buildColorMap(numericCols), [numericCols])
-
-  // ── Selection updates always commit both halves ────────────────────────────
-
-  const commit = useCallback(
-    (next: Partial<Selection>) => {
-      setSaved({ key: columnsKey(data.columns), xCol, series: activeSeries, ...next })
-    },
-    [data.columns, xCol, activeSeries]
+  const overrides = useMemo(() => {
+    const out: Record<string, string> = {}
+    for (const [col, style] of Object.entries(styles)) if (style.color) out[col] = style.color
+    return out
+  }, [styles])
+  const colors = useMemo(
+    () => buildColorMap(numericCols, cosmetics.palette, overrides),
+    [numericCols, cosmetics.palette, overrides]
   )
 
-  const toggleSeries = useCallback(
-    (col: string) => {
-      const next = activeSeries.includes(col)
-        ? activeSeries.filter((c) => c !== col)
-        : // Re-insert in chip order rather than appending, so toggling a series
-          // off and on is an identity operation and colours stay put.
-          numericCols.filter((c) => c === col || activeSeries.includes(c))
-      commit({ series: next })
-    },
-    [activeSeries, numericCols, commit]
+  const xIsDate = useMemo(
+    () => isDateColumn(config.xCol, data.rows),
+    [config.xCol, data.rows]
   )
 
-  const handleXColChange = useCallback(
-    (col: string) => {
-      setBannerDismissed(false)
-      commit({ xCol: col, series: activeSeries.filter((c) => c !== col) })
-    },
-    [activeSeries, commit]
+  // Circular charts encode one measure; the rest of the selection is ignored.
+  const effectiveSeries = SINGLE_SERIES_TYPES.has(chartType)
+    ? activeSeries.slice(0, 1)
+    : activeSeries
+
+  const result = useMemo(
+    () => transform(data, {
+      ...config,
+      series: effectiveSeries,
+      numericX: chartType === 'scatter',
+    }),
+    [data, config, effectiveSeries, chartType]
   )
-
-  const resetSelection = useCallback(() => {
-    setSaved(null)
-    setBannerDismissed(false)
-  }, [])
-
-  const loadSample = useCallback(
-    (sample: string) => {
-      setRaw(sample)
-      resetSelection()
-    },
-    [resetSelection]
-  )
-
-  const handleClear = useCallback(() => {
-    setRaw('')
-    resetSelection()
-  }, [resetSelection])
-
-  // ── Warnings ───────────────────────────────────────────────────────────────
-
-  const hasLongLabels = useMemo(
-    () =>
-      Boolean(xCol) &&
-      data.rows.some((r) => String(r[xCol] ?? '').length > LABEL_TRUNCATE),
-    [xCol, data]
-  )
-
-  const isBar = chartType === 'bar' || chartType === 'stacked-bar'
-  const showLongLabelHint =
-    isBar && orientation === 'vertical' && hasLongLabels && !bannerDismissed
-
-  // ── Chart ──────────────────────────────────────────────────────────────────
 
   const option = useMemo(() => {
-    if (!xCol || activeSeries.length === 0 || data.rows.length === 0) return null
+    if (result.categories.length === 0) return null
     return buildOption({
-      data,
-      xCol,
-      series: activeSeries,
-      chartType,
-      orientation,
-      showLegend,
-      colors,
-      palette,
+      result, xCol: config.xCol, chartType, orientation,
+      cosmetics, colors, styles, palette,
     })
-  }, [data, xCol, activeSeries, chartType, orientation, showLegend, colors, palette])
+  }, [result, config.xCol, chartType, orientation, cosmetics, colors, styles, palette])
 
-  const handleExport = useCallback(() => {
-    const instance = echartsRef.current?.getEchartsInstance()
-    if (!instance) return
+  // ── Handlers ───────────────────────────────────────────────────────────────
 
-    // The canvas renderer is required for this to produce an actual raster:
-    // under the SVG renderer getDataURL ignores `type` and returns SVG markup.
-    const url = instance.getDataURL({
-      type: 'png',
-      pixelRatio: 2,
-      backgroundColor: palette.background,
+  // Edits commit the derived config, so defaults become explicit the moment
+  // the user touches anything.
+  const patchConfig = useCallback((patch: Partial<TransformConfig>) => {
+    const next = { ...config, ...patch }
+    // Moving a column onto the X axis must remove it from the series.
+    if (patch.xCol) {
+      next.series = numericColumns(data, patch.xCol).filter((s) => next.series.includes(s))
+      if (next.series.length === 0) next.series = numericColumns(data, patch.xCol)
+    }
+    setStored({ config: next, key: dataKey })
+  }, [config, data, dataKey])
+
+  const toggleSeries = useCallback((col: string) => {
+    setStored({
+      config: {
+        ...config,
+        series: config.series.includes(col)
+          // Re-insert in chip order rather than appending, so toggling a series
+          // off and on is an identity operation and colours stay put.
+          ? config.series.filter((c) => c !== col)
+          : numericCols.filter((c) => c === col || config.series.includes(c)),
+      },
+      key: dataKey,
     })
+  }, [config, numericCols, dataKey])
 
-    const a = document.createElement('a')
-    a.href = url
-    a.download = 'chart.png'
-    a.click()
-  }, [palette])
+  const setSeriesStyle = useCallback((col: string, style: SeriesStyle) => {
+    setStyles((prev) => ({ ...prev, [col]: style }))
+  }, [])
+
+  const handleLoadSample = useCallback(async (sample: ChartSample) => {
+    setSampleState({ loading: true, error: '' })
+    try {
+      const csv = await loadSample(sample)
+      setRaw(csv)
+      setSourceLabel(sample.label)
+      setChartType(sample.chartType)
+      setCosmetics({ ...DEFAULT_COSMETICS, ...sample.cosmetics })
+      setStyles({})
+      setStored({ config: { ...DEFAULT_TRANSFORM, ...sample.transform }, key: null })
+      setSampleState({ loading: false, error: '' })
+    } catch (e) {
+      setSampleState({
+        loading: false,
+        error: e instanceof Error ? e.message : 'Could not load the sample.',
+      })
+    }
+  }, [])
+
+  const handleDataChange = useCallback((value: string) => {
+    setRaw(value)
+    setSourceLabel('')
+  }, [])
+
+  const handleShare = useCallback(() => {
+    const { hash, dataOmitted } = encodeState({
+      v: 1,
+      transform: { ...config, series: effectiveSeries },
+      cosmetics, chartType, orientation, styles,
+      data: raw,
+    })
+    const url = `${window.location.origin}${window.location.pathname}${hash}`
+    window.history.replaceState(null, '', hash)
+    try {
+      void navigator.clipboard.writeText(url)
+      return { ok: true, dataOmitted }
+    } catch {
+      return { ok: false, dataOmitted }
+    }
+  }, [config, effectiveSeries, cosmetics, chartType, orientation, styles, raw])
+
+  // ── Derived UI state ───────────────────────────────────────────────────────
 
   const hasData = data.columns.length > 0 && data.rows.length > 0
+  const usesRightAxis = effectiveSeries.some((s) => styles[s]?.axis === 'right')
+  const supportsAxes = !SINGLE_SERIES_TYPES.has(chartType)
+  const isBar = chartType === 'bar' || chartType === 'stacked-bar'
+
+  const hasLongLabels = useMemo(
+    () => Boolean(config.xCol) && result.xKind === 'category' &&
+      result.categories.some((c) => String(c).length > LABEL_TRUNCATE),
+    [config.xCol, result]
+  )
+
+  const chartHeight = expanded ? EXPANDED_PANE_HEIGHT : DEFAULT_PANE_HEIGHT
+
+  // Read at click time, not during render: the ref is not populated during
+  // render and the box changes size when the card expands.
+  const measured = useCallback(() => {
+    const box = chartBoxRef.current?.getBoundingClientRect()
+    return { width: box?.width ?? 900, height: box?.height ?? 480 }
+  }, [])
 
   return (
     <div className="space-y-4 animate-fade-in">
-      <ToolHeader icon={<BarChart2 />} title="Chart" accentedSuffix="Builder" />
+      {!expanded && <ToolHeader icon={<BarChart2 />} title="Chart" accentedSuffix="Builder" />}
 
-      {/* ── Data ─────────────────────────────────────────────────────────── */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between flex-wrap gap-2">
-            <SectionLabel htmlFor="chart-data">Data</SectionLabel>
-            <div className="flex items-center gap-1">
-              <select
-                aria-label="Load sample data"
-                className="h-7 px-2 text-xs font-mono rounded border border-[var(--color-ink-muted)] bg-[var(--color-cream)] text-[var(--color-ink)] cursor-pointer focus:outline-none focus:ring-1 focus:ring-[var(--color-accent)]"
-                value=""
-                onChange={(e) => {
-                  const sample = SAMPLES[e.target.value]
-                  if (sample) loadSample(sample)
-                }}
-              >
-                <option value="" disabled>
-                  Load sample data
-                </option>
-                {Object.keys(SAMPLES).map((name) => (
-                  <option key={name} value={name}>
-                    {name}
-                  </option>
-                ))}
-              </select>
-              {raw && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="gap-1 text-xs h-7 px-2"
-                  onClick={handleClear}
-                >
-                  <Trash2 className="w-3 h-3" aria-hidden="true" />
-                  Clear
-                </Button>
-              )}
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-2">
-          <textarea
-            id="chart-data"
-            value={raw}
-            onChange={(e) => {
-              setRaw(e.target.value)
-              setBannerDismissed(false)
-            }}
-            placeholder={
-              'Paste CSV or TSV data here…\n\nExample:\nMonth,Revenue,Expenses\nJan,42000,31000\nFeb,38000,29000'
-            }
-            spellCheck={false}
-            className="w-full h-40 resize-y font-mono text-xs bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-3 py-2.5 text-[var(--color-ink)] placeholder-[var(--color-ink-muted)] focus:outline-none focus:border-[var(--color-accent)] focus:ring-1 focus:ring-[var(--color-accent)]/20 transition-all"
-          />
+      {!expanded && (
+        <DataInput
+          value={raw}
+          onChange={handleDataChange}
+          error={parseError}
+          warning={
+            data.rows.length > MAX_PLOT_POINTS
+              ? `${data.rows.length.toLocaleString()} rows loaded. Charts are capped at ${MAX_PLOT_POINTS.toLocaleString()} points — summarise or filter to see all of it.`
+              : ''
+          }
+          samples={SAMPLES}
+          onLoadSample={handleLoadSample}
+          loadingSample={sampleState.loading}
+          sampleError={sampleState.error}
+          recordCount={data.rows.length}
+          fieldCount={data.columns.length}
+          sourceLabel={sourceLabel}
+          inputId="chart-data"
+          label="Data"
+        />
+      )}
 
-          {parseError ? (
-            <Alert variant="error" size="sm">
-              {parseError}
-            </Alert>
-          ) : hasData ? (
-            <p className="text-[10px] font-mono text-[var(--color-ink-muted)]">
-              <span className="text-[var(--color-accent)] font-semibold">
-                {data.rows.length}
-              </span>{' '}
-              rows ·{' '}
-              <span className="text-[var(--color-accent)] font-semibold">
-                {data.columns.length}
-              </span>{' '}
-              columns · {numericCols.length} numeric
-            </p>
-          ) : null}
-        </CardContent>
-      </Card>
-
-      {/* ── Controls ─────────────────────────────────────────────────────── */}
       {hasData && (
-        <Card>
-          <CardHeader>
-            <SectionLabel>Controls</SectionLabel>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4">
-              <div className="space-y-1.5">
-                <SectionLabel>Chart Type</SectionLabel>
+        <ExpandableCard expanded={expanded} onExpandedChange={setExpanded}>
+          <ExpandableCardHeader>
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <SegmentedControl
+                value={chartType}
+                onChange={(v) => setChartType(v as ChartType)}
+                variant="bordered"
+              >
+                {CHART_TYPES.map((t) => (
+                  <SegmentedControlItem key={t} value={t} className="font-mono text-[11px]">
+                    {CHART_TYPE_LABELS[t]}
+                  </SegmentedControlItem>
+                ))}
+              </SegmentedControl>
+
+              <div className="flex items-center gap-1">
+                {option && (
+                  <ExportBar
+                    option={option}
+                    background={palette.background}
+                    measured={measured}
+                    onShare={handleShare}
+                  />
+                )}
+                <ExpandToggleButton />
+              </div>
+            </div>
+          </ExpandableCardHeader>
+
+          <ExpandableCardContent className="space-y-3">
+            {isBar && (
+              <div className="flex items-center gap-2">
+                <SectionLabel>Orientation</SectionLabel>
                 <SegmentedControl
-                  value={chartType}
-                  onChange={(v) => setChartType(v as ChartType)}
-                  variant="bordered"
+                  value={orientation}
+                  onChange={(o) => setOrientation(o as Orientation)}
+                  variant="pill"
                 >
-                  {(['bar', 'stacked-bar', 'line', 'scatter'] as ChartType[]).map((t) => (
-                    <SegmentedControlItem key={t} value={t} className="font-mono">
-                      {t === 'stacked-bar' ? 'stacked bar' : t}
+                  {(['vertical', 'horizontal'] as Orientation[]).map((o) => (
+                    <SegmentedControlItem key={o} value={o} className="font-mono capitalize text-[11px]">
+                      {o}
                     </SegmentedControlItem>
                   ))}
                 </SegmentedControl>
               </div>
+            )}
 
-              {isBar && (
-                <div className="space-y-1.5">
-                  <SectionLabel>Orientation</SectionLabel>
-                  <SegmentedControl
-                    value={orientation}
-                    onChange={(o) => setOrientation(o as Orientation)}
-                    variant="bordered"
-                  >
-                    {(['vertical', 'horizontal'] as Orientation[]).map((o) => (
-                      <SegmentedControlItem
-                        key={o}
-                        value={o}
-                        className="font-mono capitalize"
-                      >
-                        {o}
-                      </SegmentedControlItem>
-                    ))}
-                  </SegmentedControl>
-                </div>
-              )}
-
-              <div className="space-y-1.5">
-                <SectionLabel htmlFor="chart-x-axis">X Axis</SectionLabel>
-                <select
-                  id="chart-x-axis"
-                  value={xCol}
-                  onChange={(e) => handleXColChange(e.target.value)}
-                  className="w-full text-xs font-mono bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-2.5 py-1.5 text-[var(--color-ink)] focus:outline-none focus:border-[var(--color-accent)] focus:ring-1 focus:ring-[var(--color-accent)]/20 transition-all cursor-pointer"
-                >
-                  {data.columns.map((c) => (
-                    <option key={c} value={c}>
-                      {c}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="space-y-1.5">
-                <SectionLabel>Series</SectionLabel>
-                {numericCols.length === 0 ? (
-                  <p className="text-[11px] text-[var(--color-ink-muted)] font-mono">
-                    No numeric columns found
-                  </p>
-                ) : (
-                  <div className="flex flex-wrap gap-1.5" role="group" aria-label="Series">
-                    {numericCols.map((col) => {
-                      const active = activeSeries.includes(col)
-                      const color = colors.get(col)!
-                      return (
-                        <button
-                          key={col}
-                          type="button"
-                          aria-pressed={active}
-                          onClick={() => toggleSeries(col)}
-                          className={cn(
-                            'inline-flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-mono rounded-md border transition-all cursor-pointer',
-                            active
-                              ? 'border-transparent text-white font-semibold'
-                              : 'border-[var(--color-border)] text-[var(--color-ink-muted)] bg-[var(--color-surface)] hover:border-[var(--color-border-dark)]'
-                          )}
-                          style={active ? { backgroundColor: color, borderColor: color } : {}}
-                        >
-                          <span
-                            className="w-2 h-2 rounded-full flex-shrink-0"
-                            style={{ backgroundColor: active ? 'rgba(255,255,255,0.7)' : color }}
-                          />
-                          {col}
-                        </button>
-                      )
-                    })}
-                  </div>
-                )}
-              </div>
-
-              <div className="space-y-1.5">
-                <SectionLabel>Legend</SectionLabel>
-                <SegmentedControl
-                  value={showLegend ? 'on' : 'off'}
-                  onChange={(v) => setShowLegend(v === 'on')}
-                  variant="bordered"
-                >
-                  <SegmentedControlItem value="on" className="font-mono">
-                    On
-                  </SegmentedControlItem>
-                  <SegmentedControlItem value="off" className="font-mono">
-                    Off
-                  </SegmentedControlItem>
-                </SegmentedControl>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* ── Preview ──────────────────────────────────────────────────────── */}
-      {option && (
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <SectionLabel>Preview</SectionLabel>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="gap-1.5 text-xs h-7 px-2"
-                onClick={handleExport}
-              >
-                <Download className="w-3 h-3" aria-hidden="true" />
-                Export PNG
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {showLongLabelHint && (
+            {hasLongLabels && isBar && orientation === 'vertical' && (
               <Alert variant="info" size="sm">
-                <span className="flex items-center justify-between gap-3 w-full">
-                  <span>
-                    Long labels detected — a{' '}
-                    <button
-                      type="button"
-                      onClick={() => setOrientation('horizontal')}
-                      className="underline underline-offset-2 cursor-pointer font-semibold"
-                    >
-                      horizontal bar chart
-                    </button>{' '}
-                    may be easier to read.
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => setBannerDismissed(true)}
-                    aria-label="Dismiss"
-                    className="shrink-0 p-0.5 rounded hover:bg-[var(--color-cream-dark)] transition-colors cursor-pointer"
-                  >
-                    <X className="w-3.5 h-3.5" aria-hidden="true" />
-                  </button>
-                </span>
+                Long labels detected — a{' '}
+                <button
+                  type="button"
+                  onClick={() => setOrientation('horizontal')}
+                  className="underline underline-offset-2 cursor-pointer font-semibold"
+                >
+                  horizontal bar chart
+                </button>{' '}
+                may be easier to read.
               </Alert>
             )}
 
-            <ReactECharts
-              ref={echartsRef}
-              option={option}
-              style={{ height: '420px', width: '100%' }}
-              opts={{ renderer: 'canvas' }}
-              notMerge
-            />
+            {result.truncated && (
+              <Alert variant="info" size="sm">
+                Showing {result.categories.length} of {result.totalCategories.toLocaleString()} groups.
+                {config.topN > 0 && !config.groupOther && ' Enable “Group as Other” to account for the rest.'}
+              </Alert>
+            )}
 
-            <p className="text-center text-[10px] text-[var(--color-ink-muted)] font-mono">
-              Hover over the chart for exact values
-            </p>
-          </CardContent>
-        </Card>
+            <div ref={chartBoxRef} style={{ height: chartHeight }}>
+              {option ? (
+                <ReactECharts
+                  ref={echartsRef}
+                  option={option}
+                  style={{ height: '100%', width: '100%' }}
+                  opts={{ renderer: 'canvas' }}
+                  notMerge
+                />
+              ) : (
+                <div className="h-full flex items-center justify-center">
+                  <Alert variant="info" size="sm">
+                    {numericCols.length === 0
+                      ? `No numeric columns left to plot. “${config.xCol}” is the X axis — pick a different one, or check that your measures are numeric.`
+                      : effectiveSeries.length === 0
+                        ? 'Select at least one series to draw a chart.'
+                        : 'No rows match the current filters.'}
+                  </Alert>
+                </div>
+              )}
+            </div>
+
+            <div className="flex items-center gap-4">
+              <span className="text-[10px] font-mono text-[var(--color-ink-muted)]">
+                {result.filteredRows.toLocaleString()} rows
+                {result.aggregated && ` · ${result.totalCategories.toLocaleString()} groups`}
+              </span>
+              <ExpandHint />
+            </div>
+
+            {/* ── Controls ─────────────────────────────────────────────── */}
+            <SegmentedControl value={tab} onChange={setTab} variant="pill">
+              <SegmentedControlItem value="shape" className="font-mono text-[11px]">
+                <SlidersHorizontal className="w-3 h-3" />
+                Data
+              </SegmentedControlItem>
+              <SegmentedControlItem value="style" className="font-mono text-[11px]">
+                <PaletteIcon className="w-3 h-3" />
+                Style
+              </SegmentedControlItem>
+            </SegmentedControl>
+
+            {tab === 'shape' ? (
+              <div className="space-y-4 pt-1">
+                <ShapePanel
+                  columns={data.columns}
+                  activeSeries={effectiveSeries}
+                  config={config}
+                  xIsDate={xIsDate}
+                  onChange={patchConfig}
+                />
+                <div className="space-y-1.5">
+                  <div className="flex items-center gap-2">
+                    <SectionLabel>Series</SectionLabel>
+                    {SINGLE_SERIES_TYPES.has(chartType) && activeSeries.length > 1 && (
+                      <span className="text-[10px] font-mono text-[var(--color-ink-muted)]">
+                        {CHART_TYPE_LABELS[chartType]} shows one measure — using “{effectiveSeries[0]}”
+                      </span>
+                    )}
+                  </div>
+                  <SeriesPanel
+                    numericCols={numericCols}
+                    active={config.series}
+                    colors={colors}
+                    styles={styles}
+                    chartType={chartType}
+                    palette={cosmetics.palette}
+                    onToggle={toggleSeries}
+                    onStyleChange={setSeriesStyle}
+                  />
+                </div>
+                <FilterEditor
+                  columns={data.columns}
+                  filters={config.filters}
+                  matchedRows={result.filteredRows}
+                  totalRows={data.rows.length}
+                  onChange={(filters: FilterRule[]) => patchConfig({ filters })}
+                />
+              </div>
+            ) : (
+              <div className="pt-1">
+                <StylePanel
+                  cosmetics={cosmetics}
+                  usesRightAxis={usesRightAxis}
+                  supportsAxes={supportsAxes}
+                  onChange={(patch) => setCosmetics((prev) => ({ ...prev, ...patch }))}
+                />
+              </div>
+            )}
+          </ExpandableCardContent>
+        </ExpandableCard>
       )}
 
-      {/* Selecting the only numeric column as X leaves nothing to plot; say so
-          rather than silently dropping the preview. */}
-      {hasData && !option && (
-        <Card>
-          <CardContent className="py-6">
-            <Alert variant="info" size="sm">
-              {numericCols.length === 0
-                ? `No numeric columns left to plot. "${xCol}" is the X axis — pick a different one, or check that your measures are numeric.`
-                : 'Select at least one series to draw a chart.'}
-            </Alert>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* ── Empty state ──────────────────────────────────────────────────── */}
       {!hasData && !raw && (
         <div className="text-center py-12 text-[var(--color-ink-muted)]">
           <BarChart2 className="w-10 h-10 mx-auto mb-3 opacity-20" aria-hidden="true" />
-          <p className="text-sm font-mono">
-            Paste data above or load a sample to get started
-          </p>
+          <p className="text-sm font-mono">Paste data above or load a sample to get started</p>
         </div>
       )}
     </div>

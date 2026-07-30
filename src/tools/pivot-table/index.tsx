@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect, useMemo, useDeferredValue } from 'rea
 import Papa from 'papaparse'
 import { Table2 } from 'lucide-react'
 import { ToolHeader } from '../../components/ui'
-import { DataInput } from './components/DataInput'
+import { DataInput } from '../../components/ui/DataInput'
 import { ConfigPanel } from './components/ConfigPanel'
 import { PivotGrid } from './components/PivotGrid'
 import { usePivotData, analyzeData } from './hooks/usePivotData'
@@ -222,6 +222,7 @@ export default function PivotTable() {
         recordCount={records.length}
         fieldCount={fields.length}
         sourceLabel={sourceLabel}
+        inputId="pivot-csv"
       />
 
       {fields.length > 0 && (

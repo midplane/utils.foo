@@ -128,9 +128,13 @@ describe('sample delivery', () => {
     const registry = readFileSync('src/tools/pivot-table/samples/index.ts', 'utf8')
     expect(registry).toMatch(/\.csv\?url'/)
 
-    for (const source of ['index.tsx', 'components/DataInput.tsx']) {
-      const text = readFileSync(`src/tools/pivot-table/${source}`, 'utf8')
-      expect(text).not.toContain('OrderID,OrderDate')
+    // DataInput is shared UI now, so it is checked at its own path.
+    for (const source of [
+      'src/tools/pivot-table/index.tsx',
+      'src/components/ui/DataInput.tsx',
+      'src/tools/chart-builder/samples.ts',
+    ]) {
+      expect(readFileSync(source, 'utf8')).not.toContain('OrderID,OrderDate')
     }
   })
 })

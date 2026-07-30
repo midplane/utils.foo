@@ -35,3 +35,4 @@ export {
   EXPANDED_PANE_HEIGHT,
   DEFAULT_PANE_HEIGHT,
 } from './ExpandableCard'
+export { DataInput } from './DataInput'
