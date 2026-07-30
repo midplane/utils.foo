@@ -83,7 +83,8 @@ describe('DataInput drag and drop', () => {
   it('accepts .tsv and .txt, whose MIME type browsers report inconsistently', async () => {
     for (const name of ['data.tsv', 'data.txt']) {
       const onChange = setup()
-      const zone = screen.getAllByText(/Upload file/).at(-1)!.closest('div.relative')!
+      const labels = screen.getAllByText(/Upload file/)
+      const zone = labels[labels.length - 1]!.closest('div.relative')!
       fireEvent.drop(zone, { dataTransfer: transfer([new File(['a\tb'], name, { type: '' })]) })
       await waitFor(() => expect(onChange).toHaveBeenCalled())
     }
