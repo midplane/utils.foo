@@ -1,4 +1,4 @@
-import { useState, useRef, useMemo, useCallback } from 'react'
+import { useState, useRef, useMemo, useCallback, useEffect } from 'react'
 import { BarChart2, PanelLeftClose, PanelLeftOpen } from 'lucide-react'
 import ReactECharts from 'echarts-for-react'
 import {
@@ -75,15 +75,27 @@ export default function ChartBuilderTool() {
 
   const [raw, setRaw] = useState(boot.raw)
   const [sourceLabel, setSourceLabel] = useState(boot.source)
+  const [sampleId, setSampleId] = useState<string | undefined>(boot.shared?.sampleId)
   const [chartType, setChartType] = useState<ChartType>(boot.shared?.chartType ?? 'bar')
   const [orientation, setOrientation] = useState<Orientation>(boot.shared?.orientation ?? 'vertical')
   const [cosmetics, setCosmetics] = useState<Cosmetics>(boot.shared?.cosmetics ?? DEFAULT_COSMETICS)
   const [styles, setStyles] = useState<Record<string, SeriesStyle>>(boot.shared?.styles ?? {})
-  const [sampleState, setSampleState] = useState<{ loading: boolean; error: string }>({
-    loading: false, error: '',
-  })
+  const [sampleState, setSampleState] = useState<{ loading: boolean; error: string }>(() => ({
+    // A shared link naming a sample starts out fetching, so say so from the
+    // first paint rather than flipping the flag inside an effect.
+    loading: Boolean(boot.shared?.sampleId) && !boot.shared?.data,
+    error: '',
+  }))
   /** The rail can be folded away to hand the full width to the chart. */
   const [railOpen, setRailOpen] = useState(true)
+  /**
+   * A shared link that had to drop its data leaves the recipient looking at an
+   * empty tool with settings they cannot see. Say so, and name the columns the
+   * settings expect, until they load something.
+   */
+  const [settingsOnlyLink, setSettingsOnlyLink] = useState(
+    Boolean(boot.shared) && !boot.shared?.data && !boot.shared?.sampleId
+  )
 
   /**
    * Shaping choices, tagged with the column set they were made against, so a
@@ -107,6 +119,32 @@ export default function ChartBuilderTool() {
   const { isDark } = useTheme()
   const echartsRef = useRef<ReactECharts>(null)
   const chartBoxRef = useRef<HTMLDivElement>(null)
+
+  // A shared link that names a sample re-fetches it rather than carrying the
+  // CSV. Async, so it cannot be done while initialising state.
+  useEffect(() => {
+    const wanted = boot.shared?.sampleId
+    if (!wanted || boot.shared?.data) return
+    const sample = SAMPLES.find((s) => s.id === wanted)
+    if (!sample) return
+
+    let cancelled = false
+    loadSample(sample)
+      .then((csv) => {
+        if (cancelled) return
+        setRaw(csv)
+        setSourceLabel(sample.label)
+        setSampleState({ loading: false, error: '' })
+      })
+      .catch((e: unknown) => {
+        if (cancelled) return
+        setSampleState({
+          loading: false,
+          error: e instanceof Error ? e.message : 'Could not load the shared sample.',
+        })
+      })
+    return () => { cancelled = true }
+  }, [boot])
 
   const { data, error: parseError } = useMemo(() => parseInput(raw), [raw])
 
@@ -219,6 +257,8 @@ export default function ChartBuilderTool() {
       const csv = await loadSample(sample)
       setRaw(csv)
       setSourceLabel(sample.label)
+      setSampleId(sample.id)
+      setSettingsOnlyLink(false)
       setChartType(sample.chartType)
       setCosmetics({ ...DEFAULT_COSMETICS, ...sample.cosmetics })
       setStyles({})
@@ -235,6 +275,9 @@ export default function ChartBuilderTool() {
   const handleDataChange = useCallback((value: string) => {
     setRaw(value)
     setSourceLabel('')
+    // Edited by hand, so it is no longer the sample it started from.
+    setSampleId(undefined)
+    setSettingsOnlyLink(false)
   }, [])
 
   const handleShare = useCallback(() => {
@@ -243,6 +286,7 @@ export default function ChartBuilderTool() {
       transform: { ...config, series: effectiveSeries },
       cosmetics, chartType, orientation, styles,
       data: raw,
+      sampleId,
     })
     const url = `${window.location.origin}${window.location.pathname}${hash}`
     window.history.replaceState(null, '', hash)
@@ -252,7 +296,7 @@ export default function ChartBuilderTool() {
     } catch {
       return { ok: false, dataOmitted }
     }
-  }, [config, effectiveSeries, cosmetics, chartType, orientation, styles, raw])
+  }, [config, effectiveSeries, cosmetics, chartType, orientation, styles, raw, sampleId])
 
   // ── Derived UI state ───────────────────────────────────────────────────────
 
@@ -357,6 +401,18 @@ export default function ChartBuilderTool() {
   return (
     <div className="space-y-4 animate-fade-in">
       {!expanded && <ToolHeader icon={<BarChart2 />} title="Chart" accentedSuffix="Builder" />}
+
+      {settingsOnlyLink && (
+        <Alert variant="info" size="sm">
+          This link carries chart settings only — the data was too large to fit in a URL.
+          {boot.shared?.transform.xCol && (
+            <> Load data with a <strong>{boot.shared.transform.xCol}</strong> column
+            {boot.shared.transform.series.length > 0 && (
+              <> and <strong>{boot.shared.transform.series.join('</strong>, <strong>')}</strong></>
+            )} to rebuild the chart.</>
+          )}
+        </Alert>
+      )}
 
       {!expanded && (
         <DataInput

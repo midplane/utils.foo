@@ -10,6 +10,9 @@ import { cn } from '../../lib/utils'
 /** Reading much more than this in the browser is not a good experience. */
 const MAX_FILE_BYTES = 25 * 1024 * 1024
 
+/** Above this many samples, the picker becomes a select rather than buttons. */
+const SAMPLE_BUTTON_LIMIT = 3
+
 /** The shape DataInput needs; callers pass richer objects and get them back. */
 interface SampleOption {
   id: string
@@ -199,17 +202,46 @@ export function DataInput<S extends SampleOption>({
               <span className="ml-1 text-[11px] text-[var(--color-ink-muted)]">
                 or load a sample:
               </span>
-              {samples.map((sample) => (
-                <Button
-                  key={sample.id}
-                  variant="ghost"
+              {/* A handful of samples read better as buttons; past that they
+                  become a wall, and the descriptions - the useful part - are
+                  stuck in tooltips. A select shows them inline.
+
+                  Width is fixed because a select sizes itself to its widest
+                  option, and the descriptions would otherwise stretch it across
+                  the card. The open list is unaffected. */}
+              {samples.length > SAMPLE_BUTTON_LIMIT ? (
+                <select
+                  aria-label="Load sample data"
                   disabled={loadingSample}
-                  title={sample.description}
-                  onClick={() => onLoadSample(sample)}
+                  value=""
+                  onChange={(e) => {
+                    const picked = samples.find((s) => s.id === e.target.value)
+                    if (picked) onLoadSample(picked)
+                  }}
+                  className="w-44 max-w-full truncate px-3 py-1.5 text-sm font-medium rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-ink)] hover:border-[var(--color-ink-muted)] focus:outline-none focus:border-[var(--color-accent)] cursor-pointer transition-all disabled:cursor-not-allowed disabled:text-[var(--color-ink-muted)]"
                 >
-                  {sample.label}
-                </Button>
-              ))}
+                  <option value="" disabled>
+                    Load a sample…
+                  </option>
+                  {samples.map((sample) => (
+                    <option key={sample.id} value={sample.id}>
+                      {sample.label} — {sample.description}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                samples.map((sample) => (
+                  <Button
+                    key={sample.id}
+                    variant="ghost"
+                    disabled={loadingSample}
+                    title={sample.description}
+                    onClick={() => onLoadSample(sample)}
+                  >
+                    {sample.label}
+                  </Button>
+                ))
+              )}
             </div>
           </div>
         )}

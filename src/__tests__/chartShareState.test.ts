@@ -55,6 +55,29 @@ describe('share state round-trip', () => {
   })
 })
 
+describe('sample references', () => {
+  // The sales sample encodes to ~87 KB inline; its id costs a dozen characters.
+  const huge = 'x,y\n' + Array.from({ length: 20_000 }, (_, i) => `${i},${i}`).join('\n')
+
+  it('carries the sample id instead of its rows', () => {
+    const { hash, dataOmitted } = encodeState(state({ data: huge, sampleId: 'sales-by-category' }))
+
+    expect(dataOmitted).toBe(false)
+    expect(hash.length).toBeLessThan(1000)
+
+    const decoded = decodeState(hash)!
+    expect(decoded.sampleId).toBe('sales-by-category')
+    expect(decoded.data).toBeUndefined()
+    // The configuration still travels intact.
+    expect(decoded.transform.aggregation).toBe('sum')
+  })
+
+  it('still drops oversized data when there is no sample to point at', () => {
+    const { dataOmitted } = encodeState(state({ data: huge }))
+    expect(dataOmitted).toBe(true)
+  })
+})
+
 describe('share state rejection', () => {
   it('ignores a hash that is not ours', () => {
     expect(decodeState('#something-else')).toBeNull()

@@ -16,6 +16,14 @@ export interface ShareState {
   styles: Record<string, SeriesStyle>
   /** Omitted when the data is too large to survive a URL. */
   data?: string
+  /**
+   * Set when the data came from a bundled sample.
+   *
+   * Carried instead of the CSV: the sales sample alone encodes to ~87 KB,
+   * far past any usable URL, but its id costs a dozen characters and the
+   * recipient re-fetches the same asset.
+   */
+  sampleId?: string
 }
 
 /**
@@ -50,7 +58,10 @@ export interface EncodeResult {
 }
 
 export function encodeState(state: ShareState): EncodeResult {
-  const withData = PREFIX + toBase64(JSON.stringify(state))
+  // A sample reference makes the inline copy redundant.
+  const source: ShareState = state.sampleId ? { ...state, data: undefined } : state
+
+  const withData = PREFIX + toBase64(JSON.stringify(source))
   if (withData.length <= MAX_HASH_LENGTH) return { hash: withData, dataOmitted: false }
 
   const withoutData: ShareState = {

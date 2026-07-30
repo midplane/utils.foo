@@ -37,9 +37,10 @@ const TYPES = Object.keys(CHART_TYPE_LABELS) as ChartType[]
 /**
  * Chart type as an icon grid.
  *
- * Nine options in a segmented control monopolised the header and forced the
- * labels down to an unreadable size; as a grid they stay scannable and cost one
- * rail row instead of a full toolbar.
+ * Deliberately not a dropdown: this is the most exploratory control in the
+ * tool - flipping bar to line to area to see which reads best - and a select
+ * costs a click per attempt while hiding the options behind recall. Three
+ * columns rather than five, so the labels stay legible in a 300px rail.
  */
 export function ChartTypePicker({
   value, orientation, onChange, onOrientationChange,
@@ -48,7 +49,7 @@ export function ChartTypePicker({
 
   return (
     <div className="space-y-2">
-      <div className="grid grid-cols-5 gap-1" role="group" aria-label="Chart type">
+      <div className="grid grid-cols-3 gap-1" role="group" aria-label="Chart type">
         {TYPES.map((type) => {
           const Icon = ICONS[type]
           const active = value === type
@@ -60,14 +61,14 @@ export function ChartTypePicker({
               aria-pressed={active}
               title={CHART_TYPE_LABELS[type]}
               className={cn(
-                'flex flex-col items-center gap-0.5 py-1.5 rounded-md border transition-colors cursor-pointer',
+                'flex flex-col items-center gap-1 py-2 rounded-md border transition-colors cursor-pointer',
                 active
                   ? 'border-[var(--color-accent)] bg-[var(--color-accent)]/10 text-[var(--color-accent)]'
                   : 'border-[var(--color-border)] text-[var(--color-ink-muted)] hover:border-[var(--color-border-dark)] hover:text-[var(--color-ink)]'
               )}
             >
-              <Icon className="w-3.5 h-3.5" aria-hidden="true" />
-              <span className="text-[8px] font-mono leading-none text-center">
+              <Icon className="w-4 h-4" aria-hidden="true" />
+              <span className="text-[10px] font-mono leading-tight text-center">
                 {CHART_TYPE_LABELS[type]}
               </span>
             </button>
