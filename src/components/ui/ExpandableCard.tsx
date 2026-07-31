@@ -8,6 +8,7 @@ import {
 } from "react";
 import { Maximize2, Minimize2 } from "lucide-react";
 import { Card, CardHeader, CardContent } from "./Card";
+import { useScrollLock } from "../../hooks/useScrollLock";
 import { cn } from "../../lib/utils";
 
 // ─── useExpandable hook ───────────────────────────────────────────────────────
@@ -170,13 +171,15 @@ export function ExpandableCard({
   // fix for the stacking context, but relocating the DOM subtree remounts
   // children — which would destroy and rebuild editor instances (CodeMirror et
   // al.) and discard the user's input.
+  //
+  // The scroll lock is ref-counted and shared with Modal: a modal opened from
+  // inside an expanded card must not release the card's lock when it closes.
+  useScrollLock(expanded);
+
   useEffect(() => {
     if (!expanded) return;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
     document.body.dataset.expandedCard = "true";
     return () => {
-      document.body.style.overflow = previousOverflow;
       delete document.body.dataset.expandedCard;
     };
   }, [expanded]);
@@ -254,6 +257,9 @@ export function ExpandToggleButton({ className }: ExpandToggleButtonProps) {
   return (
     <button
       onClick={toggle}
+      type="button"
+      aria-label={expanded ? "Collapse" : "Expand"}
+      aria-expanded={expanded}
       title={expanded ? "Collapse" : "Expand"}
       className={cn(
         "inline-flex items-center justify-center w-7 h-7 rounded-lg",
