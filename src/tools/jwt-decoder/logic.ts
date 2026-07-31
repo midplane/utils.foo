@@ -40,6 +40,26 @@ export function decodeJWT(token: string): DecodedJWT {
   }
 }
 
+export function formatPayloadValue(value: unknown): string {
+  if (typeof value === 'string') {
+    try {
+      const parsed = JSON.parse(value)
+      if (parsed !== null && typeof parsed === 'object') {
+        return JSON.stringify(parsed, null, 2)
+      }
+    } catch {
+      // Keep ordinary string claims unchanged.
+    }
+    return value
+  }
+
+  if (value !== null && typeof value === 'object') {
+    return JSON.stringify(value, null, 2)
+  }
+
+  return String(value)
+}
+
 export function formatTimestamp(value: unknown): string | null {
   if (typeof value !== 'number') return null
   const date = new Date(value * 1000)

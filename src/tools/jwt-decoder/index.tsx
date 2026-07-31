@@ -9,7 +9,7 @@ import { SectionLabel } from '../../components/ui/SectionLabel'
 import { Alert } from '../../components/ui/Alert'
 import { FlowDivider } from '../../components/ui/FlowDivider'
 import { ClipboardList, Info, LockKeyhole, ShieldCheck, Trash2 } from 'lucide-react'
-import { type DecodedJWT, decodeJWT, formatTimestamp, isExpired } from './logic'
+import { type DecodedJWT, decodeJWT, formatPayloadValue, formatTimestamp, isExpired } from './logic'
 
 const KNOWN_CLAIMS: Record<string, string> = {
   iss: 'Issuer',
@@ -171,8 +171,8 @@ export default function JwtDecoderTool() {
                           </span>
                         )}
                       </div>
-                      <div className="text-xs font-mono text-[var(--color-ink)] break-all">
-                        {typeof value === 'object' ? JSON.stringify(value) : String(value)}
+                      <div className="text-xs font-mono text-[var(--color-ink)] whitespace-pre-wrap break-all">
+                        {formatPayloadValue(value)}
                         {TIME_CLAIMS.includes(key) && formatTimestamp(value) && (
                           <span className="text-[var(--color-ink-muted)] ml-2">
                             ({formatTimestamp(value)})
