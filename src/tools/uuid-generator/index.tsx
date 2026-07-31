@@ -160,7 +160,7 @@ export default function UuidGeneratorTool() {
                   ))}
                 </SegmentedControl>
                 <input
-                  className="w-full px-3 py-2 text-xs font-mono bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg focus:outline-none focus:border-[var(--color-accent)] transition-colors"
+                  className="w-full px-3 py-2 text-xs font-mono bg-[var(--color-input-bg)] border border-[var(--color-input-border)] shadow-[var(--shadow-input-inset)] rounded-lg focus:border-[var(--color-accent)] transition-colors"
                   value={v5Namespace}
                   onChange={e => setV5Namespace(e.target.value)}
                   placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
@@ -170,7 +170,7 @@ export default function UuidGeneratorTool() {
               <div className="space-y-1">
                 <SectionLabel>Name</SectionLabel>
                 <input
-                  className="w-full px-3 py-2 text-xs font-mono bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg focus:outline-none focus:border-[var(--color-accent)] transition-colors"
+                  className="w-full px-3 py-2 text-xs font-mono bg-[var(--color-input-bg)] border border-[var(--color-input-border)] shadow-[var(--shadow-input-inset)] rounded-lg focus:border-[var(--color-accent)] transition-colors"
                   value={v5Name}
                   onChange={e => setV5Name(e.target.value)}
                   placeholder="e.g. example.com"

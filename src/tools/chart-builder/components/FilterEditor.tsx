@@ -19,7 +19,7 @@ interface FilterEditorProps {
 const OPS = Object.keys(FILTER_OP_LABELS) as FilterOp[]
 
 const selectClass =
-  'text-[11px] font-mono bg-[var(--color-surface)] border border-[var(--color-border)] rounded px-1.5 py-1 text-[var(--color-ink)] focus:outline-none focus:border-[var(--color-accent)] cursor-pointer'
+  'text-[11px] font-mono bg-[var(--color-input-bg)] border border-[var(--color-input-border)] shadow-[var(--shadow-input-inset)] rounded px-1.5 py-1 text-[var(--color-ink)] focus:border-[var(--color-accent)] cursor-pointer'
 
 export function FilterEditor({
   columns, filters, matchedRows, totalRows, onChange,
@@ -92,7 +92,7 @@ export function FilterEditor({
                   value={rule.value}
                   onChange={(e) => update(rule.id, { value: e.target.value })}
                   placeholder="value"
-                  className="flex-1 min-w-0 text-[11px] font-mono bg-[var(--color-surface)] border border-[var(--color-border)] rounded px-1.5 py-1 text-[var(--color-ink)] placeholder-[var(--color-ink-muted)] focus:outline-none focus:border-[var(--color-accent)]"
+                  className="flex-1 min-w-0 text-[11px] font-mono bg-[var(--color-input-bg)] border border-[var(--color-input-border)] shadow-[var(--shadow-input-inset)] rounded px-1.5 py-1 text-[var(--color-ink)] placeholder-[var(--color-ink-muted)] focus:border-[var(--color-accent)]"
                 />
               )}
 

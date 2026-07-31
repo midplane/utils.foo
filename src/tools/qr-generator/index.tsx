@@ -145,7 +145,7 @@ export default function QrGeneratorTool() {
                 placeholder="Enter a URL, text, email, phone number…"
                 rows={4}
               />
-              {error && <p className="text-[11px] text-red-600">{error}</p>}
+              {error && <p className="text-[11px] text-[var(--color-error-text)]">{error}</p>}
 
               {/* Presets */}
               <div className="flex flex-wrap gap-1 pt-0.5">
@@ -238,7 +238,7 @@ export default function QrGeneratorTool() {
                       type="text"
                       value={fgColor}
                       onChange={(e) => setFgColor(e.target.value)}
-                      className="flex-1 min-w-0 text-xs font-mono text-[var(--color-ink)] bg-transparent focus:outline-none"
+                      className="flex-1 min-w-0 text-xs font-mono text-[var(--color-ink)] bg-transparent"
                       maxLength={7}
                     />
                   </div>
@@ -259,7 +259,7 @@ export default function QrGeneratorTool() {
                       type="text"
                       value={bgColor}
                       onChange={(e) => setBgColor(e.target.value)}
-                      className="flex-1 min-w-0 text-xs font-mono text-[var(--color-ink)] bg-transparent focus:outline-none"
+                      className="flex-1 min-w-0 text-xs font-mono text-[var(--color-ink)] bg-transparent"
                       maxLength={7}
                     />
                   </div>

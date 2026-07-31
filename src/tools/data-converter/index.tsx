@@ -359,7 +359,7 @@ export default function DataConverterTool() {
           <ExpandableCardContent>
             {/* Error message */}
             {error && (
-              <div className="mb-2 px-3 py-2 bg-red-50 border border-red-200 rounded-lg text-[11px] text-red-700 font-mono">
+              <div className="mb-2 px-3 py-2 bg-[var(--color-error-bg)] border border-[var(--color-error-border)] rounded-lg text-[11px] text-[var(--color-error-text)] font-mono">
                 {error}
               </div>
             )}
@@ -389,7 +389,7 @@ export default function DataConverterTool() {
                   style={{ height: editorHeight }}
                   className={cn(
                     'rounded-lg border overflow-auto',
-                    error ? 'border-red-200' : 'border-[var(--color-border)]'
+                    error ? 'border-[var(--color-error-border)]' : 'border-[var(--color-border)]'
                   )}
                 />
               </div>

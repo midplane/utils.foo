@@ -34,7 +34,7 @@ const DATE_BINS: DateBin[] = ['none', 'hour', 'day', 'week', 'month', 'quarter',
 const SORTS: SortMode[] = ['none', 'x-asc', 'x-desc', 'value-desc', 'value-asc']
 
 const inputClass =
-  'w-full text-[11px] font-mono bg-[var(--color-surface)] border border-[var(--color-border)] rounded px-2 py-1 text-[var(--color-ink)] placeholder-[var(--color-ink-muted)] focus:outline-none focus:border-[var(--color-accent)]'
+  'w-full text-[11px] font-mono bg-[var(--color-input-bg)] border border-[var(--color-input-border)] shadow-[var(--shadow-input-inset)] rounded px-2 py-1 text-[var(--color-ink)] placeholder-[var(--color-ink-muted)] focus:border-[var(--color-accent)]'
 const selectClass = `${inputClass} cursor-pointer`
 
 function Field({ label, children, hint }: { label: string; children: React.ReactNode; hint?: string }) {

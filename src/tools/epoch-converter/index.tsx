@@ -69,8 +69,8 @@ export default function EpochConverter() {
           <div className="flex items-center justify-between text-[var(--color-cream)]">
             <div className="flex items-center gap-2">
               <div className="relative">
-                <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full block" />
-                <span className="absolute inset-0 w-1.5 h-1.5 bg-emerald-400 rounded-full animate-ping" />
+                <span className="w-1.5 h-1.5 bg-[var(--color-success-icon)] rounded-full block" />
+                <span className="absolute inset-0 w-1.5 h-1.5 bg-[var(--color-success-icon)] rounded-full animate-ping" />
               </div>
               <span className="text-[10px] font-semibold uppercase tracking-wider">Live</span>
             </div>

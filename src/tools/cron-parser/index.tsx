@@ -69,7 +69,7 @@ export default function CronParserTool() {
                   <div className={cn(
                     'text-[10px] font-semibold uppercase tracking-wider px-1 py-0.5 rounded',
                     !parsed.valid && field && !field.valid
-                      ? 'text-red-600 bg-red-50'
+                      ? 'text-[var(--color-error-text)] bg-[var(--color-error-bg)]'
                       : 'text-[var(--color-ink-muted)]'
                   )}>
                     {label}
@@ -77,7 +77,7 @@ export default function CronParserTool() {
                   <div className={cn(
                     'font-mono text-xs px-1 py-0.5 rounded border',
                     !parsed.valid && field && !field.valid
-                      ? 'border-red-300 bg-red-50 text-red-700'
+                      ? 'border-[var(--color-error-border)] bg-[var(--color-error-bg)] text-[var(--color-error-text)]'
                       : 'border-[var(--color-border)] bg-[var(--color-cream-dark)] text-[var(--color-ink)]'
                   )}>
                     {expression.trim().split(/\s+/)[idx] ?? '*'}

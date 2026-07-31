@@ -27,7 +27,7 @@ interface ExportMenuProps {
 type Flash = { ok: boolean; text: string } | null
 
 const selectClass =
-  'w-full text-[11px] font-mono bg-[var(--color-surface)] border border-[var(--color-border)] rounded px-2 py-1 text-[var(--color-ink)] focus:outline-none focus:border-[var(--color-accent)] cursor-pointer'
+  'w-full text-[11px] font-mono bg-[var(--color-input-bg)] border border-[var(--color-input-border)] shadow-[var(--shadow-input-inset)] rounded px-2 py-1 text-[var(--color-ink)] focus:border-[var(--color-accent)] cursor-pointer'
 
 /**
  * Every export path behind one control.

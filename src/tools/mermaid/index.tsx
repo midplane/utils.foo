@@ -492,7 +492,7 @@ export default function MermaidTool() {
                 style={{ height: PANE_HEIGHT, background: THEMES[themeName]?.bg ?? '#fff' }}
               >
                 {error ? (
-                  <div className="w-full p-3 bg-red-50 border border-red-200 rounded-lg text-xs text-red-700 font-mono whitespace-pre-wrap">
+                  <div className="w-full p-3 bg-[var(--color-error-bg)] border border-[var(--color-error-border)] rounded-lg text-xs text-[var(--color-error-text)] font-mono whitespace-pre-wrap">
                     {error}
                   </div>
                 ) : svg ? (

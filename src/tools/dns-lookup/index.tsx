@@ -110,7 +110,7 @@ function RecordSection({ result }: { result: RecordResult }) {
           {result.type}
         </span>
         {result.status === 'error' && (
-          <span className="text-[10px] text-red-600">{result.error}</span>
+          <span className="text-[10px] text-[var(--color-error-text)]">{result.error}</span>
         )}
       </div>
       {hasAnswers && (

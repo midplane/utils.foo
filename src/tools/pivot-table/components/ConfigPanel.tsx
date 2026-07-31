@@ -354,7 +354,7 @@ function ValueConfigInline({ config, fields, onUpdate, onRemove }: ValueConfigIn
   const numericOptions = fields.filter((f) => f.isNumeric)
 
   return (
-    <span className="inline-flex items-center gap-1 px-1.5 py-1 bg-[var(--color-surface)] border border-[var(--color-border)] rounded text-xs shadow-sm">
+    <span className="inline-flex items-center gap-1 px-1.5 py-1 bg-[var(--color-input-bg)] border border-[var(--color-input-border)] shadow-[var(--shadow-input-inset)] rounded text-xs shadow-sm">
       <input
         value={config.caption ?? ''}
         aria-label="Metric name"
@@ -366,7 +366,7 @@ function ValueConfigInline({ config, fields, onUpdate, onRemove }: ValueConfigIn
         className={cn(
           'w-28 px-1 py-0.5 bg-transparent rounded text-[11px] truncate',
           'border border-transparent hover:border-[var(--color-border)]',
-          'focus:outline-none focus:border-[var(--color-accent)]',
+          'focus:border-[var(--color-accent)]',
           'placeholder:text-[var(--color-ink-muted)] placeholder:italic',
           config.caption && 'font-semibold text-[var(--color-accent)]'
         )}
@@ -500,7 +500,7 @@ function ValueConfigInline({ config, fields, onUpdate, onRemove }: ValueConfigIn
   )
 }
 const BARE_SELECT =
-  'bg-transparent text-[11px] font-medium rounded cursor-pointer focus:outline-none focus-visible:ring-1 focus-visible:ring-[var(--color-accent)]'
+  'bg-transparent text-[11px] font-medium rounded cursor-pointer'
 
 // ─── Config Panel ─────────────────────────────────────────────────────────────
 

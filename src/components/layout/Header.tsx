@@ -26,8 +26,8 @@ export function Header() {
         <div className="flex items-center gap-2">
           <div className="hidden sm:flex items-center gap-1.5 px-2 py-1 bg-[var(--color-cream-dark)] rounded-full border border-[var(--color-border)]">
             <div className="relative flex items-center justify-center">
-              <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full" />
-              <span className="absolute w-1.5 h-1.5 bg-emerald-500 rounded-full animate-ping" />
+              <span className="w-1.5 h-1.5 bg-[var(--color-success-icon)] rounded-full" />
+              <span className="absolute w-1.5 h-1.5 bg-[var(--color-success-icon)] rounded-full animate-ping" />
             </div>
             <span className="text-[10px] text-[var(--color-ink-muted)] font-medium">
               client-side only

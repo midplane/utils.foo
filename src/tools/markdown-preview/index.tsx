@@ -217,7 +217,7 @@ export default function MarkdownPreviewTool() {
           <ExpandableCardHeader>
             <div className="flex items-center justify-between flex-wrap gap-2">
               {/* View mode toggles */}
-              <SegmentedControl value={viewMode} onChange={(v) => setViewMode(v as 'editor' | 'split' | 'preview')} variant="accent">
+              <SegmentedControl value={viewMode} onChange={(v) => setViewMode(v as 'editor' | 'split' | 'preview')} variant="pill">
                 <SegmentedControlItem value="editor" title="Editor only" className="px-2.5 py-1">
                   <Code className="w-3 h-3" />
                   Editor

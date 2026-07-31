@@ -325,7 +325,7 @@ function TZRow({
           {/* Remove button — shown on hover for all rows */}
           <button
             onClick={onRemove}
-            className={`absolute inset-0 rounded flex items-center justify-center text-[var(--color-ink-muted)] hover:text-red-500 hover:bg-red-50 cursor-pointer transition-opacity ${
+            className={`absolute inset-0 rounded flex items-center justify-center text-[var(--color-ink-muted)] hover:text-[var(--color-error-icon)] hover:bg-[var(--color-error-bg)] cursor-pointer transition-opacity ${
               isLocal ? 'opacity-0 group-hover:opacity-100' : 'opacity-0 group-hover:opacity-100'
             }`}
           >
@@ -780,7 +780,7 @@ function WorkHoursPanel({
           <select
             value={workStart}
             onChange={e => onChange(parseInt(e.target.value), workEnd)}
-            className="flex-1 text-xs bg-[var(--color-surface)] border border-[var(--color-border)] rounded px-1.5 py-1 text-[var(--color-ink)] cursor-pointer focus:outline-none"
+            className="flex-1 text-xs bg-[var(--color-input-bg)] border border-[var(--color-input-border)] shadow-[var(--shadow-input-inset)] rounded px-1.5 py-1 text-[var(--color-ink)] cursor-pointer"
           >
             {Array.from({ length: 24 }, (_, i) => (
               <option key={i} value={i}>{formatHour(i)}</option>
@@ -792,7 +792,7 @@ function WorkHoursPanel({
           <select
             value={workEnd}
             onChange={e => onChange(workStart, parseInt(e.target.value))}
-            className="flex-1 text-xs bg-[var(--color-surface)] border border-[var(--color-border)] rounded px-1.5 py-1 text-[var(--color-ink)] cursor-pointer focus:outline-none"
+            className="flex-1 text-xs bg-[var(--color-input-bg)] border border-[var(--color-input-border)] shadow-[var(--shadow-input-inset)] rounded px-1.5 py-1 text-[var(--color-ink)] cursor-pointer"
           >
             {Array.from({ length: 24 }, (_, i) => (
               <option key={i} value={i}>{formatHour(i)}</option>

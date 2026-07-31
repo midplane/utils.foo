@@ -423,7 +423,7 @@ function VarRow({ name, config, onChange, onConfigChange }: VarRowProps) {
           }}
           onFocus={(e) => e.target.select()}
           placeholder="e.g. 1000 * 12"
-          className="w-full text-sm font-mono bg-[var(--color-surface)] border border-[var(--color-border)] rounded-md px-3 py-1.5 text-[var(--color-ink)] placeholder-[var(--color-ink-muted)] focus:outline-none focus:border-[var(--color-accent)] focus:ring-1 focus:ring-[var(--color-accent)]/20"
+          className="w-full text-sm font-mono bg-[var(--color-input-bg)] border border-[var(--color-input-border)] shadow-[var(--shadow-input-inset)] rounded-md px-3 py-1.5 text-[var(--color-ink)] placeholder-[var(--color-ink-muted)] focus:border-[var(--color-accent)]"
         />
       )}
 
@@ -441,7 +441,7 @@ function VarRow({ name, config, onChange, onConfigChange }: VarRowProps) {
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') handleUpdate(field, e.currentTarget.value)
                 }}
-                className="text-xs font-mono bg-[var(--color-surface)] border border-[var(--color-border)] rounded px-2 py-1 text-[var(--color-ink)] focus:outline-none focus:border-[var(--color-accent)]"
+                className="text-xs font-mono bg-[var(--color-input-bg)] border border-[var(--color-input-border)] shadow-[var(--shadow-input-inset)] rounded px-2 py-1 text-[var(--color-ink)] focus:border-[var(--color-accent)]"
               />
             </label>
           ))}
@@ -535,7 +535,7 @@ function FormulaLineRow({ line, isLast, canDelete, onChange, onDelete }: Formula
             value={line.name}
             onChange={(e) => onChange(line.id, { name: e.target.value.replace(/[^a-zA-Z0-9_]/g, '') })}
             placeholder="var"
-            className="w-24 text-sm font-mono bg-[var(--color-surface)] border border-[var(--color-border)] rounded-md px-2 py-1.5 text-[var(--color-accent)] placeholder-[var(--color-ink-muted)] focus:outline-none focus:border-[var(--color-accent)]"
+            className="w-24 text-sm font-mono bg-[var(--color-input-bg)] border border-[var(--color-input-border)] shadow-[var(--shadow-input-inset)] rounded-md px-2 py-1.5 text-[var(--color-accent)] placeholder-[var(--color-ink-muted)] focus:border-[var(--color-accent)]"
           />
           <span className="text-[var(--color-ink-muted)]">=</span>
         </>
@@ -548,13 +548,13 @@ function FormulaLineRow({ line, isLast, canDelete, onChange, onDelete }: Formula
         value={line.expression}
         onChange={(e) => onChange(line.id, { expression: e.target.value })}
         placeholder={isLast ? "final expression" : "expression"}
-        className="flex-1 text-sm font-mono bg-[var(--color-surface)] border border-[var(--color-border)] rounded-md px-3 py-1.5 text-[var(--color-ink)] placeholder-[var(--color-ink-muted)] focus:outline-none focus:border-[var(--color-accent)] focus:ring-1 focus:ring-[var(--color-accent)]/20"
+        className="flex-1 text-sm font-mono bg-[var(--color-input-bg)] border border-[var(--color-input-border)] shadow-[var(--shadow-input-inset)] rounded-md px-3 py-1.5 text-[var(--color-ink)] placeholder-[var(--color-ink-muted)] focus:border-[var(--color-accent)]"
         spellCheck={false}
       />
       {canDelete && (
         <button
           onClick={() => onDelete(line.id)}
-          className="p-1.5 text-[var(--color-ink-muted)] hover:text-red-500 transition-colors cursor-pointer"
+          className="p-1.5 text-[var(--color-ink-muted)] hover:text-[var(--color-error-icon)] transition-colors cursor-pointer"
           title="Delete line"
         >
           <Trash2 size={14} />
@@ -700,7 +700,7 @@ function SweepChart({ lines, inputVars, sweepVar, onSweepVarChange }: SweepChart
         <select
           value={sweepVar}
           onChange={(e) => onSweepVarChange(e.target.value)}
-          className="text-xs font-mono bg-[var(--color-surface)] border border-[var(--color-border)] rounded-md px-2 py-1 text-[var(--color-ink)] focus:outline-none focus:border-[var(--color-accent)] cursor-pointer"
+          className="text-xs font-mono bg-[var(--color-input-bg)] border border-[var(--color-input-border)] shadow-[var(--shadow-input-inset)] rounded-md px-2 py-1 text-[var(--color-ink)] focus:border-[var(--color-accent)] cursor-pointer"
         >
           {varNames.map((n) => (
             <option key={n} value={n}>
@@ -711,7 +711,7 @@ function SweepChart({ lines, inputVars, sweepVar, onSweepVarChange }: SweepChart
       </div>
 
       {sweepError ? (
-        <p className="text-xs text-red-600 font-mono">{sweepError}</p>
+        <p className="text-xs text-[var(--color-error-text)] font-mono">{sweepError}</p>
       ) : data.length === 0 ? (
         <p className="text-xs text-[var(--color-ink-muted)] italic font-mono">
           No plottable data.
@@ -885,7 +885,7 @@ export default function FormulaVisualizer() {
               <select
                 defaultValue=""
                 onChange={handlePreset}
-                className="h-7 px-2 text-xs font-mono rounded border border-[var(--color-border)] bg-[var(--color-cream)] text-[var(--color-ink)] cursor-pointer focus:outline-none focus:ring-1 focus:ring-[var(--color-accent)]"
+                className="h-7 px-2 text-xs font-mono rounded border border-[var(--color-border)] bg-[var(--color-cream)] text-[var(--color-ink)] cursor-pointer"
               >
                 <option value="" disabled>
                   Load preset...
@@ -959,7 +959,7 @@ export default function FormulaVisualizer() {
           </CardHeader>
           <CardContent>
             {error ? (
-              <div className="inline-flex items-center gap-2 px-4 py-2 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm font-mono">
+              <div className="inline-flex items-center gap-2 px-4 py-2 bg-[var(--color-error-bg)] border border-[var(--color-error-border)] rounded-lg text-[var(--color-error-text)] text-sm font-mono">
                 <span>Error:</span>
                 <span>{error}</span>
               </div>

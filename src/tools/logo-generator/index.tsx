@@ -212,7 +212,7 @@ export default function LogoGenerator() {
                 onChange={e => setText(e.target.value)}
                 rows={3}
                 placeholder="Your logo text…"
-                className="w-full px-3 py-2 text-sm font-mono bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg text-[var(--color-ink)] placeholder-[var(--color-ink-muted)] focus:outline-none focus:border-[var(--color-accent)] focus:ring-1 focus:ring-[var(--color-accent)]/20 resize-none transition-all"
+                className="w-full px-3 py-2 text-sm font-mono bg-[var(--color-input-bg)] border border-[var(--color-input-border)] shadow-[var(--shadow-input-inset)] rounded-lg text-[var(--color-ink)] placeholder-[var(--color-ink-muted)] focus:border-[var(--color-accent)] resize-none transition-all"
               />
               <p className="mt-1 text-[10px] text-[var(--color-ink-muted)]">Use newlines for multiple lines</p>
             </CardContent>
@@ -387,7 +387,7 @@ export default function LogoGenerator() {
               {/* Aspect ratio */}
               <div>
                 <label className="block text-[10px] text-[var(--color-ink-muted)] mb-1 uppercase tracking-wider">Aspect ratio</label>
-                <SegmentedControl value={ratio.value} onChange={(v) => setRatio(ASPECT_RATIOS.find(r => r.value === v) ?? ASPECT_RATIOS[0]!)} variant="ink">
+                <SegmentedControl value={ratio.value} onChange={(v) => setRatio(ASPECT_RATIOS.find(r => r.value === v) ?? ASPECT_RATIOS[0]!)} variant="bordered">
                   {ASPECT_RATIOS.map(r => (
                     <SegmentedControlItem key={r.value} value={r.value} className="px-2 py-1 font-mono">
                       {r.label}

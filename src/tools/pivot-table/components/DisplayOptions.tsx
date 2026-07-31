@@ -256,7 +256,7 @@ function SortSelect({
       value={value}
       aria-label={ariaLabel}
       onChange={(e) => onChange(e.target.value as PivotConfig['rowOrder'])}
-      className="px-1.5 py-1 bg-[var(--color-surface)] border border-[var(--color-border)] rounded text-xs cursor-pointer focus:outline-none focus-visible:ring-1 focus-visible:ring-[var(--color-accent)]"
+      className="px-1.5 py-1 bg-[var(--color-input-bg)] border border-[var(--color-input-border)] shadow-[var(--shadow-input-inset)] rounded text-xs cursor-pointer"
     >
       {Object.entries(SORT_ORDER_LABELS).map(([key, label]) => (
         <option key={key} value={key}>

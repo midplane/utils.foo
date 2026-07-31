@@ -238,10 +238,10 @@ export default function ColorPickerTool() {
                 label="HEX"
                 value={hexInput}
                 onChange={e => handleHexChange(e.target.value)}
-                className={cn('font-mono', hexError && 'border-red-400')}
+                className={cn('font-mono', hexError && 'border-[var(--color-error-border)]')}
                 placeholder="#663399"
               />
-              {hexError && <p className="text-[10px] text-red-600 mt-0.5">{hexError}</p>}
+              {hexError && <p className="text-[10px] text-[var(--color-error-text)] mt-0.5">{hexError}</p>}
             </div>
             <div className="mb-0.5"><CopyButton text={hex.toUpperCase()} /></div>
           </div>
@@ -254,10 +254,10 @@ export default function ColorPickerTool() {
                 label="RGB"
                 value={rgbInput}
                 onChange={e => handleRgbChange(e.target.value)}
-                className={cn('font-mono', rgbError && 'border-red-400')}
+                className={cn('font-mono', rgbError && 'border-[var(--color-error-border)]')}
                 placeholder="102, 51, 153"
               />
-              {rgbError && <p className="text-[10px] text-red-600 mt-0.5">{rgbError}</p>}
+              {rgbError && <p className="text-[10px] text-[var(--color-error-text)] mt-0.5">{rgbError}</p>}
             </div>
             <div className="mb-0.5"><CopyButton text={`rgb(${rgb.r}, ${rgb.g}, ${rgb.b})`} /></div>
           </div>
@@ -270,10 +270,10 @@ export default function ColorPickerTool() {
                 label="HSL"
                 value={hslInput}
                 onChange={e => handleHslChange(e.target.value)}
-                className={cn('font-mono', hslError && 'border-red-400')}
+                className={cn('font-mono', hslError && 'border-[var(--color-error-border)]')}
                 placeholder="270, 50%, 40%"
               />
-              {hslError && <p className="text-[10px] text-red-600 mt-0.5">{hslError}</p>}
+              {hslError && <p className="text-[10px] text-[var(--color-error-text)] mt-0.5">{hslError}</p>}
             </div>
             <div className="mb-0.5"><CopyButton text={`hsl(${hsl.h}, ${hsl.s}%, ${hsl.l}%)`} /></div>
           </div>

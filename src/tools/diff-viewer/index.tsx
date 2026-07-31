@@ -335,7 +335,7 @@ export default function DiffViewerTool() {
                   <select
                     value={langOverride}
                     onChange={(e) => setLangOverride(e.target.value)}
-                    className="h-6 text-[10px] font-mono pl-1.5 pr-5 rounded-md border border-[var(--color-border)] bg-[var(--color-cream-dark)] text-[var(--color-ink-muted)] hover:border-[var(--color-border-dark)] focus:outline-none focus:border-[var(--color-accent)] focus:text-[var(--color-ink)] transition-colors cursor-pointer appearance-none"
+                    className="h-6 text-[10px] font-mono pl-1.5 pr-5 rounded-md border border-[var(--color-border)] bg-[var(--color-cream-dark)] text-[var(--color-ink-muted)] hover:border-[var(--color-border-dark)] focus:border-[var(--color-accent)] focus:text-[var(--color-ink)] transition-colors cursor-pointer appearance-none"
                     style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%2378716C'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 4px center' }}
                     title="Language for syntax highlighting"
                   >

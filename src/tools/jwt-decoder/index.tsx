@@ -140,7 +140,7 @@ export default function JwtDecoderTool() {
                   <SectionLabel>Header</SectionLabel>
                   <CopyButton text={JSON.stringify(decoded.header, null, 2)} />
                 </div>
-                <div className="p-2.5 bg-blue-50/50 border border-blue-200 rounded-lg">
+                <div className="p-2.5 bg-[var(--color-info-bg-subtle)] border border-[var(--color-info-border)] rounded-lg">
                   <pre className="text-xs font-mono text-[var(--color-ink)] whitespace-pre-wrap break-all">
                     {JSON.stringify(decoded.header, null, 2)}
                   </pre>
