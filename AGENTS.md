@@ -78,7 +78,7 @@ import { Button, Alert, ToolHeader, ResultBox, SegmentedControl } from '../../co
 | `InfoCard` | Icon + title + description card |
 | `ExpandableCard` | Card that expands to fill the viewport (see below) |
 | `Alert` | Status messages: `variant="info\|success\|warning\|error"`, `size="sm\|default"` |
-| `SegmentedControl` | Toggle groups: `variant="pill\|accent\|bordered\|ink"` |
+| `SegmentedControl` | Toggle groups: `variant="pill\|bordered"` |
 | `Button`, `Input`, `Textarea`, `Select` | Form primitives |
 | `Checkbox`, `Radio`, `Toggle` | Form controls |
 | `Card`, `Badge`, `Tabs`, `Modal`, `Tooltip` | Layout & feedback |
@@ -155,6 +155,92 @@ className="bg-[var(--color-error-bg)] border-[var(--color-error-border)]"
 
 `--app-header-height` is the sticky header height; anything sticking to the top of the page
 scroll must offset by it or it slides underneath.
+
+### Form fields
+
+Fields have their own tokens and **must not** reuse `--color-surface`/`--color-border`:
+
+```tsx
+className="bg-[var(--color-input-bg)] border border-[var(--color-input-border)] shadow-[var(--shadow-input-inset)]"
+```
+
+Most inputs sit inside a `Card`, and a `--color-surface` field on a `--color-surface` card
+left the border as the only affordance — at `--color-border` that was 1.15:1 in light mode
+and 1.4:1 in dark, so a text box read as a flat area of nothing. `--color-input-bg` is
+recessed relative to the card, `--color-input-border` clears the 3:1 WCAG 1.4.11 floor for
+component boundaries, and `--shadow-input-inset` sells the recess in light mode (dark mode
+has no usable shadow, so there the fill step and border carry it).
+
+Fields take `focus:border-[var(--color-accent)]` as a secondary cue on top of the global
+focus outline. Do not dim placeholders with an opacity suffix — `placeholder-[…]/60` was
+about 2.5:1 and failed contrast.
+
+### What the accent colour means
+
+**Accent marks selection and focus, and nothing else.** A selected segment/tab is accent; the
+focus outline is accent. It is never a hover colour and never the fill of a primary button —
+`Button variant="primary"` is ink and darkens to `--color-ink-light` on hover. Accent
+previously meant "brand", "hover", and "selected" in different components, which left users
+with no way to learn what orange signified. Ink carries primary emphasis, accent carries state.
+
+### Focus states
+
+There is exactly one focus indicator: the global `*:focus-visible` rule in `index.css`
+(2px accent outline, 2px offset). **Do not write `focus:outline-none` with a replacement
+ring in a component.** Doing so previously produced three competing indicators, one of which
+(`focus:ring-[var(--color-ink)]/5`) was invisible, and several keyed off `focus` rather than
+`focus-visible` so they fired on mouse click.
+
+Two legitimate exceptions, both already handled: `Toggle` mirrors the outline onto its visible
+track with `peer-focus-visible:` because its real `<input>` is `sr-only`, and `Checkbox`/`Radio`
+do the same for their custom-drawn boxes. Inputs may still change `border-color` on focus as a
+secondary cue — just not suppress the outline.
+
+The codebase is clean of `focus:outline-none` — `rg "focus:outline-none" src/` should return
+nothing. If that grep starts matching, a regression has been introduced.
+
+### Colour on filled elements
+
+`text-white` is only correct on an **accent** fill — accent is orange in both themes, so it
+does not invert. On a `--color-ink` fill use `--color-cream`: ink is near-white in dark mode,
+and `text-white` there produced an invisible tooltip label and an invisible checkbox tick.
+
+Never reach for raw Tailwind palette classes (`text-red-600`, `bg-emerald-500`,
+`border-blue-200`). They do not respond to the dark-mode overrides. The semantic tokens
+(`--color-error-*`, `--color-success-*`, `--color-info-*`, `--color-warning-*`) exist for this
+and cover bg / bg-subtle / border / text / icon.
+
+### Motion
+
+`index.css` carries a `prefers-reduced-motion: reduce` block that collapses all animation and
+transition durations. It deliberately does **not** set `animation: none` — several animations
+(`fadeInUp`, `fadeIn`) start from `opacity: 0` and rely on `forwards`, so removing them
+outright would leave elements permanently invisible.
+
+### Overlays and scroll locking
+
+`Modal` and `ExpandableCard` share the ref-counted `useScrollLock` hook in
+`src/hooks/useScrollLock.ts`. Do not set `document.body.style.overflow` directly: both
+components can be on screen simultaneously (a modal opened from inside a fullscreen card),
+and whichever unmounted first used to release the lock for both.
+
+`Modal` traps Tab inside the dialog and restores focus to the trigger on close. If you add
+another overlay, do the same — without a trap, Tab walks out into the page behind the overlay.
+
+### Tabs vs SegmentedControl
+
+They share a visual language on purpose: `Tabs` imports `SEGMENTED_GROUP_CLASS` and
+`segmentedItemClass` from `SegmentedControl` so the two cannot drift apart (they were
+previously pixel-identical by accident, via duplicated class strings). They remain separate
+components because they mean different things — `Tabs` swaps panels and carries
+`tablist`/`tab`/`tabpanel` semantics, `SegmentedControl` sets a value and is a group of toggle
+buttons. Pick by meaning, not appearance.
+
+`SegmentedControl` has two variants and deliberately no more: `pill` for 2-4 short options
+inline in a toolbar, `bordered` for many options or long labels that need to wrap. The old
+`accent` and `ink` variants were removed because they differed from `bordered` only by a
+border and a fill colour. For **icon-only** items pass `label` (a real accessible name);
+`title` is supplementary hover text and is not an accessible name on its own.
 
 ## Page Width
 

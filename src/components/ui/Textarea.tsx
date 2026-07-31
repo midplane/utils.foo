@@ -18,9 +18,9 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
           ref={ref}
           id={id}
           className={cn(
-            'w-full px-2.5 py-2 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg text-[var(--color-ink)] placeholder-[var(--color-ink-muted)]/60 resize-none font-mono text-xs leading-relaxed',
-            'focus:outline-none focus:border-[var(--color-border-dark)] focus:ring-1 focus:ring-[var(--color-ink)]/5',
-            'disabled:bg-[var(--color-cream-dark)] disabled:text-[var(--color-ink-muted)]',
+            'w-full px-2.5 py-2 bg-[var(--color-input-bg)] border border-[var(--color-input-border)] shadow-[var(--shadow-input-inset)] rounded-lg text-[var(--color-ink)] placeholder-[var(--color-ink-muted)] resize-none font-mono text-xs leading-relaxed',
+            'focus:border-[var(--color-accent)]',
+            'disabled:bg-[var(--color-cream-dark)] disabled:text-[var(--color-ink-muted)] disabled:shadow-none',
             'transition-colors',
             className
           )}

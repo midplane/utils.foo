@@ -53,6 +53,16 @@
   
   /* Surface color for elevated elements (cards, inputs) */
   --color-surface: #FFFFFF;
+
+  /* Form fields.
+     Fields must not reuse --color-surface: most inputs sit inside a Card, and
+     a white field on a white card left the border as the only affordance — at
+     #E7E5E4 that was 1.15:1, so the control read as a flat area of nothing.
+     The fill is recessed relative to the card and the border clears the 3:1
+     WCAG 1.4.11 floor for component boundaries (#94908A on white = 3.2:1). */
+  --color-input-bg: #FDFBF8;
+  --color-input-border: #94908A;
+  --shadow-input-inset: inset 0 1px 2px rgba(28, 25, 23, 0.07);
   /* CodeMirror active-line gutter background */
   --color-editor-active-line: #FEF3C7;
 
@@ -74,9 +84,19 @@
   --color-ink-muted: #9A8F88;
   --color-accent: #F97316;
   --color-accent-hover: #EA580C;
-  --color-border: #3A3430;
-  --color-border-dark: #4A4440;
+  /* Kept clearly lighter than --color-surface (#332D29): in dark mode there are
+     no usable shadows, so the border is the only thing separating a card from
+     the page. #3A3430 was ~3% lighter than the surface and read as no edge. */
+  --color-border: #4A4440;
+  --color-border-dark: #5C5551;
   --color-editor-active-line: #332A1E;
+
+  /* Form fields — recessed below the card surface (#332D29), border at 3.2:1
+     against that fill. Dark mode has no usable shadow, so the fill step and
+     the border are doing all the work. */
+  --color-input-bg: #241F1D;
+  --color-input-border: #756E68;
+  --shadow-input-inset: inset 0 1px 2px rgba(0, 0, 0, 0.35);
 
   /* Semantic - success */
   --color-success-bg: #0C1F16;
@@ -222,10 +242,36 @@ body[data-expanded-card='true'] main {
   font-family: var(--font-mono);
 }
 
-/* Focus styles */
+/* Focus styles.
+   This is the single focus indicator for the whole app. Components must not
+   set `focus:outline-none` with a replacement ring — earlier versions did, and
+   produced three different indicators (one of which, ring-ink/5, was invisible)
+   plus rings on mouse click because they keyed off `focus` not `focus-visible`. */
 *:focus-visible {
   outline: 2px solid var(--color-accent);
   outline-offset: 2px;
+}
+
+/* Respect a reduced-motion preference.
+   Every page root carries animate-fade-in, cards stagger in with fadeInUp, and
+   animate-pulse-subtle loops forever — all of which are vestibular triggers.
+   Animations are not removed outright (that can leave elements stuck at an
+   opacity:0 keyframe start); they are collapsed to effectively instant so the
+   forwards fill still lands on the final state. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    animation-delay: 0ms !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .card-hover:hover {
+    transform: none;
+  }
 }
 
 /* Scrollbar */
@@ -275,18 +321,6 @@ body[data-expanded-card='true'] main {
 
 .link-underline:hover::after {
   width: 100%;
-}
-
-/* Input focus glow */
-.input-glow:focus {
-  box-shadow: 0 0 0 3px rgba(234, 88, 12, 0.15);
-}
-
-/* Dark mode: give input/textarea/select a more visible border */
-.dark input:not([type=checkbox]):not([type=radio]):not([type=range]),
-.dark textarea,
-.dark select {
-  border-color: var(--color-border-dark);
 }
 
 /* Badge styles */

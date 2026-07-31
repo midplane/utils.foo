@@ -17,7 +17,7 @@ export const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(
             className={cn(
               'peer w-4 h-4 border border-[var(--color-border)] rounded bg-[var(--color-surface)] appearance-none cursor-pointer',
               'checked:bg-[var(--color-ink)] checked:border-[var(--color-ink)]',
-              'focus:outline-none focus:ring-1 focus:ring-[var(--color-ink)]/10 focus:ring-offset-1',
+              'focus-visible:outline-2 focus-visible:outline-[var(--color-accent)] focus-visible:outline-offset-2',
               'disabled:opacity-50 disabled:cursor-not-allowed',
               'transition-colors',
               className
@@ -25,7 +25,7 @@ export const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(
             {...props}
           />
           <svg
-            className="absolute inset-0 w-4 h-4 text-white opacity-0 peer-checked:opacity-100 pointer-events-none transition-opacity"
+            className="absolute inset-0 w-4 h-4 text-[var(--color-cream)] opacity-0 peer-checked:opacity-100 pointer-events-none transition-opacity"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"

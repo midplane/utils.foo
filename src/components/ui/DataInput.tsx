@@ -247,7 +247,7 @@ export function DataInput<S extends SampleOption>({
               rows={5}
               placeholder={loadingSample ? 'Loading sample…' : 'Paste CSV data here…'}
               spellCheck={false}
-              className="w-full px-3 py-2 text-xs font-mono bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg text-[var(--color-ink)] placeholder-[var(--color-ink-muted)] focus:outline-none focus:border-[var(--color-accent)] focus:ring-1 focus:ring-[var(--color-accent)]/20 resize-y transition-all"
+              className="w-full px-3 py-2 text-xs font-mono bg-[var(--color-input-bg)] border border-[var(--color-input-border)] shadow-[var(--shadow-input-inset)] rounded-lg text-[var(--color-ink)] placeholder-[var(--color-ink-muted)] focus:border-[var(--color-accent)] resize-y transition-all"
             />
 
             <div className="flex flex-wrap items-center gap-2">
@@ -294,7 +294,7 @@ export function DataInput<S extends SampleOption>({
                     const picked = samples.find((s) => s.id === e.target.value)
                     if (picked) onLoadSample(picked)
                   }}
-                  className="w-44 max-w-full truncate px-3 py-1.5 text-sm font-medium rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-ink)] hover:border-[var(--color-ink-muted)] focus:outline-none focus:border-[var(--color-accent)] cursor-pointer transition-all disabled:cursor-not-allowed disabled:text-[var(--color-ink-muted)]"
+                  className="w-44 max-w-full truncate px-3 py-1.5 text-sm font-medium rounded-lg border border-[var(--color-input-border)] bg-[var(--color-input-bg)] shadow-[var(--shadow-input-inset)] text-[var(--color-ink)] hover:border-[var(--color-ink-muted)] focus:border-[var(--color-accent)] cursor-pointer transition-all disabled:cursor-not-allowed disabled:text-[var(--color-ink-muted)]"
                 >
                   <option value="" disabled>
                     Load a sample…

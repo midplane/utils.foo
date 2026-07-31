@@ -237,7 +237,7 @@ export function Components() {
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-xs text-[var(--color-ink-muted)]">
-            A card that can expand to fill the viewport with backdrop blur. 
+            A card that expands edge-to-edge to fill the viewport, covering the site header.
             Uses <code className="bg-[var(--color-cream-dark)] px-1 rounded">useExpandable()</code> hook for state management.
           </p>
           <ExpandableCard 
@@ -255,7 +255,7 @@ export function Components() {
                 </p>
                 <div className="flex items-center gap-3">
                   <Badge variant="accent">Feature</Badge>
-                  <span className="text-xs text-[var(--color-ink-muted)]">Backdrop blur overlay</span>
+                  <span className="text-xs text-[var(--color-ink-muted)]">Covers the site header</span>
                 </div>
                 <div className="flex items-center gap-3">
                   <Badge variant="accent">Feature</Badge>
@@ -263,7 +263,7 @@ export function Components() {
                 </div>
                 <div className="flex items-center gap-3">
                   <Badge variant="accent">Feature</Badge>
-                  <span className="text-xs text-[var(--color-ink-muted)]">Click outside to collapse</span>
+                  <span className="text-xs text-[var(--color-ink-muted)]">Background scroll locked while expanded</span>
                 </div>
                 <ExpandHint />
               </div>
@@ -382,15 +382,15 @@ export function Components() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
-            <p className="text-[10px] uppercase tracking-wider text-[var(--color-ink-muted)] mb-2">Pill (Default)</p>
-            <SegmentedControl value={segmentedValue} onChange={setSegmentedValue} variant="pill">
+            <p className="text-[10px] uppercase tracking-wider text-[var(--color-ink-muted)] mb-2">Pill (Default) — 2-4 short options inline</p>
+            <SegmentedControl value={segmentedValue} onChange={setSegmentedValue} variant="pill" label="Mode">
               <SegmentedControlItem value="encode">Encode</SegmentedControlItem>
               <SegmentedControlItem value="decode">Decode</SegmentedControlItem>
             </SegmentedControl>
           </div>
           <div>
             <p className="text-[10px] uppercase tracking-wider text-[var(--color-ink-muted)] mb-2">Pill with Icons</p>
-            <SegmentedControl value={viewMode} onChange={setViewMode} variant="pill">
+            <SegmentedControl value={viewMode} onChange={setViewMode} variant="pill" label="View mode">
               <SegmentedControlItem value="grid" className="gap-1.5">
                 <Grid2x2 className="w-3 h-3" />
                 Grid
@@ -406,9 +406,9 @@ export function Components() {
             </SegmentedControl>
           </div>
           <div>
-            <p className="text-[10px] uppercase tracking-wider text-[var(--color-ink-muted)] mb-2">Accent</p>
-            <SegmentedControl value={accentValue} onChange={setAccentValue} variant="accent">
-              <SegmentedControlItem value="edit">
+            <p className="text-[10px] uppercase tracking-wider text-[var(--color-ink-muted)] mb-2">Pill, icon-only — needs an explicit label</p>
+            <SegmentedControl value={accentValue} onChange={setAccentValue} variant="pill" label="Editor layout">
+              <SegmentedControlItem value="edit" label="Edit">
                 <Code className="w-3 h-3" />
               </SegmentedControlItem>
               <SegmentedControlItem value="preview">Preview</SegmentedControlItem>
@@ -416,8 +416,8 @@ export function Components() {
             </SegmentedControl>
           </div>
           <div>
-            <p className="text-[10px] uppercase tracking-wider text-[var(--color-ink-muted)] mb-2">Bordered</p>
-            <SegmentedControl value={borderedValue} onChange={setBorderedValue} variant="bordered">
+            <p className="text-[10px] uppercase tracking-wider text-[var(--color-ink-muted)] mb-2">Bordered — many options, wraps</p>
+            <SegmentedControl value={borderedValue} onChange={setBorderedValue} variant="bordered" label="Chart type">
               <SegmentedControlItem value="bar">Bar</SegmentedControlItem>
               <SegmentedControlItem value="line">Line</SegmentedControlItem>
               <SegmentedControlItem value="pie">Pie</SegmentedControlItem>
@@ -425,16 +425,16 @@ export function Components() {
             </SegmentedControl>
           </div>
           <div>
-            <p className="text-[10px] uppercase tracking-wider text-[var(--color-ink-muted)] mb-2">Ink</p>
-            <SegmentedControl value={inkValue} onChange={setInkValue} variant="ink">
-              <SegmentedControlItem value="1:1">1:1</SegmentedControlItem>
-              <SegmentedControlItem value="4:3">4:3</SegmentedControlItem>
-              <SegmentedControlItem value="16:9">16:9</SegmentedControlItem>
+            <p className="text-[10px] uppercase tracking-wider text-[var(--color-ink-muted)] mb-2">Bordered, with supplementary titles</p>
+            <SegmentedControl value={inkValue} onChange={setInkValue} variant="bordered" label="Aspect ratio">
+              <SegmentedControlItem value="1:1" title="Square">1:1</SegmentedControlItem>
+              <SegmentedControlItem value="4:3" title="Standard">4:3</SegmentedControlItem>
+              <SegmentedControlItem value="16:9" title="Widescreen">16:9</SegmentedControlItem>
             </SegmentedControl>
           </div>
           <div>
             <p className="text-[10px] uppercase tracking-wider text-[var(--color-ink-muted)] mb-2">With Disabled Item</p>
-            <SegmentedControl value="active" onChange={() => {}}>
+            <SegmentedControl value="active" onChange={() => {}} label="Demo">
               <SegmentedControlItem value="active">Active</SegmentedControlItem>
               <SegmentedControlItem value="disabled" disabled>Disabled</SegmentedControlItem>
               <SegmentedControlItem value="other">Other</SegmentedControlItem>
@@ -549,9 +549,13 @@ export function Components() {
         <CardHeader>
           <span className="text-xs font-semibold text-[var(--color-ink)]">Tabs</span>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-3">
+          <p className="text-xs text-[var(--color-ink-muted)]">
+            Shares its look with SegmentedControl by design. Use Tabs to swap panels of content;
+            use SegmentedControl to set a value.
+          </p>
           <Tabs defaultValue="tab1">
-            <TabsList>
+            <TabsList label="Demo sections">
               <TabsTrigger value="tab1">Overview</TabsTrigger>
               <TabsTrigger value="tab2">Settings</TabsTrigger>
               <TabsTrigger value="tab3">Advanced</TabsTrigger>

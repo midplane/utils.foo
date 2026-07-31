@@ -28,7 +28,9 @@ export function Tooltip({ content, children, position = 'top', className }: Tool
       {visible && (
         <div
           className={cn(
-            'absolute z-50 px-2 py-1 text-[10px] font-medium text-white bg-[var(--color-ink)] rounded whitespace-nowrap',
+            // cream, not white: the bubble is filled with --color-ink, which is
+            // near-white in dark mode — white-on-white made the text vanish.
+            'absolute z-50 px-2 py-1 text-[10px] font-medium text-[var(--color-cream)] bg-[var(--color-ink)] rounded whitespace-nowrap',
             positionClasses[position],
             className
           )}

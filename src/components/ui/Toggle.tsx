@@ -22,8 +22,10 @@ export const Toggle = forwardRef<HTMLInputElement, ToggleProps>(
           />
           <div className={cn(
             'w-8 h-[18px] bg-[var(--color-border-dark)] rounded-full transition-colors',
-            'peer-checked:bg-[var(--color-ink)]',
-            'peer-focus:ring-1 peer-focus:ring-[var(--color-ink)]/10 peer-focus:ring-offset-1',
+            'peer-checked:bg-[var(--color-accent)]',
+            // The <input> is sr-only, so the global *:focus-visible outline would
+            // land on an invisible box. Mirror it onto the visible track instead.
+            'peer-focus-visible:outline-2 peer-focus-visible:outline-[var(--color-accent)] peer-focus-visible:outline-offset-2',
             'peer-disabled:opacity-50 peer-disabled:cursor-not-allowed'
           )} />
           <div className={cn(
