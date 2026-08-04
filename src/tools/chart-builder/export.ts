@@ -50,7 +50,26 @@ function withOffscreen<T>(
     height: size.height,
   })
   try {
-    instance.setOption(option)
+    // Export is synchronous, while the regular chart animates its first frame
+    // and may render large series progressively. Capturing immediately after
+    // setOption() would therefore contain the background but no plotted data.
+    // Keep the live option untouched and force the offscreen copy to render in
+    // one complete, static pass before either serializer reads it.
+    const series = option.series === undefined
+      ? undefined
+      : (Array.isArray(option.series) ? option.series : [option.series]).map((item) => ({
+          ...item,
+          animation: false,
+          progressive: 0,
+        }))
+    const exportOption: EChartsOption = {
+      ...option,
+      animation: false,
+      ...(series ? { series } : {}),
+    }
+
+    instance.setOption(exportOption, { notMerge: true, lazyUpdate: false })
+    instance.getZr().flush()
     return fn(instance)
   } finally {
     instance.dispose()
