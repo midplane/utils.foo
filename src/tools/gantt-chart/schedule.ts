@@ -46,6 +46,12 @@ export interface ScheduledTask {
   end: number
   /** Working days; 0 for a milestone. */
   duration: number
+  /**
+   * 0-100. A leaf reports its own figure; a summary reports its children's,
+   * weighted by duration — a summary sitting at 0% while every child is done
+   * says the opposite of the truth.
+   */
+  progress: number
   lateStart: number
   lateFinish: number
   /** Working days the task can slip without moving the project end. */
@@ -243,6 +249,7 @@ export function buildSchedule(project: Project): Schedule {
 
   // ─── Forward pass ───────────────────────────────────────────────────────
   const placed = new Map<string, { start: number; end: number; duration: number }>()
+  const progress = new Map<string, number>()
 
   for (const id of topo) {
     const task = byId.get(id)
@@ -264,6 +271,20 @@ export function buildSchedule(project: Project): Schedule {
         end = start
       }
       placed.set(id, { start, end, duration: workdaysBetween(calendar, start, end) })
+
+      // Weighted by working days, so a two-day task finishing does not count
+      // as much as a twenty-day one. Milestones carry a weight of one rather
+      // than zero, which would drop them out of the average entirely.
+      let weighted = 0
+      let weight = 0
+      for (const child of children) {
+        const span = placed.get(child)
+        if (!span) continue
+        const childWeight = Math.max(1, span.duration)
+        weighted += (progress.get(child) ?? 0) * childWeight
+        weight += childWeight
+      }
+      progress.set(id, weight > 0 ? Math.round(weighted / weight) : 0)
       continue
     }
 
@@ -294,6 +315,7 @@ export function buildSchedule(project: Project): Schedule {
 
     const end = duration <= 0 ? start : endFromDuration(calendar, start, duration)
     placed.set(id, { start, end, duration })
+    progress.set(id, Math.min(100, Math.max(0, task.progress)))
   }
 
   const spans = [...placed.values()]
@@ -351,6 +373,7 @@ export function buildSchedule(project: Project): Schedule {
       start: span.start,
       end: span.end,
       duration: span.duration,
+      progress: progress.get(task.id) ?? 0,
       lateStart: bounds.lateStart,
       lateFinish: bounds.lateFinish,
       totalFloat,

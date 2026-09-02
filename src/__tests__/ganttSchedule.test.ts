@@ -328,3 +328,62 @@ describe('gantt scheduler — manual mode', () => {
     expect(schedule.issues).toHaveLength(0)
   })
 })
+
+describe('gantt scheduler — progress roll-up', () => {
+  it('reports a leaf task’s own progress', () => {
+    const schedule = buildSchedule(project([task('a', { start: MONDAY, duration: 4, progress: 60 })]))
+    expect(schedule.byId.get('a')?.progress).toBe(60)
+  })
+
+  it('rolls a summary up from its children, weighted by duration', () => {
+    const schedule = buildSchedule(
+      project([
+        task('parent'),
+        // 8 days done, 2 days untouched → 80%, not the unweighted 50%.
+        task('a', { parentId: 'parent', start: MONDAY, duration: 8, progress: 100 }),
+        task('b', { parentId: 'parent', start: MONDAY, duration: 2, progress: 0 }),
+      ])
+    )
+    expect(schedule.byId.get('parent')?.progress).toBe(80)
+  })
+
+  it('shows a summary as complete when every child is', () => {
+    const schedule = buildSchedule(
+      project([
+        task('parent'),
+        task('a', { parentId: 'parent', start: MONDAY, duration: 3, progress: 100 }),
+        task('b', { parentId: 'parent', start: MONDAY, duration: 9, progress: 100 }),
+      ])
+    )
+    expect(schedule.byId.get('parent')?.progress).toBe(100)
+  })
+
+  it('rolls up through more than one level', () => {
+    const schedule = buildSchedule(
+      project([
+        task('top'),
+        task('mid', { parentId: 'top' }),
+        task('leaf', { parentId: 'mid', start: MONDAY, duration: 5, progress: 40 }),
+      ])
+    )
+    expect(schedule.byId.get('top')?.progress).toBe(40)
+  })
+
+  it('does not divide by zero on a summary of milestones', () => {
+    const schedule = buildSchedule(
+      project([
+        task('parent'),
+        task('m1', { parentId: 'parent', start: MONDAY, duration: 0, progress: 100 }),
+        task('m2', { parentId: 'parent', start: MONDAY, duration: 0, progress: 0 }),
+      ])
+    )
+    expect(schedule.byId.get('parent')?.progress).toBe(50)
+  })
+
+  it('clamps a progress figure that is out of range', () => {
+    const schedule = buildSchedule(
+      project([task('a', { start: MONDAY, duration: 3, progress: 140 })])
+    )
+    expect(schedule.byId.get('a')?.progress).toBe(100)
+  })
+})

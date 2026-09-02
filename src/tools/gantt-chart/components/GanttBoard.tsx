@@ -630,7 +630,7 @@ function GridRow({
         type="number"
         min={0}
         max={100}
-        value={row.task.progress}
+        value={row.isSummary ? row.progress : row.task.progress}
         disabled={row.isSummary}
         onChange={(event) =>
           onFieldChange(row.id, { progress: Math.min(100, Math.max(0, Number(event.target.value))) })
@@ -690,7 +690,7 @@ function Bar({
 
   const label = `${row.task.name}: ${formatDayLabel(geo.start)} to ${formatDayLabel(geo.end)}, ${
     milestone ? 'milestone' : `${row.duration} working days`
-  }${row.task.progress > 0 ? `, ${row.task.progress}% complete` : ''}${
+  }${row.progress > 0 ? `, ${row.progress}% complete` : ''}${
     critical ? ', on the critical path' : ''
   }`
 
@@ -758,11 +758,11 @@ function Bar({
             opacity={0.4}
             onPointerDown={onPointerDownBody}
           />
-          {row.task.progress > 0 && (
+          {row.progress > 0 && (
             <rect
               x={geo.x + 1}
               y={barY}
-              width={Math.max(1, (geo.width - 2) * Math.min(100, row.task.progress) / 100)}
+              width={Math.max(1, (geo.width - 2) * Math.min(100, row.progress) / 100)}
               height={BAR_HEIGHT}
               rx={4}
               fill={fill}

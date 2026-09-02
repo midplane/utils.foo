@@ -245,9 +245,9 @@ export function renderGanttSVG(
       parts.push(
         `<rect x="${x + 1}" y="${barY}" width="${Math.max(2, w - 2)}" height="${barHeight}" rx="4" fill="${fill}" opacity="0.4"/>`
       )
-      if (row.task.progress > 0) {
+      if (row.progress > 0) {
         parts.push(
-          `<rect x="${x + 1}" y="${barY}" width="${Math.max(1, ((w - 2) * Math.min(100, row.task.progress)) / 100)}" height="${barHeight}" rx="4" fill="${fill}"/>`
+          `<rect x="${x + 1}" y="${barY}" width="${Math.max(1, ((w - 2) * Math.min(100, row.progress)) / 100)}" height="${barHeight}" rx="4" fill="${fill}"/>`
         )
       }
       parts.push(
@@ -549,8 +549,8 @@ export function projectToMermaid(project: Project, schedule: Schedule): string {
 
     const tags: string[] = []
     if (row.duration === 0) tags.push('milestone')
-    if (row.task.progress >= 100) tags.push('done')
-    else if (row.task.progress > 0) tags.push('active')
+    if (row.progress >= 100) tags.push('done')
+    else if (row.progress > 0) tags.push('active')
     if (row.critical) tags.push('crit')
 
     const simpleChain =
