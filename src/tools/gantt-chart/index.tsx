@@ -85,7 +85,8 @@ export default function GanttChartTool() {
   const [zoom, setZoom] = useState<ZoomLevel>('week')
   const [showCritical, setShowCritical] = useState(true)
   const [showLinks, setShowLinks] = useState(true)
-  const [gridWidth, setGridWidth] = useState(384)
+  // Null means "fit the task names"; a number is the width the user dragged to.
+  const [gridWidthOverride, setGridWidthOverride] = useState<number | null>(null)
   const [importOpen, setImportOpen] = useState(false)
   const [exportOpen, setExportOpen] = useState(false)
   const [importText, setImportText] = useState('')
@@ -647,8 +648,8 @@ export default function GanttChartTool() {
             showCritical={showCritical}
             showLinks={showLinks}
             height={boardHeight}
-            gridWidth={gridWidth}
-            onGridWidthChange={setGridWidth}
+            gridWidthOverride={gridWidthOverride}
+            onGridWidthChange={setGridWidthOverride}
           />
           <ExpandHint />
         </ExpandableCardContent>

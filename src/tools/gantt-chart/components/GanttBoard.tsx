@@ -13,6 +13,35 @@ const MILESTONE_SIZE = 11
 /** Grab zone at each end of a bar, in pixels. */
 const HANDLE_WIDTH = 7
 const HEADER_HEIGHT = 44
+const DEPTH_INDENT = 14
+const DATE_COLUMN = 112
+const DAYS_COLUMN = 44
+const PROGRESS_COLUMN = 46
+const GRID_MIN = 260
+/** Past this the grid starts crowding out the chart it exists to label. */
+const GRID_MAX = 620
+
+/**
+ * One reused offscreen context for text measurement.
+ *
+ * The font is read from the document so it tracks the app's stack rather than
+ * being hardcoded here and drifting from it.
+ */
+let measureCanvas: CanvasRenderingContext2D | null | undefined
+function measureContext(): CanvasRenderingContext2D | null {
+  if (measureCanvas !== undefined) return measureCanvas
+  try {
+    const context = document.createElement('canvas').getContext('2d')
+    if (context) {
+      const body = getComputedStyle(document.body)
+      context.font = `12px ${body.fontFamily || 'sans-serif'}`
+    }
+    measureCanvas = context
+  } catch {
+    measureCanvas = null
+  }
+  return measureCanvas
+}
 
 export interface TaskEdit {
   start?: string
@@ -34,8 +63,9 @@ export interface GanttBoardProps {
   showLinks: boolean
   /** CSS length for the scroll viewport, e.g. the shared pane-height constants. */
   height: string
-  gridWidth: number
-  onGridWidthChange: (width: number) => void
+  /** Set once the splitter is dragged; null means fit to the task names. */
+  gridWidthOverride: number | null
+  onGridWidthChange: (width: number | null) => void
 }
 
 // ─── Drag state ───────────────────────────────────────────────────────────────
@@ -101,7 +131,7 @@ export function GanttBoard({
   showCritical,
   showLinks,
   height,
-  gridWidth,
+  gridWidthOverride,
   onGridWidthChange,
 }: GanttBoardProps) {
   const [drag, setDrag] = useState<Drag>(null)
@@ -131,6 +161,36 @@ export function GanttBoard({
     return () => observer.disconnect()
   }, [])
   const bodyHeight = Math.max(chartHeight, viewportHeight - HEADER_HEIGHT)
+
+  /**
+   * Width the task column needs for its longest name, so the grid fits the
+   * plan rather than clipping every row to a fixed guess. Measured with the
+   * cell's real font: a per-character estimate is wrong by enough on a
+   * proportional face to either clip anyway or waste half the pane.
+   *
+   * The user's own splitter drag always wins over this.
+   */
+  const autoGridWidth = useMemo(() => {
+    let widest = 0
+    const context = measureContext()
+    for (const row of rows) {
+      const indent = row.depth * DEPTH_INDENT
+      const text = context
+        ? context.measureText(row.task.name).width
+        : // jsdom and any browser without 2d canvas: a rough per-character
+          // fallback, deliberately generous so names are not clipped.
+          row.task.name.length * 7
+      widest = Math.max(widest, indent + text)
+    }
+    // Chevron and critical tick (34), the name cell's own padding and border
+    // (10), the gaps between cells and the row's horizontal padding (30), plus
+    // the three fixed columns. Under-counting any of these clips the longest
+    // name by a few pixels, which is exactly the row the width was sized for.
+    const chrome = 34 + 10 + 30 + DATE_COLUMN + DAYS_COLUMN + PROGRESS_COLUMN
+    return Math.round(Math.min(GRID_MAX, Math.max(GRID_MIN, widest + chrome)))
+  }, [rows])
+
+  const gridWidth = gridWidthOverride ?? autoGridWidth
   const today = todayDayNumber()
   const workCalendar = useMemo(() => toWorkCalendar(project.calendar), [project.calendar])
 
@@ -289,7 +349,7 @@ export function GanttBoard({
       window.addEventListener(
         'pointermove',
         (move: PointerEvent) => {
-          onGridWidthChange(Math.min(720, Math.max(220, originWidth + (move.clientX - originX))))
+          onGridWidthChange(Math.min(GRID_MAX, Math.max(GRID_MIN, originWidth + (move.clientX - originX))))
         },
         { signal: controller.signal }
       )
@@ -361,9 +421,9 @@ export function GanttBoard({
             style={{ height: HEADER_HEIGHT }}
           >
             <span className="flex-1">Task</span>
-            <span className="w-[112px] shrink-0">Start</span>
-            <span className="w-[44px] shrink-0 text-right">Days</span>
-            <span className="w-[46px] shrink-0 text-right">%</span>
+            <span className="shrink-0" style={{ width: DATE_COLUMN }}>Start</span>
+            <span className="shrink-0 text-right" style={{ width: DAYS_COLUMN }}>Days</span>
+            <span className="shrink-0 text-right" style={{ width: PROGRESS_COLUMN }}>%</span>
           </div>
 
           {rows.map((row) => (
@@ -386,9 +446,11 @@ export function GanttBoard({
           role="separator"
           aria-orientation="vertical"
           aria-label="Resize task columns"
+          title="Drag to resize, double-click to fit the task names"
           className="sticky z-20 w-1 shrink-0 cursor-col-resize bg-transparent hover:bg-[var(--color-accent)]/40"
           style={{ left: gridWidth, marginLeft: -4, height: bodyHeight + HEADER_HEIGHT }}
           onPointerDown={startSplitter}
+          onDoubleClick={() => onGridWidthChange(null)}
         />
 
         {/* ─── Timeline ─────────────────────────────────────────────────── */}
@@ -602,7 +664,7 @@ function GridRow({
       onMouseLeave={() => onHover(null)}
       onFocusCapture={() => onSelect(row.id)}
     >
-      <div className="flex min-w-0 flex-1 items-center" style={{ paddingLeft: row.depth * 14 }}>
+      <div className="flex min-w-0 flex-1 items-center" style={{ paddingLeft: row.depth * DEPTH_INDENT }}>
         {row.isSummary ? (
           <button
             type="button"
@@ -626,6 +688,8 @@ function GridRow({
           value={row.task.name}
           onChange={(event) => onFieldChange(row.id, { name: event.target.value })}
           aria-label={`Name of ${row.task.name}`}
+          // A name past the cap is still cut; hovering reveals it in full.
+          title={row.task.name}
           className={cn(CELL_CLASS, 'min-w-0 flex-1 truncate', row.isSummary && 'font-medium')}
         />
       </div>
@@ -635,7 +699,8 @@ function GridRow({
         disabled={row.isSummary}
         onChange={(event) => onFieldChange(row.id, { start: event.target.value })}
         aria-label={`Start date of ${row.task.name}`}
-        className={cn(CELL_CLASS, 'w-[112px] shrink-0 tabular-nums disabled:opacity-55')}
+        style={{ width: DATE_COLUMN }}
+        className={cn(CELL_CLASS, 'shrink-0 tabular-nums disabled:opacity-55')}
       />
       <input
         type="number"
@@ -644,7 +709,8 @@ function GridRow({
         disabled={row.isSummary}
         onChange={(event) => onFieldChange(row.id, { duration: Math.max(0, Number(event.target.value)) })}
         aria-label={`Duration of ${row.task.name} in working days`}
-        className={cn(CELL_CLASS, NUMBER_CELL, 'w-[44px] shrink-0 text-right tabular-nums disabled:opacity-55')}
+        style={{ width: DAYS_COLUMN }}
+        className={cn(CELL_CLASS, NUMBER_CELL, 'shrink-0 text-right tabular-nums disabled:opacity-55')}
       />
       <input
         type="number"
@@ -656,7 +722,8 @@ function GridRow({
           onFieldChange(row.id, { progress: Math.min(100, Math.max(0, Number(event.target.value))) })
         }
         aria-label={`Percent complete of ${row.task.name}`}
-        className={cn(CELL_CLASS, NUMBER_CELL, 'w-[46px] shrink-0 text-right tabular-nums disabled:opacity-55')}
+        style={{ width: PROGRESS_COLUMN }}
+        className={cn(CELL_CLASS, NUMBER_CELL, 'shrink-0 text-right tabular-nums disabled:opacity-55')}
       />
     </div>
   )
