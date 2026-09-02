@@ -16,6 +16,16 @@
   --color-accent-hover: #C2410C;
   --color-border: #E7E5E4;
   --color-border-dark: #D6D3D1;
+
+  /* Dot grid — its own token rather than --color-border. The border color is
+     tuned to sit against a card, while the grid paints 1px dots straight onto
+     the page at 40% opacity: #E7E5E4 blended down to only 2.7 L* below
+     --color-cream, so light mode read as a blank page next to dark mode's 8.4.
+     This puts the blended dot ~8.3 L* below the page, matching dark's 8.4.
+     Do NOT put this in the --color-dotgrid slot: Tailwind mints utilities from
+     every --color-* token, and a `bg-dotgrid` background-color utility would
+     win over the `.bg-dotgrid` gradient below and paint the layer solid. */
+  --color-dot-grid: #C5C1BD;
   
   /* Semantic colors - success (emerald) */
   --color-success-bg: #ecfdf5;
@@ -89,6 +99,7 @@
      the page. #3A3430 was ~3% lighter than the surface and read as no edge. */
   --color-border: #4A4440;
   --color-border-dark: #5C5551;
+  --color-dot-grid: #4A4440;
   --color-editor-active-line: #332A1E;
 
   /* Form fields — recessed below the card surface (#332D29), border at 3.2:1
@@ -162,7 +173,7 @@ body[data-expanded-card='true'] main {
 
 /* Dot grid background pattern */
 .bg-dotgrid {
-  background-image: radial-gradient(circle, var(--color-border) 1px, transparent 1px);
+  background-image: radial-gradient(circle, var(--color-dot-grid) 1px, transparent 1px);
   background-size: 24px 24px;
 }
 
