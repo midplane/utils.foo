@@ -18,11 +18,32 @@ export interface Dependency {
   lag: number
 }
 
-/** The palette keys a bar may be tinted with. Names, not hexes, so the bars
- *  re-resolve against the theme tokens instead of freezing a light-mode
- *  colour into the saved document. */
-export const TASK_COLORS = ['accent', 'blue', 'green', 'purple', 'amber', 'rose', 'slate'] as const
+/**
+ * The palette keys a bar may be tinted with. Names, not hexes, so a saved
+ * project re-resolves against the theme tokens rather than freezing a
+ * light-mode colour into the document.
+ *
+ * Three, not seven: any two bars in a chart can be compared, and these are the
+ * hues that clear colour-vision and normal-vision separation against both the
+ * light and dark surfaces. Accent is absent on purpose — in this codebase it
+ * means selection and focus, so spending it on a category would leave the
+ * selected bar indistinguishable from an orange one.
+ */
+export const TASK_COLORS = ['blue', 'orange', 'aqua'] as const
 export type TaskColor = (typeof TASK_COLORS)[number]
+
+export const TASK_COLOR_LABELS: Record<TaskColor, string> = {
+  blue: 'Blue',
+  orange: 'Orange',
+  aqua: 'Aqua',
+}
+
+/** CSS variable backing each palette key. */
+export const TASK_COLOR_VAR: Record<TaskColor, string> = {
+  blue: 'var(--color-gantt-blue)',
+  orange: 'var(--color-gantt-orange)',
+  aqua: 'var(--color-gantt-aqua)',
+}
 
 export interface Task {
   id: string
@@ -90,7 +111,7 @@ export function makeTask(partial: Partial<Task> = {}): Task {
     parentId: partial.parentId ?? null,
     collapsed: partial.collapsed ?? false,
     assignee: partial.assignee ?? '',
-    color: partial.color ?? 'accent',
+    color: partial.color ?? 'blue',
     notes: partial.notes ?? '',
   }
 }

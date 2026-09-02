@@ -6,7 +6,7 @@
  * a few weeks: "12" means nothing without the month sitting above it.
  */
 
-import { CivilDate, dayOfWeek, formatISODate, fromCivil, toCivil } from './calendar'
+import { CivilDate, WorkCalendar, dayOfWeek, formatISODate, fromCivil, isWorkday, toCivil } from './calendar'
 
 export const ZOOM_LEVELS = ['day', 'week', 'month', 'quarter'] as const
 export type ZoomLevel = (typeof ZOOM_LEVELS)[number]
@@ -237,3 +237,32 @@ export function formatDayLabel(day: number): string {
 }
 
 export { formatISODate }
+
+/**
+ * Contiguous runs of non-working days, as pixel bands.
+ *
+ * Only produced at day and week zoom: below that a weekend is under 4px wide,
+ * so the shading reads as noise rather than as structure. Shared by the live
+ * chart and the image export so the two cannot drift apart.
+ */
+export function nonWorkingBands(
+  timeline: Timeline,
+  calendar: WorkCalendar
+): { key: number; x: number; width: number }[] {
+  if (timeline.zoom !== 'day' && timeline.zoom !== 'week') return []
+  const bands: { key: number; x: number; width: number }[] = []
+  let runStart: number | null = null
+  for (let day = timeline.origin; day <= timeline.end + 1; day++) {
+    const off = day <= timeline.end && !isWorkday(calendar, day)
+    if (off && runStart === null) runStart = day
+    if (!off && runStart !== null) {
+      bands.push({
+        key: runStart,
+        x: xForDay(timeline, runStart),
+        width: (day - runStart) * timeline.dayWidth,
+      })
+      runStart = null
+    }
+  }
+  return bands
+}
