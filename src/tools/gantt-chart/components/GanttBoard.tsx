@@ -111,6 +111,26 @@ export function GanttBoard({
 
   const rows = schedule.visible
   const chartHeight = Math.max(rows.length * ROW_HEIGHT, ROW_HEIGHT)
+
+  /**
+   * The chart body fills the scroll viewport even when the rows do not reach
+   * the bottom of it. Drawing only as far as the last task left the weekend
+   * shading, the period rules and the grid's right-hand border stopping in mid
+   * air — most visible in fullscreen, where a short plan left a blank
+   * rectangle over half the pane that read as a rendering fault rather than as
+   * an empty chart.
+   */
+  const [viewportHeight, setViewportHeight] = useState(0)
+  useEffect(() => {
+    const element = scrollRef.current
+    if (!element || typeof ResizeObserver === 'undefined') return
+    const observer = new ResizeObserver((entries) => {
+      setViewportHeight(entries[0]?.contentRect.height ?? 0)
+    })
+    observer.observe(element)
+    return () => observer.disconnect()
+  }, [])
+  const bodyHeight = Math.max(chartHeight, viewportHeight - HEADER_HEIGHT)
   const today = todayDayNumber()
   const workCalendar = useMemo(() => toWorkCalendar(project.calendar), [project.calendar])
 
@@ -334,7 +354,7 @@ export function GanttBoard({
         {/* ─── Frozen task grid ─────────────────────────────────────────── */}
         <div
           className="sticky left-0 z-20 shrink-0 border-r border-[var(--color-border-dark)] bg-[var(--color-surface)]"
-          style={{ width: gridWidth }}
+          style={{ width: gridWidth, minHeight: bodyHeight + HEADER_HEIGHT }}
         >
           <div
             className="sticky top-0 z-10 flex items-end border-b border-[var(--color-border-dark)] bg-[var(--color-surface)] px-2 pb-1 text-[10px] font-medium uppercase tracking-wider text-[var(--color-ink-muted)]"
@@ -367,7 +387,7 @@ export function GanttBoard({
           aria-orientation="vertical"
           aria-label="Resize task columns"
           className="sticky z-20 w-1 shrink-0 cursor-col-resize bg-transparent hover:bg-[var(--color-accent)]/40"
-          style={{ left: gridWidth, marginLeft: -4, height: chartHeight + HEADER_HEIGHT }}
+          style={{ left: gridWidth, marginLeft: -4, height: bodyHeight + HEADER_HEIGHT }}
           onPointerDown={startSplitter}
         />
 
@@ -404,7 +424,7 @@ export function GanttBoard({
           <svg
             ref={svgRef}
             width={timeline.width}
-            height={chartHeight}
+            height={bodyHeight}
             className="block touch-none"
             onPointerMove={handlePointerMove}
             onPointerUp={endDrag}
@@ -420,7 +440,7 @@ export function GanttBoard({
                 x={band.x}
                 y={0}
                 width={band.width}
-                height={chartHeight}
+                height={bodyHeight}
                 fill="var(--color-cream-dark)"
               />
             ))}
@@ -432,7 +452,7 @@ export function GanttBoard({
                 x1={band.x}
                 x2={band.x}
                 y1={0}
-                y2={chartHeight}
+                y2={bodyHeight}
                 stroke="var(--color-border)"
                 strokeWidth={1}
               />
@@ -469,7 +489,7 @@ export function GanttBoard({
                 x1={todayX}
                 x2={todayX}
                 y1={0}
-                y2={chartHeight}
+                y2={bodyHeight}
                 stroke="var(--color-error-icon)"
                 strokeWidth={1.5}
                 strokeDasharray="3 3"
