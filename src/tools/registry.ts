@@ -32,6 +32,7 @@ const LogoGeneratorTool     = lazy(() => import('./logo-generator'))
 const PivotTableTool        = lazy(() => import('./pivot-table'))
 const FormulaVisualizerTool = lazy(() => import('./formula-visualizer'))
 const ExifViewerTool        = lazy(() => import('./exif-viewer'))
+const GanttChartTool        = lazy(() => import('./gantt-chart'))
 
 // Import tool metadata
 import { meta as epochConverterMeta } from './epoch-converter/meta'
@@ -64,6 +65,7 @@ import { meta as logoGeneratorMeta } from './logo-generator/meta'
 import { meta as pivotTableMeta } from './pivot-table/meta'
 import { meta as formulaVisualizerMeta } from './formula-visualizer/meta'
 import { meta as exifViewerMeta } from './exif-viewer/meta'
+import { meta as ganttChartMeta } from './gantt-chart/meta'
 
 // Registry of all tools
 export const tools: Tool[] = [
@@ -97,6 +99,7 @@ export const tools: Tool[] = [
   { ...pivotTableMeta,          component: PivotTableTool },
   { ...formulaVisualizerMeta,   component: FormulaVisualizerTool },
   { ...exifViewerMeta,          component: ExifViewerTool },
+  { ...ganttChartMeta,          component: GanttChartTool },
 ]
 
 // Helper to get tool by ID

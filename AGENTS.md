@@ -25,13 +25,13 @@ npm run test:run     # Vitest single run
 
 ### Known-failing baseline
 
-Do not assume a clean run means you broke nothing — compare against these known failures:
+Do not assume a clean run means you broke nothing — compare against this baseline:
 
 - **ESLint: 7 errors.** All `react-hooks/refs` ("Cannot access refs during render") in
   `ThemeContext.tsx`, `data-converter`, `json-formatter`, `markdown-preview`, `mermaid` (×2).
-- **Vitest: 14 failures** of 226 tests across 10 files, all in `src/__tests__/useFavorites.test.ts`.
-  The jsdom environment provides `document` but not `localStorage`, so `localStorage.clear()`
-  throws in `beforeEach`.
+- **Vitest: clean.** 382 tests across 19 files, all passing. (This previously recorded 14
+  `useFavorites` failures from a jsdom `localStorage` gap; that was fixed and the note went
+  stale. Re-measure before trusting a baseline written down here.)
 
 If your change adds failures beyond these, it regressed something.
 
@@ -265,6 +265,26 @@ number formatting anywhere, check that directory first.
 One caveat: the engine's own `toNumber` is deliberately strict (it rejects `"$1,200"` so
 that ISO dates are not mistaken for numbers). Chart Builder coerces with its own lenient
 parser *before* pushing into an aggregator, so currency and percent columns still sum.
+
+## Dates in the Gantt engine
+
+`src/tools/gantt-chart/` keeps dates as integer **day numbers** — days since 1970-01-01 —
+not `Date` objects, and converts to `YYYY-MM-DD` only at the edge (`calendar.ts`). A Gantt
+bar is a span of calendar days with no time of day, and `new Date('2024-03-10')` parses as
+UTC midnight, which is the 9th in any negative UTC offset. Integers have no timezone. **Do
+not "modernise" this into `Date` arithmetic** — every off-by-one-day bug in a planner comes
+from exactly that.
+
+`schedule.ts` resolves dependencies, summary roll-up and the critical path over one directed
+graph (predecessor → successor, plus child → summary). A single topological order means each
+node's inputs are final when it is visited, so there is no fixed-point loop, and one cycle
+check covers dependency loops and parent/dependency tangles together. Invalid input degrades
+into a reported `ScheduleIssue` and still gets dated — never an exception, so a broken plan
+still renders the rows its error message points at.
+
+`calendar.ts` is not private to that tool: working-day arithmetic, ISO date parsing that
+rejects `2024-02-31`, and holiday handling all live there. Check it before writing date maths
+anywhere.
 
 ## Adding a New Tool
 

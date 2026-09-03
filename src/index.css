@@ -26,6 +26,17 @@
      every --color-* token, and a `bg-dotgrid` background-color utility would
      win over the `.bg-dotgrid` gradient below and paint the layer solid. */
   --color-dot-grid: #C5C1BD;
+
+  /* Gantt bar palette — categorical identity for task tinting. Deliberately
+     NOT the --color-success/error/... tokens: a bar tinted green means a
+     workstream the user picked, not "success", and status colours stay
+     reserved for the critical path. Three hues and no more — these validate
+     all-pairs for colour-vision deficiency and normal-vision separation
+     against both surfaces, and no fourth hue cleared the dark-mode floor.
+     Grouping past three is the task hierarchy's job, not the palette's. */
+  --color-gantt-blue: #2a78d6;
+  --color-gantt-orange: #eb6834;
+  --color-gantt-aqua: #1baf7a;
   
   /* Semantic colors - success (emerald) */
   --color-success-bg: #ecfdf5;
@@ -100,6 +111,11 @@
   --color-border: #4A4440;
   --color-border-dark: #5C5551;
   --color-dot-grid: #4A4440;
+  /* Same three hues, re-stepped for the dark surface and validated as a set —
+     not an automatic lightening of the light values. */
+  --color-gantt-blue: #3987e5;
+  --color-gantt-orange: #d95926;
+  --color-gantt-aqua: #199e70;
   --color-editor-active-line: #332A1E;
 
   /* Form fields — recessed below the card surface (#332D29), border at 3.2:1
