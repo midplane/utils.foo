@@ -1,4 +1,5 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { useLocation } from 'react-router-dom'
 import { Code, Columns2, Download, Eye, RotateCw, Shrink, Trash2, Workflow, ZoomIn, ZoomOut } from 'lucide-react'
 import {
   Alert, Button, CopyButton, Select, Toggle, ToolHeader, SectionLabel,
@@ -8,9 +9,12 @@ import {
   DEFAULT_PANE_HEIGHT, EXPANDED_PANE_HEIGHT,
 } from '../../components/ui'
 import { cn } from '../../lib/utils'
+import { useTheme } from '../../contexts/ThemeContext'
 import { CodeEditor } from './CodeEditor'
-import { INITIAL_CODE, SAMPLES } from './samples'
-import { useD2, type Layout, type RenderFormat } from './useD2'
+import { SAMPLES } from './samples'
+import { useD2, type Layout } from './useD2'
+import { decodeState, DEFAULT_STATE, type ShareState } from './shareState'
+import { ShareButton } from './ShareButton'
 
 const LAYOUT_OPTIONS = [
   { value: 'tala', label: 'TALA' },
@@ -24,19 +28,40 @@ const THEME_OPTIONS = [
   { value: '200', label: 'Dark mauve' },
 ]
 
-type ViewMode = 'split' | 'editor' | 'preview'
-
 export default function D2Tool() {
-  const [code, setCode] = useState<string>(INITIAL_CODE)
-  const [layout, setLayout] = useState<Layout>('tala')
-  const [theme, setTheme] = useState('0')
-  const [sketch, setSketch] = useState(false)
-  const [renderer, setRenderer] = useState('svg')
-  const [asciiMode, setAsciiMode] = useState<Exclude<RenderFormat, 'svg'>>('standard')
-  const [view, setView] = useState<ViewMode>('split')
-  const [zoom, setZoom] = useState(1)
+  const { hash } = useLocation()
+  const [loaded, setLoaded] = useState<{ hash: string; state: ShareState | null; error: string } | null>(null)
+  useEffect(() => {
+    let cancelled = false
+    decodeState(hash).then(
+      state => { if (!cancelled) setLoaded({ hash, state, error: '' }) },
+      error => { if (!cancelled) setLoaded({ hash, state: null, error: error instanceof Error ? error.message : 'Could not open this share link.' }) },
+    )
+    return () => { cancelled = true }
+  }, [hash])
+
+  if (loaded?.hash !== hash) return <div role="status" className="flex items-center gap-2 text-xs"><Spinner size="sm" /> Loading diagram…</div>
+  return <D2Editor initial={loaded.state ?? DEFAULT_STATE} shared={Boolean(loaded.state)} linkError={loaded.error} />
+}
+
+function D2Editor({ initial, shared, linkError }: { initial: ShareState; shared: boolean; linkError: string }) {
+  const [code, setCode] = useState(initial.code)
+  const [layout, setLayout] = useState<Layout>(initial.layout)
+  const [theme, setTheme] = useState(initial.theme)
+  const [sketch, setSketch] = useState(initial.sketch)
+  const [renderer, setRenderer] = useState(initial.renderer)
+  const [asciiMode, setAsciiMode] = useState(initial.asciiMode)
+  const [view, setView] = useState(initial.view)
+  const [zoom, setZoom] = useState(initial.zoom)
   const [revision, setRevision] = useState(0)
-  const { expanded, setExpanded } = useExpandable()
+  const { expanded, setExpanded } = useExpandable({ defaultExpanded: initial.expanded })
+  const { isDark, toggle } = useTheme()
+  const appliedTheme = useRef(false)
+  useEffect(() => {
+    if (appliedTheme.current) return
+    appliedTheme.current = true
+    if (shared && isDark !== initial.isDark) toggle()
+  }, [shared, initial.isDark, isDark, toggle])
   const isAscii = renderer === 'ascii'
   const { output, error, pending } = useD2(code, layout, Number(theme), sketch, revision, isAscii ? asciiMode : 'svg')
   const svg = isAscii ? '' : output
@@ -67,6 +92,7 @@ export default function D2Tool() {
       <p className="text-xs text-[var(--color-ink-muted)]">
         Write D2 and turn it into a diagram. Rendering runs locally in your browser.
       </p>
+      {linkError && <Alert variant="error">{linkError} The example below is ready to edit.</Alert>}
 
       <div className="flex flex-wrap items-end gap-3">
         <div className="w-40">
@@ -75,7 +101,7 @@ export default function D2Tool() {
         </div>
         <div className="w-28">
           <Select id="d2-renderer" label="Renderer" value={renderer} onChange={event => {
-            setRenderer(event.target.value)
+            setRenderer(event.target.value as ShareState['renderer'])
             if (event.target.value === 'ascii' && layout === 'dagre') setLayout('elk')
           }} options={[{ value: 'svg', label: 'SVG' }, { value: 'ascii', label: 'ASCII' }]} />
         </div>
@@ -90,7 +116,7 @@ export default function D2Tool() {
         ) : (
           <>
             <div className="w-36">
-              <Select id="d2-theme" label="Diagram theme" value={theme} onChange={event => setTheme(event.target.value)} options={THEME_OPTIONS} />
+              <Select id="d2-theme" label="Diagram theme" value={theme} onChange={event => setTheme(event.target.value as ShareState['theme'])} options={THEME_OPTIONS} />
             </div>
             <div className="py-1.5">
               <Toggle label="Sketch" checked={sketch} onChange={event => setSketch(event.target.checked)} />
@@ -103,13 +129,14 @@ export default function D2Tool() {
 
       <ExpandableCard expanded={expanded} onExpandedChange={setExpanded}>
         <ExpandableCardHeader className="flex flex-wrap items-center justify-between gap-2">
-          <SegmentedControl value={view} onChange={value => setView(value as ViewMode)} label="View mode">
+          <SegmentedControl value={view} onChange={value => setView(value as ShareState['view'])} label="View mode">
             <SegmentedControlItem value="editor" label="Editor"><Code className="h-3.5 w-3.5" /></SegmentedControlItem>
             <SegmentedControlItem value="split" label="Split view"><Columns2 className="h-3.5 w-3.5" /></SegmentedControlItem>
             <SegmentedControlItem value="preview" label="Preview"><Eye className="h-3.5 w-3.5" /></SegmentedControlItem>
           </SegmentedControl>
           <div className="flex items-center gap-1">
             <Button variant="ghost" size="sm" onClick={() => setCode('')} disabled={!code} title="Clear source" aria-label="Clear source"><Trash2 className="h-3.5 w-3.5" /></Button>
+            <ShareButton state={{ v: 1, code, layout, theme, sketch, renderer, asciiMode, view, zoom, expanded, isDark }} />
             <CopyButton text={output} disabled={!output}>Copy {isAscii ? 'ASCII' : 'SVG'}</CopyButton>
             <Button variant="secondary" size="sm" onClick={handleDownload} disabled={!output} className="gap-1.5"><Download className="h-3 w-3" /> {isAscii ? 'TXT' : 'SVG'}</Button>
             <ExpandToggleButton />
