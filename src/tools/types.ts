@@ -12,9 +12,10 @@ export interface ToolMeta {
   /**
    * Opt into a wider content column. Use for split-pane or canvas-style tools
    * (side-by-side editors, diagrams) that benefit from horizontal space.
+   * Use 'xl' for a 1,600px column with the normal page gutters.
    * Defaults to the standard narrow column.
    */
-  wide?: boolean
+  wide?: boolean | 'xl'
 }
 
 export interface Tool extends ToolMeta {

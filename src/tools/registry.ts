@@ -28,6 +28,7 @@ const DnsLookupTool         = lazy(() => import('./dns-lookup'))
 const MarkdownPreviewTool   = lazy(() => import('./markdown-preview'))
 const MarkdownTableTool     = lazy(() => import('./markdown-table'))
 const MermaidTool           = lazy(() => import('./mermaid'))
+const D2Tool                = lazy(() => import('./d2'))
 const LogoGeneratorTool     = lazy(() => import('./logo-generator'))
 const PivotTableTool        = lazy(() => import('./pivot-table'))
 const FormulaVisualizerTool = lazy(() => import('./formula-visualizer'))
@@ -61,6 +62,7 @@ import { meta as dnsLookupMeta } from './dns-lookup/meta'
 import { meta as markdownPreviewMeta } from './markdown-preview/meta'
 import { meta as markdownTableMeta } from './markdown-table/meta'
 import { meta as mermaidMeta } from './mermaid/meta'
+import { meta as d2Meta } from './d2/meta'
 import { meta as logoGeneratorMeta } from './logo-generator/meta'
 import { meta as pivotTableMeta } from './pivot-table/meta'
 import { meta as formulaVisualizerMeta } from './formula-visualizer/meta'
@@ -95,6 +97,7 @@ export const tools: Tool[] = [
   { ...markdownPreviewMeta,     component: MarkdownPreviewTool },
   { ...markdownTableMeta,       component: MarkdownTableTool },
   { ...mermaidMeta,             component: MermaidTool },
+  { ...d2Meta,                  component: D2Tool },
   { ...logoGeneratorMeta,       component: LogoGeneratorTool },
   { ...pivotTableMeta,          component: PivotTableTool },
   { ...formulaVisualizerMeta,   component: FormulaVisualizerTool },
