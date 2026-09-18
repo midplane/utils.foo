@@ -17,7 +17,7 @@ export function segmentedItemClass(isSelected: boolean) {
     isSelected
       // Accent means "selected" everywhere in the app. The raised surface chip
       // carries the elevation, the accent text carries the state.
-      ? 'bg-[var(--color-surface)] text-[var(--color-accent)] shadow-sm'
+      ? 'bg-[var(--color-surface)] text-[var(--color-accent-text)] shadow-sm'
       : 'text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]'
   )
 }
@@ -111,7 +111,7 @@ export function SegmentedControlItem({ value, children, className, disabled, lab
           : cn(
               'inline-flex items-center justify-center gap-1 px-3 py-1.5 text-xs font-medium rounded-md transition-all cursor-pointer border',
               isSelected
-                ? 'bg-[var(--color-accent)] border-[var(--color-accent)] text-white font-semibold'
+                ? 'bg-[var(--color-accent-text)] border-[var(--color-accent-text)] text-[var(--color-cream)] font-semibold'
                 : 'border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-ink-muted)] hover:border-[var(--color-border-dark)] hover:text-[var(--color-ink)]'
             ),
         disabled && 'opacity-50 cursor-not-allowed',

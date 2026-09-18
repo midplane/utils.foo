@@ -8,17 +8,17 @@ export interface RadioProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 
 export const Radio = forwardRef<HTMLInputElement, RadioProps>(
   ({ className, label, id, ...props }, ref) => {
     return (
-      <label htmlFor={id} className="inline-flex items-center gap-2 cursor-pointer group">
+      <label htmlFor={id} className="inline-flex items-center gap-2 cursor-pointer group has-[:disabled]:opacity-50 has-[:disabled]:cursor-not-allowed">
         <div className="relative">
           <input
             ref={ref}
             type="radio"
             id={id}
             className={cn(
-              'peer w-4 h-4 border border-[var(--color-border)] rounded-full bg-[var(--color-surface)] appearance-none cursor-pointer',
-              'checked:border-[var(--color-ink)]',
+              'peer w-4 h-4 border border-[var(--color-input-border)] rounded-full bg-[var(--color-input-bg)] shadow-[var(--shadow-input-inset)] appearance-none cursor-pointer',
+              'checked:border-[var(--color-ink)] checked:shadow-none',
               'focus-visible:outline-2 focus-visible:outline-[var(--color-accent)] focus-visible:outline-offset-2',
-              'disabled:opacity-50 disabled:cursor-not-allowed',
+              'disabled:cursor-not-allowed',
               'transition-colors',
               className
             )}

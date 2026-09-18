@@ -14,17 +14,22 @@ export interface SectionLabelProps {
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
-export const SectionLabel = forwardRef<HTMLLabelElement, SectionLabelProps>(
+export const SectionLabel = forwardRef<HTMLElement, SectionLabelProps>(
   ({ children, htmlFor, className }, ref) => {
+    const classes = cn(
+      'text-[10px] font-semibold uppercase tracking-wider text-[var(--color-ink-muted)]',
+      className
+    )
+    // A <label> with nothing to label is not a label; render a span instead.
+    if (!htmlFor) {
+      return (
+        <span ref={ref as React.Ref<HTMLSpanElement>} className={classes}>
+          {children}
+        </span>
+      )
+    }
     return (
-      <label
-        ref={ref}
-        htmlFor={htmlFor}
-        className={cn(
-          'text-[10px] font-semibold uppercase tracking-wider text-[var(--color-ink-muted)]',
-          className
-        )}
-      >
+      <label ref={ref as React.Ref<HTMLLabelElement>} htmlFor={htmlFor} className={classes}>
         {children}
       </label>
     )

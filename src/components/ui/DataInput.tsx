@@ -179,7 +179,7 @@ export function DataInput<S extends SampleOption>({
           <SectionLabel htmlFor={inputId}>{label}</SectionLabel>
 
           {loadingSample ? (
-            <span className="inline-flex items-center gap-1.5 text-[11px] text-[var(--color-ink-muted)]">
+            <span role="status" className="inline-flex items-center gap-1.5 text-[11px] text-[var(--color-ink-muted)]">
               <Spinner className="w-3 h-3" />
               Loading sample…
             </span>
@@ -255,7 +255,8 @@ export function DataInput<S extends SampleOption>({
                 className={cn(
                   'inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg border cursor-pointer transition-all',
                   'border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-ink)] hover:border-[var(--color-ink-muted)]',
-                  'focus-within:ring-1 focus-within:ring-[var(--color-accent)]',
+                  // The file input is sr-only, so mirror the global focus ring onto its label.
+                  'has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-[var(--color-accent)] has-[:focus-visible]:outline-offset-2',
                   loading && 'opacity-60 pointer-events-none'
                 )}
               >

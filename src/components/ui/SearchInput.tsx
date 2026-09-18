@@ -11,6 +11,8 @@ export interface SearchInputProps {
   onChange: (value: string) => void
   /** Placeholder text */
   placeholder?: string
+  /** Accessible name; the placeholder alone is not one. */
+  label?: string
   /** Additional classes for the container */
   className?: string
 }
@@ -18,25 +20,27 @@ export interface SearchInputProps {
 // ─── Component ───────────────────────────────────────────────────────────────
 
 export const SearchInput = forwardRef<HTMLInputElement, SearchInputProps>(
-  ({ value, onChange, placeholder = 'Search...', className }, ref) => {
+  ({ value, onChange, placeholder = 'Search...', label = 'Search', className }, ref) => {
     return (
       <div className={cn('relative', className)}>
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--color-ink-muted)]" />
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--color-ink-muted)]" aria-hidden="true" />
         <input
           ref={ref}
           type="search"
           placeholder={placeholder}
+          aria-label={label}
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="w-full pl-9 pr-8 py-1.5 text-xs bg-[var(--color-input-bg)] border border-[var(--color-input-border)] shadow-[var(--shadow-input-inset)] rounded-lg text-[var(--color-ink)] placeholder-[var(--color-ink-muted)] focus:border-[var(--color-accent)] transition-all font-mono"
+          className="w-full pl-9 pr-8 py-1.5 text-xs bg-[var(--color-input-bg)] border border-[var(--color-input-border)] shadow-[var(--shadow-input-inset)] rounded-lg text-[var(--color-ink)] placeholder-[var(--color-ink-muted)] focus:border-[var(--color-accent)] transition-colors font-mono [&::-webkit-search-cancel-button]:appearance-none"
         />
         {value && (
           <button
             type="button"
             onClick={() => onChange('')}
+            aria-label="Clear search"
             className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 hover:bg-[var(--color-cream-dark)] rounded transition-colors cursor-pointer"
           >
-            <X className="w-3 h-3 text-[var(--color-ink-muted)]" />
+            <X className="w-3 h-3 text-[var(--color-ink-muted)]" aria-hidden="true" />
           </button>
         )}
       </div>

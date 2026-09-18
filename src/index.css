@@ -14,6 +14,11 @@
   --color-ink-muted: #78716C;
   --color-accent: #EA580C;
   --color-accent-hover: #C2410C;
+  /* Accent for small text and for fills that carry text. --color-accent is
+     3.56:1 on white and 3.45:1 on the page, under the 4.5:1 floor at 12px and
+     below; this step clears it in both themes (5.2:1 light, 4.8:1 dark). Use
+     --color-accent for lines, icons and large marks, this for text. */
+  --color-accent-text: #C2410C;
   --color-border: #E7E5E4;
   --color-border-dark: #D6D3D1;
 
@@ -105,6 +110,7 @@
   --color-ink-muted: #9A8F88;
   --color-accent: #F97316;
   --color-accent-hover: #EA580C;
+  --color-accent-text: #F97316;
   /* Kept clearly lighter than --color-surface (#332D29): in dark mode there are
      no usable shadows, so the border is the only thing separating a card from
      the page. #3A3430 was ~3% lighter than the surface and read as no edge. */

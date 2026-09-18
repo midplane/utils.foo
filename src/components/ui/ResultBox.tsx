@@ -1,6 +1,7 @@
 import { forwardRef, type ReactNode } from 'react'
 import { cn } from '../../lib/utils'
 import { CopyButton } from './CopyButton'
+import { SectionLabel } from './SectionLabel'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -27,9 +28,7 @@ export const ResultBox = forwardRef<HTMLDivElement, ResultBoxProps>(
       return (
         <div ref={ref} className={cn('space-y-2', className)}>
           {label && (
-            <label className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-ink-muted)]">
-              {label}
-            </label>
+            <SectionLabel>{label}</SectionLabel>
           )}
           <div className="p-4 bg-[var(--color-cream-dark)] border border-[var(--color-border)] rounded-lg text-center">
             <span className="text-xs text-[var(--color-ink-muted)]">
@@ -47,9 +46,7 @@ export const ResultBox = forwardRef<HTMLDivElement, ResultBoxProps>(
         {showHeader && (
           <div className="flex items-center justify-between">
             {label ? (
-              <label className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-ink-muted)]">
-                {label}
-              </label>
+              <SectionLabel>{label}</SectionLabel>
             ) : (
               <span />
             )}

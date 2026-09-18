@@ -1,4 +1,5 @@
 import { HTMLAttributes, forwardRef, ReactNode, useEffect, useId, useRef } from 'react'
+import { X } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import { useScrollLock } from '../../hooks/useScrollLock'
 
@@ -21,6 +22,9 @@ export const Modal = forwardRef<HTMLDivElement, ModalProps>(
   ({ className, open, onClose, title, label, children, ...props }, ref) => {
     const overlayRef = useRef<HTMLDivElement>(null)
     const dialogRef = useRef<HTMLDivElement>(null)
+    // Set when a press begins on the backdrop itself, so selecting text inside
+    // the dialog and releasing outside it does not dismiss the modal.
+    const pressedBackdrop = useRef(false)
     const titleId = useId()
 
     useScrollLock(open)
@@ -80,8 +84,12 @@ export const Modal = forwardRef<HTMLDivElement, ModalProps>(
       <div
         ref={overlayRef}
         className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 animate-fade-in"
+        onMouseDown={(e) => {
+          pressedBackdrop.current = e.target === overlayRef.current
+        }}
         onClick={(e) => {
-          if (e.target === overlayRef.current) onClose()
+          if (pressedBackdrop.current && e.target === overlayRef.current) onClose()
+          pressedBackdrop.current = false
         }}
       >
         <div
@@ -110,9 +118,7 @@ export const Modal = forwardRef<HTMLDivElement, ModalProps>(
                 aria-label="Close dialog"
                 className="p-1 text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] hover:bg-[var(--color-cream-dark)] rounded transition-colors cursor-pointer"
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
+                <X className="w-4 h-4" aria-hidden="true" />
               </button>
             </div>
           )}

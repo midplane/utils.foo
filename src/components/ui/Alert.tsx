@@ -20,6 +20,8 @@ export const Alert = forwardRef<HTMLDivElement, AlertProps>(
     return (
       <div
         ref={ref}
+        // Errors interrupt; everything else waits its turn. Callers can override.
+        role={variant === 'error' ? 'alert' : 'status'}
         className={cn(
           'flex items-center gap-2 rounded-lg border',
           size === 'sm' ? 'px-2.5 py-1.5 text-xs' : 'px-3 py-2 text-sm',
@@ -33,7 +35,7 @@ export const Alert = forwardRef<HTMLDivElement, AlertProps>(
         )}
         {...props}
       >
-        <span className={cn(
+        <span aria-hidden="true" className={cn(
           'flex-shrink-0',
           {
             'text-[var(--color-ink-muted)]': variant === 'info',

@@ -7,6 +7,7 @@ export interface SkeletonProps {
 export function Skeleton({ className }: SkeletonProps) {
   return (
     <div
+      aria-hidden="true"
       className={cn(
         'bg-[var(--color-cream-dark)] rounded animate-pulse',
         className

@@ -8,6 +8,7 @@ import {
 } from "react";
 import { Maximize2, Minimize2 } from "lucide-react";
 import { Card, CardHeader, CardContent } from "./Card";
+import { Kbd } from "./Kbd";
 import { useScrollLock } from "../../hooks/useScrollLock";
 import { cn } from "../../lib/utils";
 
@@ -304,9 +305,7 @@ export function ExpandHint({ className }: ExpandHintProps) {
       className={cn("text-[10px] text-[var(--color-ink-muted)]", className)}
     >
       Press{" "}
-      <kbd className="px-1 py-0.5 bg-[var(--color-cream-dark)] border border-[var(--color-border)] rounded text-[9px]">
-        Esc
-      </kbd>{" "}
+      <Kbd>Esc</Kbd>{" "}
       to collapse
     </span>
   );

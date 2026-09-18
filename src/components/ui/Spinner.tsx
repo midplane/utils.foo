@@ -1,11 +1,13 @@
 import { cn } from '../../lib/utils'
 
 export interface SpinnerProps {
+  /** Announces the spinner as a status. Omit when a nearby text label already says what is loading. */
+  label?: string
   size?: 'sm' | 'md' | 'lg'
   className?: string
 }
 
-export function Spinner({ size = 'md', className }: SpinnerProps) {
+export function Spinner({ size = 'md', label, className }: SpinnerProps) {
   return (
     <svg
       className={cn(
@@ -17,6 +19,9 @@ export function Spinner({ size = 'md', className }: SpinnerProps) {
         },
         className
       )}
+      role={label ? 'status' : undefined}
+      aria-label={label}
+      aria-hidden={label ? undefined : true}
       fill="none"
       viewBox="0 0 24 24"
     >

@@ -1,4 +1,4 @@
-import { useState, ReactNode, createContext, useContext, useId } from 'react'
+import { useState, ReactNode, KeyboardEvent, createContext, useContext, useId } from 'react'
 import { cn } from '../../lib/utils'
 import { SEGMENTED_GROUP_CLASS, segmentedItemClass } from './SegmentedControl'
 
@@ -40,8 +40,32 @@ interface TabsListProps {
 }
 
 export function TabsList({ children, className, label }: TabsListProps) {
+  // Only the active tab is in the tab order, so without arrow keys the other
+  // tabs cannot be reached from the keyboard at all.
+  const handleKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
+    const tabs = Array.from(e.currentTarget.querySelectorAll<HTMLElement>('[role="tab"]'))
+    const current = tabs.indexOf(document.activeElement as HTMLElement)
+    if (current === -1) return
+
+    let next = -1
+    if (e.key === 'ArrowRight') next = (current + 1) % tabs.length
+    else if (e.key === 'ArrowLeft') next = (current - 1 + tabs.length) % tabs.length
+    else if (e.key === 'Home') next = 0
+    else if (e.key === 'End') next = tabs.length - 1
+    if (next === -1) return
+
+    e.preventDefault()
+    tabs[next]!.focus()
+    tabs[next]!.click()
+  }
+
   return (
-    <div role="tablist" aria-label={label} className={cn(SEGMENTED_GROUP_CLASS, 'w-fit', className)}>
+    <div
+      role="tablist"
+      aria-label={label}
+      onKeyDown={handleKeyDown}
+      className={cn(SEGMENTED_GROUP_CLASS, 'w-fit', className)}
+    >
       {children}
     </div>
   )

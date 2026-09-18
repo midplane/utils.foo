@@ -18,7 +18,7 @@ export interface FlowDividerProps {
 export const FlowDivider = forwardRef<HTMLDivElement, FlowDividerProps>(
   ({ hasOutput = false, icon, className }, ref) => {
     return (
-      <div ref={ref} className={cn('flex items-center gap-2', className)}>
+      <div ref={ref} aria-hidden="true" className={cn('flex items-center gap-2', className)}>
         <div className="flex-1 h-px bg-[var(--color-border)]" />
         <div
           className={cn(
