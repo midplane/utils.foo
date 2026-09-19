@@ -32,6 +32,7 @@ interface DisplayOptionsProps {
 export function DisplayOptions({ config, onConfigChange }: DisplayOptionsProps) {
   const [open, setOpen] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
+  const triggerRef = useRef<HTMLButtonElement>(null)
   const panelId = useId()
 
   useEffect(() => {
@@ -41,7 +42,11 @@ export function DisplayOptions({ config, onConfigChange }: DisplayOptionsProps) 
       if (!containerRef.current?.contains(e.target as Node)) setOpen(false)
     }
     const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setOpen(false)
+      if (e.key === 'Escape') {
+        setOpen(false)
+        // Put focus back where the panel was opened from.
+        triggerRef.current?.focus()
+      }
     }
 
     document.addEventListener('pointerdown', onPointerDown)
@@ -69,6 +74,7 @@ export function DisplayOptions({ config, onConfigChange }: DisplayOptionsProps) 
   return (
     <div ref={containerRef} className="relative">
       <Button
+        ref={triggerRef}
         variant="secondary"
         size="sm"
         onClick={() => setOpen((v) => !v)}
@@ -80,7 +86,7 @@ export function DisplayOptions({ config, onConfigChange }: DisplayOptionsProps) 
         <SlidersHorizontal className="w-3 h-3" aria-hidden="true" />
         Display
         {activeCount > 0 && (
-          <span className="px-1 rounded-full bg-[var(--color-accent)] text-white text-[10px] font-semibold">
+          <span className="px-1 rounded-full bg-[var(--color-accent-text)] text-[var(--color-cream)] text-[10px] font-semibold">
             {activeCount}
           </span>
         )}
@@ -92,7 +98,7 @@ export function DisplayOptions({ config, onConfigChange }: DisplayOptionsProps) 
           role="dialog"
           aria-label="Display options"
           className={cn(
-            'absolute right-0 top-full z-40 mt-1 w-[19rem] p-3 space-y-3',
+            'absolute right-0 top-full z-40 mt-1 w-[19rem] max-w-[calc(100vw-2rem)] p-3 space-y-3',
             'rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] shadow-lg'
           )}
         >
@@ -111,6 +117,7 @@ export function DisplayOptions({ config, onConfigChange }: DisplayOptionsProps) 
 
           <Row label="Layout" hint={hasRowHierarchy ? undefined : 'Needs two or more row fields'}>
             <SegmentedControl
+              label="Layout"
               value={config.layout}
               onChange={(v) => set('layout', v as PivotConfig['layout'])}
             >
@@ -127,6 +134,7 @@ export function DisplayOptions({ config, onConfigChange }: DisplayOptionsProps) 
             hint={hasRowHierarchy ? undefined : 'Needs two or more row fields'}
           >
             <SegmentedControl
+              label="Row subtotals"
               value={config.rowSubtotals}
               onChange={(v) => set('rowSubtotals', v as PivotConfig['rowSubtotals'])}
             >
@@ -143,6 +151,7 @@ export function DisplayOptions({ config, onConfigChange }: DisplayOptionsProps) 
             hint={hasColHierarchy ? undefined : 'Needs two or more column fields'}
           >
             <SegmentedControl
+              label="Column subtotals"
               value={config.colSubtotals}
               onChange={(v) => set('colSubtotals', v as PivotConfig['colSubtotals'])}
             >
@@ -156,6 +165,7 @@ export function DisplayOptions({ config, onConfigChange }: DisplayOptionsProps) 
 
           <Row label="Heatmap">
             <SegmentedControl
+              label="Heatmap"
               value={config.heatmap}
               onChange={(v) => set('heatmap', v as PivotConfig['heatmap'])}
             >
@@ -181,7 +191,7 @@ export function DisplayOptions({ config, onConfigChange }: DisplayOptionsProps) 
                   <button
                     type="button"
                     onClick={() => set('rowSortBy', undefined)}
-                    className="text-[11px] text-[var(--color-accent)] hover:underline cursor-pointer"
+                    className="text-[11px] text-[var(--color-accent-text)] hover:underline cursor-pointer"
                   >
                     Clear column sort
                   </button>

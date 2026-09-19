@@ -7,8 +7,11 @@ export interface ToggleProps extends Omit<InputHTMLAttributes<HTMLInputElement>,
 
 export const Toggle = forwardRef<HTMLInputElement, ToggleProps>(
   ({ className, label, id, ...props }, ref) => {
+    // Only a labelled control is its own <label>; an unlabelled one is usually
+    // inside a row-level <label>, and labels do not nest.
+    const Wrapper = label ? 'label' : 'span'
     return (
-      <label htmlFor={id} className="inline-flex items-center gap-2 cursor-pointer group has-[:disabled]:opacity-50 has-[:disabled]:cursor-not-allowed">
+      <Wrapper className="inline-flex items-center gap-2 cursor-pointer group has-[:disabled]:opacity-50 has-[:disabled]:cursor-not-allowed">
         <div className="relative">
           <input
             ref={ref}
@@ -39,7 +42,7 @@ export const Toggle = forwardRef<HTMLInputElement, ToggleProps>(
             {label}
           </span>
         )}
-      </label>
+      </Wrapper>
     )
   }
 )

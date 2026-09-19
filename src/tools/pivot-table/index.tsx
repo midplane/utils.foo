@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useMemo, useDeferredValue } from 'react'
+import { useState, useCallback, useEffect, useMemo, useDeferredValue, useRef } from 'react'
 import Papa from 'papaparse'
 import { Table2 } from 'lucide-react'
 import { ToolHeader } from '../../components/ui'
@@ -166,30 +166,31 @@ export default function PivotTable() {
     return out
   }, [fields, records])
 
+  // Only the most recent request may land. The picker calls this directly, so
+  // a per-call cancel flag would never be used and a slow first request could
+  // overwrite a sample chosen after it.
+  const latestSample = useRef(0)
+
   const handleLoadSample = useCallback((sample: Sample) => {
     setSampleState({ status: 'loading' })
-    let cancelled = false
+    const request = ++latestSample.current
+    const cancelled = () => request !== latestSample.current
 
     loadSample(sample)
       .then((csv) => {
-        // A slow first request must not clobber a sample picked since.
-        if (cancelled) return
+        if (cancelled()) return
         setCsvText(csv)
         setConfig(sample.config)
         setSourceLabel(sample.label)
         setSampleState({ status: 'ready' })
       })
       .catch((error: unknown) => {
-        if (cancelled) return
+        if (cancelled()) return
         setSampleState({
           status: 'error',
           message: error instanceof Error ? error.message : 'Could not load the sample.',
         })
       })
-
-    return () => {
-      cancelled = true
-    }
   }, [])
 
   // Hand-edited or pasted data is no longer "the Sales orders sample".
@@ -200,8 +201,11 @@ export default function PivotTable() {
 
   // Fetch the default sample once, after the tool has rendered.
   useEffect(() => {
-    const cancel = handleLoadSample(DEFAULT_SAMPLE)
-    return cancel
+    handleLoadSample(DEFAULT_SAMPLE)
+    const latest = latestSample
+    return () => {
+      latest.current += 1
+    }
     // Deliberately runs once; picking another sample goes through the button.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])

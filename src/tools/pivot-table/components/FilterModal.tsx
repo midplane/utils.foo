@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useRef } from 'react'
+import { useState, useMemo, useCallback } from 'react'
 import { X, Check, RotateCcw } from 'lucide-react'
 import {
   Modal,
@@ -59,7 +59,6 @@ export function FilterModal({
   )
   const [measure, setMeasure] = useState<MeasureRule | null>(() => filter?.measure ?? null)
   const [search, setSearch] = useState('')
-  const searchRef = useRef<HTMLInputElement>(null)
 
   const filteredValues = useMemo(() => {
     const query = search.trim().toLowerCase()
@@ -133,7 +132,6 @@ export function FilterModal({
             ) : (
               <>
                 <SearchInput
-                  ref={searchRef}
                   value={search}
                   onChange={setSearch}
                   placeholder="Search values…"
@@ -143,7 +141,7 @@ export function FilterModal({
                   <button
                     type="button"
                     onClick={() => setAll(true)}
-                    className="text-[var(--color-accent)] hover:underline cursor-pointer"
+                    className="text-[var(--color-accent-text)] hover:underline cursor-pointer"
                   >
                     Select all
                   </button>
@@ -153,7 +151,7 @@ export function FilterModal({
                   <button
                     type="button"
                     onClick={() => setAll(false)}
-                    className="text-[var(--color-accent)] hover:underline cursor-pointer"
+                    className="text-[var(--color-accent-text)] hover:underline cursor-pointer"
                   >
                     Select none
                   </button>

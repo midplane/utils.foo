@@ -3,7 +3,7 @@ import { X, Download } from 'lucide-react'
 import { Modal, Button, Alert, CopyButton } from '../../../components/ui'
 import { AxisExclusions, DataRecord, PivotConfig } from '../types'
 import { findSourceRecords } from '../engine/drilldown'
-import { escapeCsv } from '../engine/export'
+import { downloadCsv, escapeCsv } from '../engine/export'
 
 /** Enough to inspect a cell without rendering an entire dataset into a dialog. */
 const DRILL_LIMIT = 200
@@ -63,7 +63,7 @@ export function DrillDownModal({
   const title = [target.rowLabel, target.colLabel].filter(Boolean).join(' · ')
 
   return (
-    <Modal open={open} onClose={onClose} title={`Source rows — ${title || 'all'}`}>
+    <Modal open={open} onClose={onClose} title={`Source rows — ${title || 'all'}`} className="max-w-3xl">
       <div className="space-y-3">
         <div className="flex items-center gap-2 text-xs">
           <span className="text-[var(--color-ink-muted)]">
@@ -86,7 +86,12 @@ export function DrillDownModal({
             No source records match this cell.
           </Alert>
         ) : (
-          <div className="max-h-72 overflow-auto border border-[var(--color-border)] rounded-lg">
+          <div
+            role="region"
+            aria-label="Source rows"
+            tabIndex={0}
+            className="max-h-72 overflow-auto border border-[var(--color-border)] rounded-lg"
+          >
             <table className="w-full text-[11px] font-mono border-collapse">
               <thead className="sticky top-0 bg-[var(--color-cream-dark)]">
                 <tr>
@@ -140,13 +145,7 @@ export function DrillDownModal({
                 ),
               ].join('\r\n')
 
-              const blob = new Blob([`\uFEFF${csv}`], { type: 'text/csv;charset=utf-8' })
-              const url = URL.createObjectURL(blob)
-              const link = document.createElement('a')
-              link.href = url
-              link.download = `drilldown-${safeFileName(title)}.csv`
-              link.click()
-              URL.revokeObjectURL(url)
+              downloadCsv(csv, `drilldown-${safeFileName(title)}.csv`)
             }}
           >
             <Download className="w-3.5 h-3.5" aria-hidden="true" />

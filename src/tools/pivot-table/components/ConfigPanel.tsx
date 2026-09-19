@@ -88,6 +88,14 @@ function FieldChip({
   const [menuOpen, setMenuOpen] = useState(false)
   const containerRef = useRef<HTMLSpanElement>(null)
   const menuId = useId()
+  const triggerRef = useRef<HTMLButtonElement>(null)
+  const menuRef = useRef<HTMLDivElement>(null)
+
+  // Move focus into the menu when it opens so it can be driven from the keyboard.
+  useEffect(() => {
+    if (!menuOpen) return
+    menuRef.current?.querySelector<HTMLElement>('[role="menuitem"]:not(:disabled)')?.focus()
+  }, [menuOpen])
 
   useEffect(() => {
     if (!menuOpen) return
@@ -96,7 +104,10 @@ function FieldChip({
       if (!containerRef.current?.contains(e.target as Node)) setMenuOpen(false)
     }
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setMenuOpen(false)
+      if (e.key === 'Escape') {
+        setMenuOpen(false)
+        triggerRef.current?.focus()
+      }
     }
 
     document.addEventListener('pointerdown', handlePointerDown)
@@ -112,6 +123,7 @@ function FieldChip({
   return (
     <span ref={containerRef} className="relative inline-flex">
       <button
+        ref={triggerRef}
         type="button"
         draggable
         onDragStart={(e) => {
@@ -143,7 +155,7 @@ function FieldChip({
           />
         )}
         {filterCount !== undefined && filterCount > 0 && (
-          <span className="ml-0.5 px-1 rounded-full bg-[var(--color-accent)] text-white text-[10px] font-semibold">
+          <span className="ml-0.5 px-1 rounded-full bg-[var(--color-accent-text)] text-[var(--color-cream)] text-[10px] font-semibold">
             {filterCount}
           </span>
         )}
@@ -151,8 +163,19 @@ function FieldChip({
 
       {menuOpen && (
         <div
+          ref={menuRef}
           id={menuId}
           role="menu"
+          onKeyDown={(e) => {
+            if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return
+            const items = Array.from(
+              e.currentTarget.querySelectorAll<HTMLElement>('[role="menuitem"]:not(:disabled)')
+            )
+            const at = items.indexOf(document.activeElement as HTMLElement)
+            const next = e.key === 'ArrowDown' ? (at + 1) % items.length : (at - 1 + items.length) % items.length
+            e.preventDefault()
+            items[next]?.focus()
+          }}
           aria-label={`Actions for ${field}`}
           className="absolute z-30 top-full left-0 mt-1 min-w-[10rem] py-1 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] shadow-lg"
         >
@@ -297,7 +320,10 @@ function DropZone({
         e.dataTransfer.dropEffect = 'move'
         setIsDragOver(true)
       }}
-      onDragLeave={() => setIsDragOver(false)}
+      onDragLeave={(e) => {
+        // dragleave also fires when crossing onto a child chip; only clear on a real exit.
+        if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setIsDragOver(false)
+      }}
       onDrop={(e) => {
         e.preventDefault()
         setIsDragOver(false)
@@ -354,7 +380,7 @@ function ValueConfigInline({ config, fields, onUpdate, onRemove }: ValueConfigIn
   const numericOptions = fields.filter((f) => f.isNumeric)
 
   return (
-    <span className="inline-flex items-center gap-1 px-1.5 py-1 bg-[var(--color-input-bg)] border border-[var(--color-input-border)] shadow-[var(--shadow-input-inset)] rounded text-xs shadow-sm">
+    <span className="inline-flex items-center gap-1 px-1.5 py-1 bg-[var(--color-input-bg)] border border-[var(--color-input-border)] shadow-[var(--shadow-input-inset)] rounded text-xs">
       <input
         value={config.caption ?? ''}
         aria-label="Metric name"
@@ -368,7 +394,7 @@ function ValueConfigInline({ config, fields, onUpdate, onRemove }: ValueConfigIn
           'border border-transparent hover:border-[var(--color-border)]',
           'focus:border-[var(--color-accent)]',
           'placeholder:text-[var(--color-ink-muted)] placeholder:italic',
-          config.caption && 'font-semibold text-[var(--color-accent)]'
+          config.caption && 'font-semibold text-[var(--color-accent-text)]'
         )}
       />
       <span className="text-[var(--color-ink-muted)]" aria-hidden="true">
@@ -431,7 +457,7 @@ function ValueConfigInline({ config, fields, onUpdate, onRemove }: ValueConfigIn
         value={config.showAs}
         aria-label="Show values as"
         onChange={(e) => onUpdate({ ...config, showAs: e.target.value as ShowAs })}
-        className={cn(BARE_SELECT, config.showAs !== 'raw' && 'text-[var(--color-accent)]')}
+        className={cn(BARE_SELECT, config.showAs !== 'raw' && 'text-[var(--color-accent-text)]')}
         title="Show values as"
       >
         {Object.entries(SHOW_AS_LABELS).map(([key, label]) => (
@@ -455,7 +481,7 @@ function ValueConfigInline({ config, fields, onUpdate, onRemove }: ValueConfigIn
             format: style === 'auto' ? undefined : { ...config.format, style },
           })
         }}
-        className={cn(BARE_SELECT, config.format && 'text-[var(--color-accent)]')}
+        className={cn(BARE_SELECT, config.format && 'text-[var(--color-accent-text)]')}
       >
         {Object.entries(NUMBER_STYLE_LABELS).map(([key, label]) => (
           <option key={key} value={key}>
@@ -499,6 +525,7 @@ function ValueConfigInline({ config, fields, onUpdate, onRemove }: ValueConfigIn
     </span>
   )
 }
+
 const BARE_SELECT =
   'bg-transparent text-[11px] font-medium rounded cursor-pointer'
 
@@ -831,7 +858,7 @@ export function ConfigPanel({
               type="button"
               onClick={addValue}
               aria-label="Add value metric"
-              className="inline-flex items-center gap-0.5 px-1.5 py-1 text-[var(--color-accent)] hover:bg-[var(--color-accent)]/10 rounded transition-colors cursor-pointer"
+              className="inline-flex items-center gap-0.5 px-1.5 py-1 text-[var(--color-accent-text)] hover:bg-[var(--color-accent)]/10 rounded transition-colors cursor-pointer"
             >
               <Plus className="w-3 h-3" aria-hidden="true" />
             </button>

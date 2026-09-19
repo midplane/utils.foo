@@ -1,8 +1,10 @@
-import { useMemo, useCallback, useState } from 'react'
+import { useMemo, useCallback, useRef, useState } from 'react'
 import { Table2, ChevronRight, ChevronDown, Download, ArrowUp, ArrowDown, ChevronsUpDown, BarChart2 } from 'lucide-react'
 import {
   Alert,
   Button,
+  Card,
+  CardHeader,
   CopyButton,
   EmptyState,
   ExpandableCard,
@@ -18,7 +20,7 @@ import { DrillDownModal, DrillTarget } from './DrillDownModal'
 import { DisplayOptions } from './DisplayOptions'
 import { compositeKey, keyLabel } from '../engine/sorters'
 import { NO_VALUE } from '../engine/aggregators'
-import { escapeCsv, escapeTsv } from '../engine/export'
+import { downloadCsv, escapeCsv, escapeTsv } from '../engine/export'
 import { useNavigate } from 'react-router-dom'
 import { writeHandoff } from '../../chart-builder/shareState'
 import {
@@ -244,11 +246,9 @@ export function PivotGrid({
     [buildMatrix]
   )
 
-  const handleCellClick = useCallback(
-    (event: React.MouseEvent<HTMLTableSectionElement>) => {
-      const cell = (event.target as HTMLElement).closest('td')
-      const lineIdx = cell?.dataset.line
-      const slotIdx = cell?.dataset.slot
+  const openDrill = useCallback(
+    (cell: HTMLElement) => {
+      const { line: lineIdx, slot: slotIdx, vi } = cell.dataset
       if (lineIdx === undefined || slotIdx === undefined) return
 
       const line = visibleLines[Number(lineIdx)]
@@ -260,12 +260,76 @@ export function PivotGrid({
         colPath: slot.node.path,
         rowLabel: line.node.path.map(keyLabel).join(' / '),
         colLabel: slot.node.path.map(keyLabel).join(' / '),
+        // The metric that was clicked, not always the first one.
         formatted:
           result.cells.get(compositeKey(line.node.flatKey, slot.node.flatKey))
-            ?.formatted[0] ?? NO_VALUE,
+            ?.formatted[Number(vi ?? 0)] ?? NO_VALUE,
       })
     },
     [visibleLines, slots, result.cells]
+  )
+
+  const handleCellClick = useCallback(
+    (event: React.MouseEvent<HTMLTableSectionElement>) => {
+      const cell = (event.target as HTMLElement).closest('td')
+      if (cell) openDrill(cell)
+    },
+    [openDrill]
+  )
+
+  // ─── Keyboard navigation ───────────────────────────────────────────────────
+  // Value cells are one tab stop with arrow-key movement inside them (roving
+  // tabindex) rather than a tab stop each, so a large grid can be entered and
+  // left with a single Tab while every cell stays reachable.
+
+  const tbodyRef = useRef<HTMLTableSectionElement>(null)
+  const [activeCell, setActiveCell] = useState<{ line: number; col: number } | null>(null)
+
+  const valueLineIndexes = useMemo(
+    () => visibleLines.flatMap((line, i) => (line.showsValues ? [i] : [])),
+    [visibleLines]
+  )
+  const columnCount = slots.length * numValues
+
+  // Fall back to the first value cell whenever the remembered one is gone.
+  const tabStop =
+    activeCell &&
+    valueLineIndexes.includes(activeCell.line) &&
+    activeCell.col < columnCount
+      ? activeCell
+      : { line: valueLineIndexes[0] ?? -1, col: 0 }
+
+  const handleGridKeyDown = useCallback(
+    (event: React.KeyboardEvent<HTMLTableSectionElement>) => {
+      const cell = (event.target as HTMLElement).closest('td')
+      if (!cell || cell.dataset.line === undefined) return
+
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault()
+        openDrill(cell)
+        return
+      }
+
+      const at = valueLineIndexes.indexOf(Number(cell.dataset.line))
+      let nextAt = at
+      let col = Number(cell.dataset.col)
+      switch (event.key) {
+        case 'ArrowUp': nextAt = Math.max(0, at - 1); break
+        case 'ArrowDown': nextAt = Math.min(valueLineIndexes.length - 1, at + 1); break
+        case 'ArrowLeft': col = Math.max(0, col - 1); break
+        case 'ArrowRight': col = Math.min(columnCount - 1, col + 1); break
+        case 'Home': col = 0; break
+        case 'End': col = columnCount - 1; break
+        default: return
+      }
+      event.preventDefault()
+
+      const line = valueLineIndexes[nextAt]
+      tbodyRef.current
+        ?.querySelector<HTMLElement>(`td[data-line="${line}"][data-col="${col}"]`)
+        ?.focus()
+    },
+    [openDrill, valueLineIndexes, columnCount]
   )
 
   /**
@@ -284,13 +348,7 @@ export function PivotGrid({
 
   const handleDownloadCsv = useCallback(() => {
     const csv = buildMatrix().map((row) => row.map(escapeCsv).join(',')).join('\r\n')
-    const blob = new Blob([`\uFEFF${csv}`], { type: 'text/csv;charset=utf-8' })
-    const url = URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    link.href = url
-    link.download = 'pivot-table.csv'
-    link.click()
-    URL.revokeObjectURL(url)
+    downloadCsv(csv, 'pivot-table.csv')
   }, [buildMatrix])
 
   // ─── Empty states ──────────────────────────────────────────────────────────
@@ -322,11 +380,8 @@ export function PivotGrid({
 
   return (
     <ExpandableCard expanded={expanded} onExpandedChange={setExpanded}>
-      <ExpandableCardHeader className="flex items-center gap-2">
-        <Table2 className="w-4 h-4 text-[var(--color-ink-muted)]" />
-        <span className="text-xs font-semibold text-[var(--color-ink-muted)] uppercase tracking-wider">
-          Pivot Table
-        </span>
+      <ExpandableCardHeader className="flex flex-wrap items-center gap-2">
+        <GridTitle />
         <span className="text-[11px] text-[var(--color-ink-muted)]">
           {lines.length.toLocaleString()} rows × {slots.length.toLocaleString()} columns
           {result.matchedRecords < result.totalRecords && (
@@ -478,7 +533,7 @@ export function PivotGrid({
                 grid would otherwise put 10,000 identically-named buttons into
                 the tab order, which no keyboard or screen-reader user can get
                 past. */}
-            <tbody onClick={handleCellClick}>
+            <tbody ref={tbodyRef} onClick={handleCellClick} onKeyDown={handleGridKeyDown}>
               {visibleLines.map((line, lineIdx) => (
                 <tr
                   key={line.key}
@@ -526,6 +581,7 @@ export function PivotGrid({
                     const isTotalColumn = slot.kind !== 'leaf'
 
                     return valueConfigs.map((vc, vi) => {
+                      const col = slotIdx * numValues + vi
                       const value = cell?.values[vi] ?? null
                       const background =
                         line.kind === 'leaf' && !isTotalColumn && slot.kind === 'leaf'
@@ -537,11 +593,22 @@ export function PivotGrid({
                           key={`${slot.key}-${vc.id}`}
                           data-line={line.showsValues ? lineIdx : undefined}
                           data-slot={line.showsValues ? slotIdx : undefined}
-                          title={line.showsValues ? 'Click to show source rows' : undefined}
+                          data-vi={line.showsValues ? vi : undefined}
+                          data-col={line.showsValues ? col : undefined}
+                          tabIndex={
+                            line.showsValues
+                              ? lineIdx === tabStop.line && col === tabStop.col ? 0 : -1
+                              : undefined
+                          }
+                          onFocus={
+                            line.showsValues ? () => setActiveCell({ line: lineIdx, col }) : undefined
+                          }
+                          aria-haspopup={line.showsValues ? 'dialog' : undefined}
+                          title={line.showsValues ? 'Show source rows (Enter)' : undefined}
                           className={cn(
                             'px-3 py-1.5 text-right border-b border-r border-[var(--color-border)] tabular-nums',
                             line.showsValues &&
-                              'cursor-pointer hover:text-[var(--color-accent)]',
+                              'cursor-pointer hover:text-[var(--color-accent-text)] focus-visible:outline-offset-[-2px]',
                             isTotalColumn && 'bg-[var(--color-cream-dark)]/60 font-semibold'
                           )}
                           style={background ? { backgroundColor: background } : undefined}
@@ -632,7 +699,7 @@ function CollapseLabel({
       onClick={onToggle}
       aria-expanded={!collapsed}
       aria-label={`${collapsed ? 'Expand' : 'Collapse'} ${text}`}
-      className="inline-flex items-center gap-0.5 hover:text-[var(--color-accent)] transition-colors cursor-pointer"
+      className="inline-flex items-center gap-0.5 hover:text-[var(--color-accent-text)] transition-colors cursor-pointer"
       style={padding}
     >
       {collapsed ? (
@@ -678,7 +745,7 @@ function HeaderLabel({
       onClick={() => onToggle(cell.toggleKey)}
       aria-expanded={!cell.collapsed}
       aria-label={`${cell.collapsed ? 'Expand' : 'Collapse'} ${text}`}
-      className="inline-flex items-center gap-0.5 hover:text-[var(--color-accent)] transition-colors cursor-pointer"
+      className="inline-flex items-center gap-0.5 hover:text-[var(--color-accent-text)] transition-colors cursor-pointer"
     >
       {cell.collapsed ? (
         <ChevronRight className="w-3 h-3 shrink-0" aria-hidden="true" />
@@ -690,17 +757,25 @@ function HeaderLabel({
   )
 }
 
+function GridTitle() {
+  return (
+    <>
+      <Table2 className="w-4 h-4 text-[var(--color-ink-muted)]" aria-hidden="true" />
+      <span className="text-xs font-semibold text-[var(--color-ink-muted)] uppercase tracking-wider">
+        Pivot Table
+      </span>
+    </>
+  )
+}
+
 function GridShell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="border border-[var(--color-border)] rounded-lg overflow-hidden">
-      <div className="flex items-center gap-2 px-3 py-2 bg-[var(--color-cream)] border-b border-[var(--color-border)]">
-        <Table2 className="w-4 h-4 text-[var(--color-ink-muted)]" />
-        <span className="text-xs font-semibold text-[var(--color-ink-muted)] uppercase tracking-wider">
-          Pivot Table
-        </span>
-      </div>
+    <Card>
+      <CardHeader className="flex items-center gap-2">
+        <GridTitle />
+      </CardHeader>
       <div className="p-3">{children}</div>
-    </div>
+    </Card>
   )
 }
 
@@ -735,8 +810,8 @@ function SortButton({
       onClick={onClick}
       title={`Sort rows by ${label}`}
       className={cn(
-        'group inline-flex items-center gap-1 hover:text-[var(--color-accent)] transition-colors cursor-pointer',
-        state && 'text-[var(--color-accent)]'
+        'group inline-flex items-center gap-1 hover:text-[var(--color-accent-text)] transition-colors cursor-pointer',
+        state && 'text-[var(--color-accent-text)]'
       )}
     >
       <span>{label}</span>
