@@ -380,7 +380,7 @@ function ValueConfigInline({ config, fields, onUpdate, onRemove }: ValueConfigIn
   const numericOptions = fields.filter((f) => f.isNumeric)
 
   return (
-    <span className="inline-flex items-center gap-1 px-1.5 py-1 bg-[var(--color-input-bg)] border border-[var(--color-input-border)] shadow-[var(--shadow-input-inset)] rounded text-xs">
+    <span className="inline-flex flex-wrap items-center gap-1 max-w-full px-1.5 py-1 bg-[var(--color-input-bg)] border border-[var(--color-input-border)] shadow-[var(--shadow-input-inset)] rounded text-xs">
       <input
         value={config.caption ?? ''}
         aria-label="Metric name"

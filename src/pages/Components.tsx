@@ -131,8 +131,8 @@ export function Components() {
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
-            <SectionLabel>Input Options</SectionLabel>
-            <SectionLabel htmlFor="demo-section-input">With htmlFor attribute</SectionLabel>
+            <SectionLabel className="block">Input Options</SectionLabel>
+            <SectionLabel htmlFor="demo-section-input" className="block">With htmlFor attribute</SectionLabel>
           </div>
         </CardContent>
       </Card>

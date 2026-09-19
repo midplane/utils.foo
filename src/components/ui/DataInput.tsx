@@ -214,115 +214,118 @@ export function DataInput<S extends SampleOption>({
         </div>
       </CardHeader>
 
-      <CardContent className="space-y-2">
-        {/* Alerts stay outside the collapsible region: a warning about the data
-            is exactly what you need to see when the editor is shut. */}
-        {sampleError && (
-          <Alert variant="error" size="sm">
-            {sampleError}
-          </Alert>
-        )}
-        {fileError && (
-          <Alert variant="error" size="sm">
-            {fileError}
-          </Alert>
-        )}
-        {error && (
-          <Alert variant="error" size="sm">
-            {error}
-          </Alert>
-        )}
-        {!error && warning && (
-          <Alert variant="warning" size="sm">
-            {warning}
-          </Alert>
-        )}
+      {/* Collapsed with nothing to report there is no body; an empty one is a blank band. */}
+      {(expanded || sampleError || fileError || error || warning) && (
+        <CardContent className="space-y-2">
+          {/* Alerts stay outside the collapsible region: a warning about the data
+              is exactly what you need to see when the editor is shut. */}
+          {sampleError && (
+            <Alert variant="error" size="sm">
+              {sampleError}
+            </Alert>
+          )}
+          {fileError && (
+            <Alert variant="error" size="sm">
+              {fileError}
+            </Alert>
+          )}
+          {error && (
+            <Alert variant="error" size="sm">
+              {error}
+            </Alert>
+          )}
+          {!error && warning && (
+            <Alert variant="warning" size="sm">
+              {warning}
+            </Alert>
+          )}
 
-        {expanded && (
-          <div id={`${inputId}-editor`} className="space-y-2">
-            <textarea
-              id={inputId}
-              value={value}
-              onChange={(e) => onChange(e.target.value)}
-              rows={5}
-              placeholder={loadingSample ? 'Loading sample…' : 'Paste CSV data here…'}
-              spellCheck={false}
-              className="w-full px-3 py-2 text-xs font-mono bg-[var(--color-input-bg)] border border-[var(--color-input-border)] shadow-[var(--shadow-input-inset)] rounded-lg text-[var(--color-ink)] placeholder-[var(--color-ink-muted)] focus:border-[var(--color-accent)] resize-y transition-all"
-            />
+          {expanded && (
+            <div id={`${inputId}-editor`} className="space-y-2">
+              <textarea
+                id={inputId}
+                value={value}
+                onChange={(e) => onChange(e.target.value)}
+                rows={5}
+                placeholder={loadingSample ? 'Loading sample…' : 'Paste CSV data here…'}
+                spellCheck={false}
+                className="w-full px-3 py-2 text-xs font-mono bg-[var(--color-input-bg)] border border-[var(--color-input-border)] shadow-[var(--shadow-input-inset)] rounded-lg text-[var(--color-ink)] placeholder-[var(--color-ink-muted)] focus:border-[var(--color-accent)] resize-y transition-all"
+              />
 
-            <div className="flex flex-wrap items-center gap-2">
-              <label
-                className={cn(
-                  'inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg border cursor-pointer transition-all',
-                  'border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-ink)] hover:border-[var(--color-ink-muted)]',
-                  // The file input is sr-only, so mirror the global focus ring onto its label.
-                  'has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-[var(--color-accent)] has-[:focus-visible]:outline-offset-2',
-                  loading && 'opacity-60 pointer-events-none'
-                )}
-              >
-                <input
-                  type="file"
-                  accept=".csv,.tsv,.txt,text/csv"
-                  className="sr-only"
-                  onChange={handleFile}
-                />
-                <Upload className="w-3.5 h-3.5" aria-hidden="true" />
-                {loading ? 'Reading…' : 'Upload file'}
-              </label>
-
-              {/* Drag and drop is invisible unless advertised. Hidden on touch,
-                  where there is nothing to drag from. */}
-              <span className="hidden sm:inline text-[11px] text-[var(--color-ink-muted)]">
-                or drop one anywhere here
-              </span>
-
-              <span className="ml-1 text-[11px] text-[var(--color-ink-muted)]">
-                or load a sample:
-              </span>
-              {/* A handful of samples read better as buttons; past that they
-                  become a wall, and the descriptions - the useful part - are
-                  stuck in tooltips. A select shows them inline.
-
-                  Width is fixed because a select sizes itself to its widest
-                  option, and the descriptions would otherwise stretch it across
-                  the card. The open list is unaffected. */}
-              {samples.length > SAMPLE_BUTTON_LIMIT ? (
-                <select
-                  aria-label="Load sample data"
-                  disabled={loadingSample}
-                  value=""
-                  onChange={(e) => {
-                    const picked = samples.find((s) => s.id === e.target.value)
-                    if (picked) onLoadSample(picked)
-                  }}
-                  className="w-44 max-w-full truncate px-3 py-1.5 text-sm font-medium rounded-lg border border-[var(--color-input-border)] bg-[var(--color-input-bg)] shadow-[var(--shadow-input-inset)] text-[var(--color-ink)] hover:border-[var(--color-ink-muted)] focus:border-[var(--color-accent)] cursor-pointer transition-all disabled:cursor-not-allowed disabled:text-[var(--color-ink-muted)]"
+              <div className="flex flex-wrap items-center gap-2">
+                <label
+                  className={cn(
+                    'inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg border cursor-pointer transition-all',
+                    'border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-ink)] hover:border-[var(--color-ink-muted)]',
+                    // The file input is sr-only, so mirror the global focus ring onto its label.
+                    'has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-[var(--color-accent)] has-[:focus-visible]:outline-offset-2',
+                    loading && 'opacity-60 pointer-events-none'
+                  )}
                 >
-                  <option value="" disabled>
-                    Load a sample…
-                  </option>
-                  {samples.map((sample) => (
-                    <option key={sample.id} value={sample.id}>
-                      {sample.label} — {sample.description}
-                    </option>
-                  ))}
-                </select>
-              ) : (
-                samples.map((sample) => (
-                  <Button
-                    key={sample.id}
-                    variant="ghost"
+                  <input
+                    type="file"
+                    accept=".csv,.tsv,.txt,text/csv"
+                    className="sr-only"
+                    onChange={handleFile}
+                  />
+                  <Upload className="w-3.5 h-3.5" aria-hidden="true" />
+                  {loading ? 'Reading…' : 'Upload file'}
+                </label>
+
+                {/* Drag and drop is invisible unless advertised. Hidden on touch,
+                    where there is nothing to drag from. */}
+                <span className="hidden sm:inline text-[11px] text-[var(--color-ink-muted)]">
+                  or drop one anywhere here
+                </span>
+
+                <span className="ml-1 text-[11px] text-[var(--color-ink-muted)]">
+                  or load a sample:
+                </span>
+                {/* A handful of samples read better as buttons; past that they
+                    become a wall, and the descriptions - the useful part - are
+                    stuck in tooltips. A select shows them inline.
+
+                    Width is fixed because a select sizes itself to its widest
+                    option, and the descriptions would otherwise stretch it across
+                    the card. The open list is unaffected. */}
+                {samples.length > SAMPLE_BUTTON_LIMIT ? (
+                  <select
+                    aria-label="Load sample data"
                     disabled={loadingSample}
-                    title={sample.description}
-                    onClick={() => onLoadSample(sample)}
+                    value=""
+                    onChange={(e) => {
+                      const picked = samples.find((s) => s.id === e.target.value)
+                      if (picked) onLoadSample(picked)
+                    }}
+                    className="w-44 max-w-full truncate px-3 py-1.5 text-sm font-medium rounded-lg border border-[var(--color-input-border)] bg-[var(--color-input-bg)] shadow-[var(--shadow-input-inset)] text-[var(--color-ink)] hover:border-[var(--color-ink-muted)] focus:border-[var(--color-accent)] cursor-pointer transition-all disabled:cursor-not-allowed disabled:text-[var(--color-ink-muted)]"
                   >
-                    {sample.label}
-                  </Button>
-                ))
-              )}
+                    <option value="" disabled>
+                      Load a sample…
+                    </option>
+                    {samples.map((sample) => (
+                      <option key={sample.id} value={sample.id}>
+                        {sample.label} — {sample.description}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  samples.map((sample) => (
+                    <Button
+                      key={sample.id}
+                      variant="ghost"
+                      disabled={loadingSample}
+                      title={sample.description}
+                      onClick={() => onLoadSample(sample)}
+                    >
+                      {sample.label}
+                    </Button>
+                  ))
+                )}
+              </div>
             </div>
-          </div>
-        )}
-      </CardContent>
+          )}
+        </CardContent>
+      )}
     </Card>
   )
 }
