@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import type { EChartsOption } from 'echarts'
-import { Download, Check, Copy, Link2, Braces, ChevronDown, Image } from 'lucide-react'
+import { Download, Check, Copy, Braces, ChevronDown, Image } from 'lucide-react'
 import { Button } from '../../../components/ui/Button'
 import { SectionLabel } from '../../../components/ui/SectionLabel'
 import { cn } from '../../../lib/utils'
@@ -21,7 +21,6 @@ interface ExportMenuProps {
    * it comes from a DOM rect, which is not available during render.
    */
   measured: () => { width: number; height: number }
-  onShare: () => { ok: boolean; dataOmitted: boolean }
 }
 
 type Flash = { ok: boolean; text: string } | null
@@ -36,7 +35,7 @@ const selectClass =
  * buttons — which crowded out the chart-type picker and wrapped badly. They are
  * all infrequent, terminal actions, so a menu is the right weight for them.
  */
-export function ExportMenu({ option, background, measured, onShare }: ExportMenuProps) {
+export function ExportMenu({ option, background, measured }: ExportMenuProps) {
   const [open, setOpen] = useState(false)
   const [preset, setPreset] = useState('current')
   const [scale, setScale] = useState(2)
@@ -76,12 +75,6 @@ export function ExportMenu({ option, background, measured, onShare }: ExportMenu
     } catch {
       show(false, 'Copy failed')
     }
-  }
-
-  const handleShare = () => {
-    const { ok, dataOmitted } = onShare()
-    if (!ok) return show(false, 'Could not copy the link')
-    show(true, dataOmitted ? 'Link copied — settings only, data too large' : 'Link copied')
   }
 
   const item =
@@ -173,13 +166,6 @@ export function ExportMenu({ option, background, measured, onShare }: ExportMenu
 
           <div className="h-px bg-[var(--color-border)]" />
 
-          <button
-            type="button" role="menuitem" className={item}
-            onClick={() => { handleShare(); setOpen(false) }}
-          >
-            <Link2 className="w-3 h-3" aria-hidden="true" />
-            Copy shareable link
-          </button>
           <button
             type="button" role="menuitem" className={item}
             onClick={() => { downloadJSON(option); setOpen(false) }}

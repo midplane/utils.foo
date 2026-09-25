@@ -4,6 +4,7 @@ import {
   decodeState,
   writeHandoff,
   consumeHandoff,
+  isChartHash,
   type ShareState,
 } from '../tools/chart-builder/shareState'
 import { DEFAULT_TRANSFORM } from '../tools/chart-builder/transform'
@@ -19,30 +20,53 @@ const state = (over: Partial<ShareState> = {}): ShareState => ({
   ...over,
 })
 
+/** Pseudo-random, so it does not compress its way under the link limit. */
+function incompressibleCsv(rows: number): string {
+  let seed = 1
+  const next = () => (seed = (seed * 48271) % 2147483647).toString(36)
+  return 'x,y\n' + Array.from({ length: rows }, () => `${next()},${next()}`).join('\n')
+}
+
+/** A link in the original uncompressed format. */
+function legacyHash(value: unknown): string {
+  const bytes = new TextEncoder().encode(JSON.stringify(value))
+  return '#c=' + btoa(String.fromCharCode(...bytes)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
+}
+
 describe('share state round-trip', () => {
-  it('survives encode then decode', () => {
+  it('survives encode then decode', async () => {
     const original = state({ data: 'Month,Revenue\nJan,1' })
-    const decoded = decodeState(encodeState(original).hash)
+    const decoded = await decodeState((await encodeState(original)).hash)
     expect(decoded).toEqual(original)
   })
 
-  it('preserves non-Latin-1 text', () => {
-    // btoa alone throws on these, so the encoder has to go through UTF-8 bytes.
+  it('writes compressed links', async () => {
+    const { hash } = await encodeState(state())
+    expect(hash.startsWith('#cz=')).toBe(true)
+  })
+
+  it('preserves non-Latin-1 text', async () => {
     const original = state({
       cosmetics: { ...DEFAULT_COSMETICS, title: '売上 — Ünicode ✓ Ωmega' },
       data: 'Città,Valore\nMilano,42',
     })
-    const decoded = decodeState(encodeState(original).hash)
+    const decoded = await decodeState((await encodeState(original)).hash)
     expect(decoded!.cosmetics.title).toBe('売上 — Ünicode ✓ Ωmega')
     expect(decoded!.data).toBe('Città,Valore\nMilano,42')
   })
 
-  it('drops the data when the link would be too long, keeping the settings', () => {
-    const huge = 'x,y\n' + Array.from({ length: 20_000 }, (_, i) => `${i},${i}`).join('\n')
-    const { hash, dataOmitted } = encodeState(state({ data: huge }))
+  it('fits repetitive data that the old uncompressed format had to drop', async () => {
+    const regular = 'x,y\n' + Array.from({ length: 5_000 }, (_, i) => `${i},${i % 7}`).join('\n')
+    expect(legacyHash(state({ data: regular })).length).toBeGreaterThan(12_000)
+    const { dataOmitted } = await encodeState(state({ data: regular }))
+    expect(dataOmitted).toBe(false)
+  })
+
+  it('drops the data when the link would be too long, keeping the settings', async () => {
+    const { hash, dataOmitted } = await encodeState(state({ data: incompressibleCsv(20_000) }))
 
     expect(dataOmitted).toBe(true)
-    const decoded = decodeState(hash)
+    const decoded = await decodeState(hash)
     expect(decoded!.data).toBeUndefined()
     // The configuration still made it across.
     expect(decoded!.transform.xCol).toBe('Month')
@@ -50,50 +74,57 @@ describe('share state round-trip', () => {
     expect(decoded!.styles.Revenue?.axis).toBe('right')
   })
 
-  it('keeps small data inline', () => {
-    expect(encodeState(state({ data: 'a,b\n1,2' })).dataOmitted).toBe(false)
+  it('keeps small data inline', async () => {
+    expect((await encodeState(state({ data: 'a,b\n1,2' }))).dataOmitted).toBe(false)
   })
 })
 
 describe('sample references', () => {
-  // The sales sample encodes to ~87 KB inline; its id costs a dozen characters.
-  const huge = 'x,y\n' + Array.from({ length: 20_000 }, (_, i) => `${i},${i}`).join('\n')
+  const huge = incompressibleCsv(20_000)
 
-  it('carries the sample id instead of its rows', () => {
-    const { hash, dataOmitted } = encodeState(state({ data: huge, sampleId: 'sales-by-category' }))
+  it('carries the sample id instead of its rows', async () => {
+    const { hash, dataOmitted } = await encodeState(state({ data: huge, sampleId: 'sales-by-category' }))
 
     expect(dataOmitted).toBe(false)
     expect(hash.length).toBeLessThan(1000)
 
-    const decoded = decodeState(hash)!
+    const decoded = (await decodeState(hash))!
     expect(decoded.sampleId).toBe('sales-by-category')
     expect(decoded.data).toBeUndefined()
     // The configuration still travels intact.
     expect(decoded.transform.aggregation).toBe('sum')
   })
 
-  it('still drops oversized data when there is no sample to point at', () => {
-    const { dataOmitted } = encodeState(state({ data: huge }))
+  it('still drops oversized data when there is no sample to point at', async () => {
+    const { dataOmitted } = await encodeState(state({ data: huge }))
     expect(dataOmitted).toBe(true)
   })
 })
 
+describe('legacy links', () => {
+  it('still opens links in the original uncompressed format', async () => {
+    const original = state({ data: 'Città,Valore\nMilano,42' })
+    expect(isChartHash(legacyHash(original))).toBe(true)
+    expect(await decodeState(legacyHash(original))).toEqual(original)
+  })
+})
+
 describe('share state rejection', () => {
-  it('ignores a hash that is not ours', () => {
-    expect(decodeState('#something-else')).toBeNull()
-    expect(decodeState('')).toBeNull()
+  it('ignores a hash that is not ours', async () => {
+    expect(await decodeState('#something-else')).toBeNull()
+    expect(await decodeState('')).toBeNull()
+    expect(isChartHash('#p=abc')).toBe(false)
   })
 
-  it('ignores corrupt payloads rather than throwing', () => {
-    expect(decodeState('#c=not-valid-base64!!')).toBeNull()
-    expect(decodeState('#c=' + btoa('{"nope":true}'))).toBeNull()
+  it('ignores corrupt payloads rather than throwing', async () => {
+    expect(await decodeState('#c=not-valid-base64!!')).toBeNull()
+    expect(await decodeState('#c=' + btoa('{"nope":true}'))).toBeNull()
+    expect(await decodeState('#cz=not-valid!!')).toBeNull()
+    expect(await decodeState('#cz=AAAA')).toBeNull()
   })
 
-  it('ignores a future version', () => {
-    const encoded = encodeState(state()).hash
-    const bumped = JSON.parse(JSON.stringify({ ...state(), v: 2 }))
-    expect(decodeState(encoded)).not.toBeNull()
-    expect(decodeState('#c=' + btoa(JSON.stringify(bumped)))).toBeNull()
+  it('ignores a future version', async () => {
+    expect(await decodeState(legacyHash({ ...state(), v: 2 }))).toBeNull()
   })
 })
 

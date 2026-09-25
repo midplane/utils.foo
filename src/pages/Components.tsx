@@ -34,6 +34,7 @@ import {
   Spinner,
   Kbd,
   CopyButton,
+  ShareButton,
   ToolHeader,
   FlowDivider,
   SectionLabel,
@@ -673,6 +674,14 @@ export function Components() {
                 </code>
                 <CopyButton text="npm install utils.foo" />
               </div>
+            </div>
+            <div>
+              <p className="text-[10px] uppercase tracking-wider text-[var(--color-ink-muted)] mb-2">Share Button</p>
+              <ShareButton
+                title="Share example"
+                contents="this page's example state"
+                createLink={async () => ({ url: `${window.location.origin}/components#example` })}
+              />
             </div>
           </div>
         </CardContent>

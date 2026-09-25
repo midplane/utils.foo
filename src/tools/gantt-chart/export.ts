@@ -493,34 +493,70 @@ export function projectToJSON(project: Project): string {
 }
 
 export function projectFromJSON(text: string): Project {
-  const parsed: unknown = JSON.parse(text)
+  return projectFromObject(JSON.parse(text))
+}
+
+const str = (value: unknown, fallback: string) => (typeof value === 'string' ? value : fallback)
+const num = (value: unknown, fallback: number) =>
+  typeof value === 'number' && Number.isFinite(value) ? value : fallback
+
+/**
+ * Rebuild a project from parsed JSON, coercing every field to its type.
+ *
+ * The input may be a hand-edited file or a share link from anywhere, so a
+ * wrong-typed field falls back to its default rather than reaching the
+ * scheduler or being rendered as a React child.
+ */
+export function projectFromObject(parsed: unknown): Project {
   if (typeof parsed !== 'object' || parsed === null) throw new Error('Expected a JSON object.')
-  const raw = parsed as Partial<Project> & { version?: number }
+  const raw = parsed as Record<string, unknown>
   if (!Array.isArray(raw.tasks)) throw new Error('Expected a "tasks" array.')
 
-  const tasks = raw.tasks.map((task, index) => {
-    const source = (task ?? {}) as Partial<Task>
+  const tasks = raw.tasks.map((task: unknown, index) => {
+    const source = (typeof task === 'object' && task !== null ? task : {}) as Record<string, unknown>
     const color = source.color as TaskColor
+    const id = str(source.id, '')
     return makeTask({
-      ...source,
-      id: typeof source.id === 'string' && source.id ? source.id : `row${index + 1}`,
-      name: typeof source.name === 'string' ? source.name : `Task ${index + 1}`,
+      id: id || `row${index + 1}`,
+      name: str(source.name, `Task ${index + 1}`),
+      start: str(source.start, ''),
+      duration: Math.max(0, Math.round(num(source.duration, 5))),
+      progress: Math.min(100, Math.max(0, num(source.progress, 0))),
+      parentId: typeof source.parentId === 'string' ? source.parentId : null,
+      collapsed: source.collapsed === true,
+      assignee: str(source.assignee, ''),
+      notes: str(source.notes, ''),
       color: TASK_COLORS.includes(color) ? color : 'blue',
       deps: Array.isArray(source.deps)
-        ? source.deps.filter(
-            (dep): dep is Dependency =>
-              typeof dep?.from === 'string' && DEPENDENCY_TYPES.includes(dep.type)
-          )
+        ? source.deps
+            .filter(
+              (dep): dep is Dependency =>
+                typeof dep?.from === 'string' && DEPENDENCY_TYPES.includes(dep.type)
+            )
+            .map((dep) => ({ from: dep.from, type: dep.type, lag: Math.round(num(dep.lag, 0)) }))
         : [],
     })
   })
 
   return {
-    name: typeof raw.name === 'string' ? raw.name : 'Imported plan',
+    name: str(raw.name, 'Imported plan'),
     tasks,
-    calendar: raw.calendar ?? DEFAULT_CALENDAR_CONFIG,
+    calendar: calendarFromObject(raw.calendar),
     autoSchedule: raw.autoSchedule !== false,
   }
+}
+
+function calendarFromObject(value: unknown): CalendarConfig {
+  if (typeof value !== 'object' || value === null) return DEFAULT_CALENDAR_CONFIG
+  const raw = value as Record<string, unknown>
+  const workdays =
+    Array.isArray(raw.workdays) && raw.workdays.length === 7 && raw.workdays.every((d) => typeof d === 'boolean')
+      ? (raw.workdays as boolean[])
+      : DEFAULT_CALENDAR_CONFIG.workdays
+  const holidays = Array.isArray(raw.holidays)
+    ? raw.holidays.filter((d): d is string => typeof d === 'string' && parseISODate(d) !== null)
+    : []
+  return { workdays, holidays }
 }
 
 // ─── Mermaid ──────────────────────────────────────────────────────────────────

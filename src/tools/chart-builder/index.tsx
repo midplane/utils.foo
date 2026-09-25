@@ -3,6 +3,8 @@ import { BarChart2, PanelLeftClose, PanelLeftOpen } from 'lucide-react'
 import ReactECharts from 'echarts-for-react'
 import {
   Alert,
+  ShareButton,
+  Spinner,
   ToolHeader,
   DataInput,
   useExpandable,
@@ -40,7 +42,8 @@ import {
   type SeriesStyle,
 } from './chartOption'
 import { SAMPLES, loadSample, type ChartSample } from './samples'
-import { encodeState, readStateFromLocation, consumeHandoff } from './shareState'
+import { encodeState, decodeState, isChartHash, consumeHandoff, type ShareState } from './shareState'
+import { buildShareUrl } from '../../lib/shareLink'
 import { ChartTypePicker } from './components/ChartTypePicker'
 import { RailSection } from './components/RailSection'
 import { ShapePanel } from './components/ShapePanel'
@@ -57,12 +60,11 @@ import { ExportMenu } from './components/ExportMenu'
  * Doing this here rather than in a mount effect avoids a render with empty
  * state followed by a cascading update.
  */
-function bootState() {
+function bootState(shared: ShareState | null) {
   const handoff = consumeHandoff()
   if (handoff) {
     return { raw: handoff.csv, source: handoff.source, shared: null }
   }
-  const shared = readStateFromLocation()
   return {
     raw: shared?.data ?? '',
     source: shared?.data ? 'Shared link' : '',
@@ -70,8 +72,28 @@ function bootState() {
   }
 }
 
+/**
+ * Decoding a link is async (decompression), so the editor mounts only once it
+ * is done: its state is initialised from the link rather than patched in by a
+ * later effect. Visits without a chart link skip the wait entirely.
+ */
 export default function ChartBuilderTool() {
-  const [boot] = useState(bootState)
+  const [shared, setShared] = useState<{ state: ShareState | null } | null>(() =>
+    isChartHash(window.location.hash) ? null : { state: null }
+  )
+  useEffect(() => {
+    if (shared) return
+    let cancelled = false
+    void decodeState(window.location.hash).then((state) => { if (!cancelled) setShared({ state }) })
+    return () => { cancelled = true }
+  }, [shared])
+
+  if (!shared) return <div role="status" className="flex items-center gap-2 text-xs"><Spinner size="sm" /> Loading chart…</div>
+  return <ChartBuilder shared={shared.state} />
+}
+
+function ChartBuilder({ shared }: { shared: ShareState | null }) {
+  const [boot] = useState(() => bootState(shared))
 
   const [raw, setRaw] = useState(boot.raw)
   const [sourceLabel, setSourceLabel] = useState(boot.source)
@@ -280,21 +302,19 @@ export default function ChartBuilderTool() {
     setSettingsOnlyLink(false)
   }, [])
 
-  const handleShare = useCallback(() => {
-    const { hash, dataOmitted } = encodeState({
+  const createShareLink = useCallback(async () => {
+    const { hash, dataOmitted } = await encodeState({
       v: 1,
       transform: { ...config, series: effectiveSeries },
       cosmetics, chartType, orientation, styles,
       data: raw,
       sampleId,
     })
-    const url = `${window.location.origin}${window.location.pathname}${hash}`
-    window.history.replaceState(null, '', hash)
-    try {
-      void navigator.clipboard.writeText(url)
-      return { ok: true, dataOmitted }
-    } catch {
-      return { ok: false, dataOmitted }
+    return {
+      url: buildShareUrl(hash, window.location.href),
+      note: dataOmitted
+        ? 'Your data is too large to fit in a link, so only the chart settings are included. The recipient will need to load the same data.'
+        : undefined,
     }
   }, [config, effectiveSeries, cosmetics, chartType, orientation, styles, raw, sampleId])
 
@@ -469,7 +489,14 @@ export default function ChartBuilderTool() {
                   option={option}
                   background={palette.background}
                   measured={measured}
-                  onShare={handleShare}
+                />
+              )}
+              {hasData && (
+                <ShareButton
+                  className="h-7 px-2 text-xs"
+                  title="Share chart"
+                  contents="your data and every chart setting"
+                  createLink={createShareLink}
                 />
               )}
               <ExpandToggleButton />

@@ -1,3 +1,4 @@
+import { decodeFragment, encodeFragment, ShareLinkError } from '../../lib/shareLink'
 import type { TransformConfig } from './transform'
 import type { ChartType, Cosmetics, Orientation, SeriesStyle } from './chartOption'
 
@@ -26,30 +27,15 @@ export interface ShareState {
   sampleId?: string
 }
 
-/**
- * Browsers and proxies start truncating URLs well before the theoretical
- * limit. Past this the data is dropped and only the configuration travels.
- */
-const MAX_HASH_LENGTH = 12_000
+const PREFIX = 'cz'
 
-const PREFIX = '#c='
+/**
+ * The original, uncompressed format. No longer written, but links already
+ * pasted into docs and chats must keep opening.
+ */
+const LEGACY_PREFIX = '#c='
 
 // ─── Encoding ─────────────────────────────────────────────────────────────────
-
-/** UTF-8 safe base64, since btoa alone throws on non-Latin-1 characters. */
-function toBase64(text: string): string {
-  const bytes = new TextEncoder().encode(text)
-  let binary = ''
-  for (const byte of bytes) binary += String.fromCharCode(byte)
-  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
-}
-
-function fromBase64(encoded: string): string {
-  const padded = encoded.replace(/-/g, '+').replace(/_/g, '/')
-  const binary = atob(padded + '='.repeat((4 - (padded.length % 4)) % 4))
-  const bytes = Uint8Array.from(binary, (c) => c.charCodeAt(0))
-  return new TextDecoder().decode(bytes)
-}
 
 export interface EncodeResult {
   hash: string
@@ -57,12 +43,14 @@ export interface EncodeResult {
   dataOmitted: boolean
 }
 
-export function encodeState(state: ShareState): EncodeResult {
+export async function encodeState(state: ShareState): Promise<EncodeResult> {
   // A sample reference makes the inline copy redundant.
   const source: ShareState = state.sampleId ? { ...state, data: undefined } : state
-
-  const withData = PREFIX + toBase64(JSON.stringify(source))
-  if (withData.length <= MAX_HASH_LENGTH) return { hash: withData, dataOmitted: false }
+  try {
+    return { hash: await encodeFragment(PREFIX, source), dataOmitted: false }
+  } catch (error) {
+    if (!(error instanceof ShareLinkError) || error.kind !== 'too-large' || !source.data) throw error
+  }
 
   const withoutData: ShareState = {
     v: state.v,
@@ -72,25 +60,36 @@ export function encodeState(state: ShareState): EncodeResult {
     orientation: state.orientation,
     styles: state.styles,
   }
-  return { hash: PREFIX + toBase64(JSON.stringify(withoutData)), dataOmitted: true }
+  return { hash: await encodeFragment(PREFIX, withoutData), dataOmitted: true }
 }
 
-export function decodeState(hash: string): ShareState | null {
-  if (!hash.startsWith(PREFIX)) return null
+function accept(parsed: unknown): ShareState | null {
+  const state = parsed as ShareState | null
+  // Only accept the shape this build understands.
+  if (state?.v !== 1 || typeof state.transform !== 'object' || state.transform === null) return null
+  return state
+}
+
+function decodeLegacy(encoded: string): ShareState | null {
+  const padded = encoded.replace(/-/g, '+').replace(/_/g, '/')
+  const binary = atob(padded + '='.repeat((4 - (padded.length % 4)) % 4))
+  const bytes = Uint8Array.from(binary, (c) => c.charCodeAt(0))
+  return accept(JSON.parse(new TextDecoder().decode(bytes)))
+}
+
+/** Corrupt or foreign links decode to null, leaving the tool in its default state. */
+export async function decodeState(hash: string): Promise<ShareState | null> {
   try {
-    const parsed = JSON.parse(fromBase64(hash.slice(PREFIX.length))) as ShareState
-    // Only accept the shape this build understands.
-    if (parsed?.v !== 1 || typeof parsed.transform !== 'object') return null
-    return parsed
+    if (hash.startsWith(LEGACY_PREFIX)) return decodeLegacy(hash.slice(LEGACY_PREFIX.length))
+    return accept(await decodeFragment(PREFIX, hash))
   } catch {
     return null
   }
 }
 
-/** Read and clear the share state from the current URL. */
-export function readStateFromLocation(): ShareState | null {
-  if (typeof window === 'undefined') return null
-  return decodeState(window.location.hash)
+/** True when the hash looks like a chart link, before paying for decoding it. */
+export function isChartHash(hash: string): boolean {
+  return hash.startsWith(LEGACY_PREFIX) || hash.startsWith(`#${PREFIX}=`)
 }
 
 // ─── Cross-tool handoff ───────────────────────────────────────────────────────

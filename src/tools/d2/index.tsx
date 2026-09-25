@@ -6,15 +6,14 @@ import {
   SegmentedControl, SegmentedControlItem, Spinner,
   ExpandableCard, ExpandableCardHeader, ExpandableCardContent,
   ExpandToggleButton, ExpandHint, useExpandable,
-  DEFAULT_PANE_HEIGHT, EXPANDED_PANE_HEIGHT,
+  DEFAULT_PANE_HEIGHT, EXPANDED_PANE_HEIGHT, ShareButton,
 } from '../../components/ui'
 import { cn } from '../../lib/utils'
 import { useTheme } from '../../contexts/ThemeContext'
 import { CodeEditor } from './CodeEditor'
 import { SAMPLES } from './samples'
 import { useD2, type Layout } from './useD2'
-import { decodeState, DEFAULT_STATE, type ShareState } from './shareState'
-import { ShareButton } from './ShareButton'
+import { createShareUrl, decodeState, DEFAULT_STATE, type ShareState } from './shareState'
 
 const LAYOUT_OPTIONS = [
   { value: 'tala', label: 'TALA' },
@@ -136,7 +135,8 @@ function D2Editor({ initial, shared, linkError }: { initial: ShareState; shared:
           </SegmentedControl>
           <div className="flex items-center gap-1">
             <Button variant="ghost" size="sm" onClick={() => setCode('')} disabled={!code} title="Clear source" aria-label="Clear source"><Trash2 className="h-3.5 w-3.5" /></Button>
-            <ShareButton state={{ v: 1, code, layout, theme, sketch, renderer, asciiMode, view, zoom, expanded, isDark }} />
+            <ShareButton title="Share D2 diagram" contents="your source and all diagram and view settings"
+              createLink={async () => ({ url: await createShareUrl({ v: 1, code, layout, theme, sketch, renderer, asciiMode, view, zoom, expanded, isDark }, window.location.href) })} />
             <CopyButton text={output} disabled={!output}>Copy {isAscii ? 'ASCII' : 'SVG'}</CopyButton>
             <Button variant="secondary" size="sm" onClick={handleDownload} disabled={!output} className="gap-1.5"><Download className="h-3 w-3" /> {isAscii ? 'TXT' : 'SVG'}</Button>
             <ExpandToggleButton />

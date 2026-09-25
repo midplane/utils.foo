@@ -1,5 +1,6 @@
 import type { Layout, RenderFormat } from './useD2'
 import { INITIAL_CODE } from './samples'
+import { fromBase64Url, MAX_HASH_LENGTH, readBytes, toBase64Url } from '../../lib/shareLink'
 
 export interface ShareState {
   v: 1
@@ -28,10 +29,11 @@ export const DEFAULT_STATE: ShareState = {
 }
 
 const PREFIX = '#d2='
-export const MAX_HASH_LENGTH = 32_000
+export { MAX_HASH_LENGTH }
 const MAX_STATE_BYTES = 1_000_000
 const INVALID_LINK = 'This D2 share link is invalid or uses an unsupported version.'
-const TOO_LARGE = 'This diagram is too large for a share link. Shorten the source and try again; no source or settings have been omitted.'
+const TOO_LARGE_MESSAGE = 'This diagram is too large for a share link. Shorten the source and try again; no source or settings have been omitted.'
+const tooLarge = () => new Error(TOO_LARGE_MESSAGE)
 
 function validateState(value: unknown): ShareState {
   if (!value || typeof value !== 'object') throw new Error(INVALID_LINK)
@@ -89,54 +91,25 @@ function unpackState(value: unknown): ShareState {
   })
 }
 
-// Bound the decompressed payload as well as the URL to avoid expanding an
-// untrusted fragment into an arbitrarily large allocation.
-async function readBytes(stream: ReadableStream<Uint8Array>, limit: number): Promise<Uint8Array<ArrayBuffer>> {
-  const reader = stream.getReader()
-  const chunks: Uint8Array[] = []
-  let length = 0
-  try {
-    while (true) {
-      const { done, value } = await reader.read()
-      if (done) break
-      length += value.length
-      if (length > limit) {
-        await reader.cancel()
-        throw new Error(TOO_LARGE)
-      }
-      chunks.push(value)
-    }
-  } finally { reader.releaseLock() }
-  const bytes = new Uint8Array(length)
-  let offset = 0
-  for (const chunk of chunks) { bytes.set(chunk, offset); offset += chunk.length }
-  return bytes
-}
-
 export async function encodeState(state: ShareState): Promise<string> {
   validateState(state)
   const bytes = new TextEncoder().encode(JSON.stringify(packState(state)))
-  if (bytes.length > MAX_STATE_BYTES) throw new Error(TOO_LARGE)
-  const compressed = await readBytes(new Blob([bytes]).stream().pipeThrough(new CompressionStream('deflate-raw')), MAX_HASH_LENGTH)
-  let binary = ''
-  for (const byte of compressed) binary += String.fromCharCode(byte)
-  const hash = PREFIX + btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
-  if (hash.length > MAX_HASH_LENGTH) throw new Error(TOO_LARGE)
+  if (bytes.length > MAX_STATE_BYTES) throw tooLarge()
+  const compressed = await readBytes(new Blob([bytes]).stream().pipeThrough(new CompressionStream('deflate-raw')), MAX_HASH_LENGTH, tooLarge)
+  const hash = PREFIX + toBase64Url(compressed)
+  if (hash.length > MAX_HASH_LENGTH) throw tooLarge()
   return hash
 }
 
 export async function decodeState(hash: string): Promise<ShareState | null> {
   if (!hash.startsWith(PREFIX)) return null
-  if (hash.length > MAX_HASH_LENGTH) throw new Error(TOO_LARGE)
+  if (hash.length > MAX_HASH_LENGTH) throw tooLarge()
   try {
-    const encoded = hash.slice(PREFIX.length)
-    if (!encoded || !/^[A-Za-z0-9_-]+$/.test(encoded)) throw new Error(INVALID_LINK)
-    const binary = atob(encoded.replace(/-/g, '+').replace(/_/g, '/'))
-    const bytes = Uint8Array.from(binary, char => char.charCodeAt(0))
+    const bytes = fromBase64Url(hash.slice(PREFIX.length))
     // Gzip's magic bytes cannot begin a valid raw DEFLATE stream (its first
     // byte specifies a reserved block type), so old links are unambiguous.
     const legacy = bytes[0] === 0x1f && bytes[1] === 0x8b
-    const decompressed = await readBytes(new Blob([bytes]).stream().pipeThrough(new DecompressionStream(legacy ? 'gzip' : 'deflate-raw')), MAX_STATE_BYTES)
+    const decompressed = await readBytes(new Blob([bytes]).stream().pipeThrough(new DecompressionStream(legacy ? 'gzip' : 'deflate-raw')), MAX_STATE_BYTES, tooLarge)
     const parsed: unknown = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(decompressed))
     return legacy ? validateState(parsed) : unpackState(parsed)
   } catch {

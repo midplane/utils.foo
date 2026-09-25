@@ -16,6 +16,7 @@ import {
   Alert,
   Badge,
   Button,
+  ShareButton,
   Card,
   CardContent,
   ExpandHint,
@@ -36,6 +37,7 @@ import {
   Toggle,
   useExpandable,
 } from '../../components/ui'
+import { buildShareUrl } from '../../lib/shareLink'
 import { cn } from '../../lib/utils'
 import { GanttBoard, ROW_HEIGHT, TaskEdit } from './components/GanttBoard'
 import { TaskInspector } from './components/TaskInspector'
@@ -64,6 +66,7 @@ import {
 import { SAMPLES, emptyProject } from './samples'
 import { buildSchedule, toWorkCalendar } from './schedule'
 import { ZOOM_LABELS, ZOOM_LEVELS, ZoomLevel, buildTimeline } from './timeline'
+import { decodeState, encodeState } from './shareState'
 
 const WEEKDAY_LABELS = ['S', 'M', 'T', 'W', 'T', 'F', 'S']
 const HISTORY_LIMIT = 80
@@ -94,6 +97,7 @@ export default function GanttChartTool() {
   const [importWarnings, setImportWarnings] = useState<string[]>([])
   const [exportScale, setExportScale] = useState('2')
   const [exportNote, setExportNote] = useState('')
+  const [linkError, setLinkError] = useState('')
   const { expanded, setExpanded } = useExpandable()
 
   // ─── History ──────────────────────────────────────────────────────────────
@@ -138,6 +142,27 @@ export default function GanttChartTool() {
     setHistory({ past: [], present: next, future: [] })
     setSelectedId(null)
   }, [])
+
+  // A shared link replaces the starting sample once it has been decoded.
+  useEffect(() => {
+    let cancelled = false
+    decodeState(window.location.hash).then(
+      (shared) => {
+        if (cancelled || !shared) return
+        replaceProject(shared.project)
+        setZoom(shared.zoom)
+      },
+      (error: unknown) => {
+        if (!cancelled) setLinkError(error instanceof Error ? error.message : 'Could not open this share link.')
+      },
+    )
+    return () => { cancelled = true }
+  }, [replaceProject])
+
+  const createShareLink = useCallback(
+    async () => ({ url: buildShareUrl(await encodeState({ project, zoom }), window.location.href) }),
+    [project, zoom]
+  )
 
   // ─── Derived ──────────────────────────────────────────────────────────────
 
@@ -453,6 +478,7 @@ export default function GanttChartTool() {
   return (
     <div className="space-y-4">
       <ToolHeader icon={<GanttChartSquare size={20} />} title="Gantt" accentedSuffix="Chart Builder" />
+      {linkError && <Alert variant="error">{linkError}</Alert>}
 
       {/* ─── Toolbar ───────────────────────────────────────────────────────── */}
       <Card>
@@ -587,6 +613,11 @@ export default function GanttChartTool() {
               <Button variant="secondary" size="sm" onClick={() => setExportOpen(true)}>
                 <Download size={14} className="mr-1" /> Export
               </Button>
+              <ShareButton
+                title="Share Gantt chart"
+                contents="every task, dependency and calendar setting in this plan"
+                createLink={createShareLink}
+              />
             </div>
           </div>
         </CardContent>

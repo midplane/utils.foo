@@ -29,7 +29,7 @@ Do not assume a clean run means you broke nothing — compare against this basel
 
 - **ESLint: 7 errors.** All `react-hooks/refs` ("Cannot access refs during render") in
   `ThemeContext.tsx`, `data-converter`, `json-formatter`, `markdown-preview`, `mermaid` (×2).
-- **Vitest: clean.** 382 tests across 19 files, all passing. (This previously recorded 14
+- **Vitest: clean.** 518 tests across 26 files, all passing. (This previously recorded 14
   `useFavorites` failures from a jsdom `localStorage` gap; that was fixed and the note went
   stale. Re-measure before trusting a baseline written down here.)
 
@@ -84,6 +84,7 @@ import { Button, Alert, ToolHeader, ResultBox, SegmentedControl } from '../../co
 | `Card`, `Badge`, `Tabs`, `Modal`, `Tooltip` | Layout & feedback |
 | `CopyButton`, `Spinner`, `Skeleton`, `Kbd` | Utilities |
 | `DataInput` | CSV/TSV entry: paste, file upload, drag-drop, sample loading, collapses once parsed |
+| `ShareButton` | Opens a dialog with a self-contained share link built by an async `createLink` |
 
 `src/pages/Components.tsx` renders a live gallery of these — check it before building anything new.
 
@@ -254,6 +255,21 @@ export const meta: ToolMeta = { /* ... */, wide: true }
 
 Use `wide` for split-pane or canvas-style tools (side-by-side editors, diagrams, charts).
 Do not widen the shared default — it affects every tool at once.
+
+## Share links
+
+Sharing must not compromise the "nothing leaves your browser" claim, so a share link carries
+its whole payload in the URL **fragment** (after `#`), which browsers never send to a server.
+`src/lib/shareLink.ts` does the work: JSON → raw DEFLATE → base64url under a per-tool prefix
+(`#p=` pivot, `#g=` gantt, `#cz=` chart, `#d2=` D2), capped at 32 KB of URL and 2 MB
+decompressed. Pair it with `ShareButton` from the UI library.
+
+- A decoded link is untrusted input. Validate every field before it reaches an engine (see
+  `pivot-table/shareState.ts`); unreadable links should surface an `Alert`, not throw.
+- When data will not fit, fall back to a settings-only link and say so via the dialog `note`.
+  A bundled sample is sent as its id, never its rows.
+- Never change the meaning of an existing prefix: old links live in chats and docs. Chart
+  Builder still reads its original uncompressed `#c=` format for this reason.
 
 ## Reusing the Pivot Table engine
 

@@ -1,7 +1,8 @@
 import { useState, useCallback, useEffect, useMemo, useDeferredValue, useRef } from 'react'
 import Papa from 'papaparse'
 import { Table2 } from 'lucide-react'
-import { ToolHeader } from '../../components/ui'
+import { Alert, ShareButton, ToolHeader } from '../../components/ui'
+import { buildShareUrl } from '../../lib/shareLink'
 import { DataInput } from '../../components/ui/DataInput'
 import { ConfigPanel } from './components/ConfigPanel'
 import { PivotGrid } from './components/PivotGrid'
@@ -9,8 +10,7 @@ import { usePivotData, analyzeData } from './hooks/usePivotData'
 import { derivedFieldInfo, derivedFieldNames, looksLikeDate } from './engine/grouping'
 import { SAMPLES, DEFAULT_SAMPLE, loadSample, Sample } from './samples'
 import { PivotConfig, DataRecord, FieldInfo, ValueConfig } from './types'
-
-
+import { decodeState, encodeState, type ShareState } from './shareState'
 
 type SampleState =
   | { status: 'loading' }
@@ -134,6 +134,10 @@ export default function PivotTable() {
   const [config, setConfig] = useState<PivotConfig>(DEFAULT_SAMPLE.config)
   const [sampleState, setSampleState] = useState<SampleState>({ status: 'loading' })
   const [sourceLabel, setSourceLabel] = useState('')
+  /** Set while the data is an unedited bundled sample, so a link can name it instead of carrying it. */
+  const [sampleId, setSampleId] = useState<string | undefined>()
+  /** Problems opening a shared link, or a note that it arrived without data. */
+  const [linkNotice, setLinkNotice] = useState<{ variant: 'error' | 'info'; text: string } | null>(null)
 
   // Parsing a large paste is not cheap. Deferring it keeps the textarea
   // responsive while React re-parses in the background.
@@ -171,7 +175,7 @@ export default function PivotTable() {
   // overwrite a sample chosen after it.
   const latestSample = useRef(0)
 
-  const handleLoadSample = useCallback((sample: Sample) => {
+  const handleLoadSample = useCallback((sample: Sample, sharedConfig?: PivotConfig) => {
     setSampleState({ status: 'loading' })
     const request = ++latestSample.current
     const cancelled = () => request !== latestSample.current
@@ -180,8 +184,9 @@ export default function PivotTable() {
       .then((csv) => {
         if (cancelled()) return
         setCsvText(csv)
-        setConfig(sample.config)
+        setConfig(sharedConfig ?? sample.config)
         setSourceLabel(sample.label)
+        setSampleId(sample.id)
         setSampleState({ status: 'ready' })
       })
       .catch((error: unknown) => {
@@ -197,11 +202,57 @@ export default function PivotTable() {
   const handleCsvChange = useCallback((next: string) => {
     setCsvText(next)
     setSourceLabel('')
+    setSampleId(undefined)
+    setLinkNotice(null)
   }, [])
 
-  // Fetch the default sample once, after the tool has rendered.
+  const applySharedState = useCallback((shared: ShareState) => {
+    const sample = shared.sampleId ? SAMPLES.find((s) => s.id === shared.sampleId) : undefined
+    if (sample) { handleLoadSample(sample, shared.config); return }
+    setConfig(shared.config)
+    setSampleState({ status: 'ready' })
+    if (shared.data) {
+      setCsvText(shared.data)
+      setSourceLabel('Shared link')
+      return
+    }
+    const columns = [...shared.config.rows, ...shared.config.cols, ...shared.config.values.map((v) => v.field)]
+    setLinkNotice({
+      variant: 'info',
+      text: 'This link carries the pivot settings but not the data, which was too large to fit. ' +
+        `Paste or load the same CSV${columns.length ? ` (with ${[...new Set(columns)].join(', ')})` : ''} to see it.`,
+    })
+  }, [handleLoadSample])
+
+  const createShareLink = useCallback(async () => {
+    const { hash, dataOmitted } = await encodeState({
+      config: activeConfig,
+      data: csvText,
+      sampleId,
+    })
+    return {
+      url: buildShareUrl(hash, window.location.href),
+      note: dataOmitted
+        ? 'Your data is too large to fit in a link, so only the pivot settings are included. The recipient will need to load the same CSV.'
+        : undefined,
+    }
+  }, [activeConfig, csvText, sampleId])
+
+  // Open a shared link if there is one; otherwise fetch the default sample.
   useEffect(() => {
-    handleLoadSample(DEFAULT_SAMPLE)
+    const request = latestSample.current
+    decodeState(window.location.hash).then(
+      (shared) => {
+        if (request !== latestSample.current) return
+        if (shared) applySharedState(shared)
+        else handleLoadSample(DEFAULT_SAMPLE)
+      },
+      (error: unknown) => {
+        if (request !== latestSample.current) return
+        setLinkNotice({ variant: 'error', text: error instanceof Error ? error.message : 'Could not open this share link.' })
+        handleLoadSample(DEFAULT_SAMPLE)
+      },
+    )
     const latest = latestSample
     return () => {
       latest.current += 1
@@ -212,7 +263,19 @@ export default function PivotTable() {
 
   return (
     <div className="space-y-4 animate-fade-in">
-      <ToolHeader icon={<Table2 />} title="Pivot" accentedSuffix="Table" />
+      <div className="flex items-center justify-between gap-3">
+        <ToolHeader icon={<Table2 />} title="Pivot" accentedSuffix="Table" />
+        {fields.length > 0 && (
+          <ShareButton
+            className="shrink-0"
+            title="Share pivot table"
+            contents="your data and every pivot setting"
+            createLink={createShareLink}
+          />
+        )}
+      </div>
+
+      {linkNotice && <Alert variant={linkNotice.variant}>{linkNotice.text}</Alert>}
 
       <DataInput
         value={csvText}
