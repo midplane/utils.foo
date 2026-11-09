@@ -4,10 +4,6 @@ import { EditorView } from '@codemirror/view'
 import { EditorState, Compartment } from '@codemirror/state'
 import { LanguageDescription } from '@codemirror/language'
 import { languages } from '@codemirror/language-data'
-import * as yaml from 'js-yaml'
-import Papa from 'papaparse'
-import { XMLParser, XMLBuilder } from 'fast-xml-parser'
-import { parse as parseTOML, stringify as stringifyTOML } from 'smol-toml'
 import { Button } from '../../components/ui/Button'
 import { CopyButton } from '../../components/ui/CopyButton'
 import { Badge } from '../../components/ui/Badge'
@@ -25,14 +21,9 @@ import { cn } from '../../lib/utils'
 import { appTheme, appThemeDark } from '../../lib/codemirrorTheme'
 import { useTheme } from '../../contexts/ThemeContext'
 import { ArrowLeftRight, Sparkles, Trash2 } from 'lucide-react'
+import { convert, type ConversionId } from './convert'
 
 // ─── Conversion definitions ───────────────────────────────────────────────────
-
-type ConversionId =
-  | 'json-yaml' | 'yaml-json'
-  | 'json-toml' | 'toml-json'
-  | 'json-csv'  | 'csv-json'
-  | 'json-xml'  | 'xml-json'
 
 interface Conversion {
   id: ConversionId
@@ -109,61 +100,6 @@ utils.bar,1.0.0,false,7`,
   <active>true</active>
   <score>42</score>
 </root>`,
-}
-
-// ─── Converter logic ──────────────────────────────────────────────────────────
-
-function convert(id: ConversionId, input: string): { output: string; error?: string } {
-  const trimmed = input.trim()
-  if (!trimmed) return { output: '' }
-
-  try {
-    switch (id) {
-      case 'json-yaml': {
-        const obj = JSON.parse(trimmed)
-        return { output: yaml.dump(obj, { indent: 2, lineWidth: -1 }).trimEnd() }
-      }
-      case 'yaml-json': {
-        const obj = yaml.load(trimmed)
-        return { output: JSON.stringify(obj, null, 2) }
-      }
-      case 'json-toml': {
-        const obj = JSON.parse(trimmed)
-        return { output: stringifyTOML(obj) }
-      }
-      case 'toml-json': {
-        const obj = parseTOML(trimmed)
-        return { output: JSON.stringify(obj, null, 2) }
-      }
-      case 'json-csv': {
-        const obj = JSON.parse(trimmed)
-        const arr = Array.isArray(obj) ? obj : [obj]
-        return { output: Papa.unparse(arr) }
-      }
-      case 'csv-json': {
-        const result = Papa.parse(trimmed, { header: true, skipEmptyLines: true, dynamicTyping: true })
-        if (result.errors.length > 0) throw new Error(result.errors[0]!.message)
-        return { output: JSON.stringify(result.data, null, 2) }
-      }
-      case 'json-xml': {
-        const obj = JSON.parse(trimmed)
-        const builder = new XMLBuilder({ format: true, indentBy: '  ', suppressEmptyNode: true })
-        const wrapped = { root: obj }
-        const xml = builder.build(wrapped) as string
-        return { output: `<?xml version="1.0" encoding="UTF-8"?>\n${xml.trimEnd()}` }
-      }
-      case 'xml-json': {
-        const parser = new XMLParser({ ignoreAttributes: false, parseTagValue: true, parseAttributeValue: true })
-        const obj = parser.parse(trimmed)
-        // Unwrap single root key if present
-        const keys = Object.keys(obj)
-        const unwrapped = keys.length === 1 ? obj[keys[0]!] : obj
-        return { output: JSON.stringify(unwrapped, null, 2) }
-      }
-    }
-  } catch (e) {
-    return { output: '', error: (e as Error).message }
-  }
 }
 
 // ─── Async language loader ────────────────────────────────────────────────────
@@ -270,14 +206,16 @@ export default function DataConverterTool() {
   }, [convId, inputText])
 
   // ── On conversion switch: load sample for new source format ──────────────────
+  // Keep the user's input when the source format stays the same (JSON → YAML to JSON → TOML).
   const handleConvChange = useCallback((id: ConversionId) => {
     const newConv = CONVERSIONS.find(c => c.id === id)!
-    const sample = SAMPLES[newConv.from] ?? ''
-    setConvId(id)
-    setInputText(sample)
     const iv = inputView.current
+    setConvId(id)
+    if (newConv.from === conv.from && iv && iv.state.doc.toString().trim()) return
+    const sample = SAMPLES[newConv.from] ?? ''
+    setInputText(sample)
     if (iv) iv.dispatch({ changes: { from: 0, to: iv.state.doc.length, insert: sample } })
-  }, [])
+  }, [conv.from])
 
   // ── Swap ─────────────────────────────────────────────────────────────────────
   const handleSwap = useCallback(() => {
