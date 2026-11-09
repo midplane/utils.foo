@@ -1,5 +1,5 @@
 // ─── Pure client-side EXIF parser ─────────────────────────────────────────────
-// Parses EXIF (APP1) from JPEG files using a DataView over an ArrayBuffer.
+// Parses EXIF from JPEG files (APP1 segment) and TIFF files, using a DataView over an ArrayBuffer.
 // No external dependencies. Supports IFD0, Exif SubIFD, and GPS IFD.
 
 export interface ExifData {
@@ -190,7 +190,13 @@ export function formatExifValue(key: string, value: string | number | number[]):
     }
   }
   if (key === 'ExposureTime' && typeof value === 'number') {
-    return value < 1 ? `1/${Math.round(1 / value)}s` : `${value}s`
+    // Show a fraction only when 1/value is near an integer, so 0.6s is not shown as 1/2s.
+    if (value > 0 && value < 1) {
+      const inverse = 1 / value
+      if (Math.abs(inverse - Math.round(inverse)) < 0.05) return `1/${Math.round(inverse)}s`
+      return `${Number(value.toFixed(3))}s`
+    }
+    return `${value}s`
   }
   if (key === 'FNumber' && typeof value === 'number') {
     return `f/${value}`
@@ -207,10 +213,42 @@ export function formatExifValue(key: string, value: string | number | number[]):
   if (key === 'ExposureBiasValue' && typeof value === 'number') {
     return `${value >= 0 ? '+' : ''}${value.toFixed(1)} EV`
   }
+  if (Array.isArray(value) && (key === 'ExifVersion' || key === 'FlashpixVersion')) {
+    return bytesToText(value)
+  }
+  if (Array.isArray(value) && key === 'UserComment') {
+    return decodeUserComment(value)
+  }
   if (Array.isArray(value)) {
     return value.map(v => typeof v === 'number' ? (Number.isInteger(v) ? v : v.toFixed(4)) : v).join(', ')
   }
   return String(value)
+}
+
+function bytesToText(bytes: number[]): string {
+  let str = ''
+  for (const b of bytes) {
+    if (b === 0) break
+    str += String.fromCharCode(b)
+  }
+  return str.trim()
+}
+
+// UserComment starts with an 8-byte character code ("ASCII", "UNICODE", "JIS" or all zeros).
+function decodeUserComment(bytes: number[]): string {
+  const code = bytesToText(bytes.slice(0, 8))
+  const body = bytes.slice(8)
+  if (code === 'UNICODE') {
+    const le = body[0] !== 0 && body[1] === 0
+    let str = ''
+    for (let i = 0; i + 1 < body.length; i += 2) {
+      const unit = le ? (body[i] ?? 0) | ((body[i + 1] ?? 0) << 8) : ((body[i] ?? 0) << 8) | (body[i + 1] ?? 0)
+      if (unit === 0) break
+      str += String.fromCharCode(unit)
+    }
+    return str.trim()
+  }
+  return bytesToText(body)
 }
 
 // ─── GPS coordinate helpers ───────────────────────────────────────────────────
@@ -259,8 +297,9 @@ function readTagValue(
       return bytes
     }
     case 2: { // ASCII
+      // Some writers omit the NUL terminator, so read all `count` bytes and stop at the first NUL.
       let str = ''
-      for (let i = 0; i < count - 1; i++) {
+      for (let i = 0; i < count; i++) {
         const c = view.getUint8(valueOffset + i)
         if (c === 0) break
         str += String.fromCharCode(c)
@@ -273,7 +312,8 @@ function readTagValue(
       for (let i = 0; i < count; i++) shorts.push(view.getUint16(valueOffset + i * 2, littleEndian))
       return shorts
     }
-    case 4: { // LONG
+    case 4: // LONG
+    case 13: { // IFD (offset to a sub-IFD, stored as a LONG)
       if (count === 1) return view.getUint32(valueOffset, littleEndian)
       const longs: number[] = []
       for (let i = 0; i < count; i++) longs.push(view.getUint32(valueOffset + i * 4, littleEndian))
@@ -321,7 +361,7 @@ function readTagValue(
 }
 
 const FORMAT_SIZES: Record<number, number> = {
-  1: 1, 2: 1, 3: 2, 4: 4, 5: 8, 7: 1, 9: 4, 10: 8,
+  1: 1, 2: 1, 3: 2, 4: 4, 5: 8, 7: 1, 9: 4, 10: 8, 13: 4,
 }
 
 function readIFD(
@@ -379,6 +419,11 @@ export function parseExif(buffer: ArrayBuffer): ParsedExif | null {
     // Guard against tiny/truncated files
     if (view.byteLength < 4) return null
 
+    // A TIFF file is a TIFF header at offset 0
+    if (view.getUint16(0) === 0x4949 || view.getUint16(0) === 0x4d4d) {
+      return parseExifFromTiff(view, 0)
+    }
+
     // Find JPEG SOI
     if (view.getUint16(0) !== 0xFFD8) return null
 
@@ -424,9 +469,11 @@ export function parseExif(buffer: ArrayBuffer): ParsedExif | null {
   }
 }
 
-function parseExifFromTiff(view: DataView, tiffStart: number): ParsedExif {
+function parseExifFromTiff(view: DataView, tiffStart: number): ParsedExif | null {
   const byteOrder = view.getUint16(tiffStart)
-  const littleEndian = byteOrder === 0x4949 // "II"
+  if (byteOrder !== 0x4949 && byteOrder !== 0x4d4d) return null // Not "II" or "MM"
+  const littleEndian = byteOrder === 0x4949
+  if (view.getUint16(tiffStart + 2, littleEndian) !== 42) return null
 
   const ifd0Offset = view.getUint32(tiffStart + 4, littleEndian)
   const ifd0 = readIFD(view, tiffStart, ifd0Offset, IFD0_TAGS, littleEndian)

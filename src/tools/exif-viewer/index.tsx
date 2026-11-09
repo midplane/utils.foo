@@ -148,16 +148,16 @@ export default function ExifViewerTool() {
   const loadIdRef = useRef(0)
 
   const processFile = useCallback((file: File) => {
+    // Increment first, so that reads for an earlier file are ignored even if this file is rejected.
+    const currentLoadId = ++loadIdRef.current
     setError('')
     setExif(null)
     setPreview(null)
 
     if (!file.type.match(/^image\/(jpeg|tiff)/) && !file.name.match(/\.(jpe?g|tiff?)$/i)) {
-      setError('Only JPEG and TIFF files contain EXIF data. Please try a photo from a camera.')
+      setError('This tool reads EXIF data from JPEG and TIFF files only. Select a JPEG or TIFF file.')
       return
     }
-
-    const currentLoadId = ++loadIdRef.current
 
     setFileName(file.name)
     setFileSize(file.size)
@@ -188,6 +188,10 @@ export default function ExifViewerTool() {
       }
       setExif(result)
     }
+    reader.onerror = () => {
+      if (loadIdRef.current !== currentLoadId) return
+      setError('Cannot read this file.')
+    }
     reader.readAsArrayBuffer(file)
   }, [])
 
@@ -209,6 +213,7 @@ export default function ExifViewerTool() {
   }, [])
 
   const handleClear = useCallback(() => {
+    loadIdRef.current++
     setExif(null)
     setPreview(null)
     setFileName('')
