@@ -7,12 +7,31 @@ import { CopyButton } from '../../components/ui/CopyButton'
 import { ToolHeader } from '../../components/ui/ToolHeader'
 import { FlowDivider } from '../../components/ui/FlowDivider'
 import { SegmentedControl, SegmentedControlItem } from '../../components/ui/SegmentedControl'
+import { Alert } from '../../components/ui/Alert'
+import {
+  describeDate,
+  formatDate,
+  formatTimestamp,
+  parseDate,
+  parseTimestamp,
+  type Unit,
+  type Zone,
+} from './convert'
+
+/** The current time, rounded down to a whole second to match a seconds timestamp. */
+const nowToSecond = () => Math.floor(Date.now() / 1000) * 1000
 
 export default function EpochConverter() {
-  // Initialize with current time
-  const [timestamp, setTimestamp] = useState(() => Math.floor(Date.now() / 1000).toString())
-  const [dateString, setDateString] = useState(() => new Date().toLocaleString())
-  const [timezone, setTimezone] = useState('local')
+  // The instant both fields show. It is null while either field is empty or invalid.
+  const [instant, setInstant] = useState<number | null>(nowToSecond)
+  // The unit of the last timestamp the user entered, so that a date edit does
+  // not change a milliseconds timestamp into seconds.
+  const [unit, setUnit] = useState<Unit>('s')
+  const [zone, setZone] = useState<Zone>('local')
+  const [timestamp, setTimestamp] = useState(() => (instant === null ? '' : formatTimestamp(instant, 's')))
+  const [dateString, setDateString] = useState(() => (instant === null ? '' : formatDate(instant, 'local')))
+  const [timestampError, setTimestampError] = useState('')
+  const [dateError, setDateError] = useState('')
   const [currentTime, setCurrentTime] = useState(() => Date.now())
 
   useEffect(() => {
@@ -22,38 +41,41 @@ export default function EpochConverter() {
 
   const handleTimestampChange = (value: string) => {
     setTimestamp(value)
-    if (!value.trim()) { setDateString(''); return }
-    const num = parseInt(value, 10)
-    if (isNaN(num)) { setDateString('Invalid timestamp'); return }
-    const ms = value.length > 10 || num > 9999999999 ? num : num * 1000
-    const date = new Date(ms)
-    if (isNaN(date.getTime())) { setDateString('Invalid timestamp'); return }
-    setDateString(timezone === 'utc' ? date.toISOString() : date.toLocaleString())
+    setDateError('')
+    if (!value.trim()) { setInstant(null); setTimestampError(''); setDateString(''); return }
+    const parsed = parseTimestamp(value)
+    if (!parsed.ok) { setInstant(null); setTimestampError(parsed.error); setDateString(''); return }
+    setTimestampError('')
+    setInstant(parsed.value.ms)
+    setUnit(parsed.value.unit)
+    setDateString(formatDate(parsed.value.ms, zone))
   }
 
   const handleDateChange = (value: string) => {
     setDateString(value)
-    if (!value.trim()) { setTimestamp(''); return }
-    const date = new Date(value)
-    if (isNaN(date.getTime())) { setTimestamp('Invalid date'); return }
-    setTimestamp(Math.floor(date.getTime() / 1000).toString())
+    setTimestampError('')
+    if (!value.trim()) { setInstant(null); setDateError(''); setTimestamp(''); return }
+    const parsed = parseDate(value, zone)
+    if (!parsed.ok) { setInstant(null); setDateError(parsed.error); setTimestamp(''); return }
+    setDateError('')
+    setInstant(parsed.value)
+    setTimestamp(formatTimestamp(parsed.value, unit))
   }
 
   const handleNow = () => {
-    const now = Date.now()
-    setTimestamp(Math.floor(now / 1000).toString())
-    const date = new Date(now)
-    setDateString(timezone === 'utc' ? date.toISOString() : date.toLocaleString())
+    const now = nowToSecond()
+    setInstant(now)
+    setUnit('s')
+    setTimestamp(formatTimestamp(now, 's'))
+    setDateString(formatDate(now, zone))
+    setTimestampError('')
+    setDateError('')
   }
 
-  const handleTimezoneChange = (tz: string) => {
-    setTimezone(tz)
-    if (timestamp && !isNaN(parseInt(timestamp, 10))) {
-      const num = parseInt(timestamp, 10)
-      const ms = timestamp.length > 10 || num > 9999999999 ? num : num * 1000
-      const date = new Date(ms)
-      setDateString(tz === 'utc' ? date.toISOString() : date.toLocaleString())
-    }
+  const handleTimezoneChange = (value: string) => {
+    const next: Zone = value === 'utc' ? 'utc' : 'local'
+    setZone(next)
+    if (instant !== null) setDateString(formatDate(instant, next))
   }
 
   const nowSeconds = Math.floor(currentTime / 1000)
@@ -97,7 +119,7 @@ export default function EpochConverter() {
             <span className="text-xs font-semibold text-[var(--color-ink)]">Convert</span>
             <div className="flex items-center gap-2">
               <span className="text-[10px] text-[var(--color-ink-muted)] uppercase">TZ</span>
-              <SegmentedControl value={timezone} onChange={handleTimezoneChange}>
+              <SegmentedControl value={zone} onChange={handleTimezoneChange}>
                 <SegmentedControlItem value="local" className="px-2 py-0.5 text-[10px]">Local</SegmentedControlItem>
                 <SegmentedControlItem value="utc" className="px-2 py-0.5 text-[10px]">UTC</SegmentedControlItem>
               </SegmentedControl>
@@ -106,40 +128,54 @@ export default function EpochConverter() {
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
-            <div className="flex gap-2">
-              <div className="flex-1">
-                <Input
-                  label="Unix Timestamp"
-                  placeholder="1699900800 or 1699900800000"
-                  value={timestamp}
-                  onChange={(e) => handleTimestampChange(e.target.value)}
-                  id="timestamp"
-                  className="font-mono"
-                />
-              </div>
-              {timestamp && !timestamp.includes('Invalid') && (
-                <div className="flex items-end">
-                  <CopyButton text={timestamp} />
+            <div className="space-y-2">
+              <div className="flex gap-2">
+                <div className="flex-1">
+                  <Input
+                    label="Unix Timestamp"
+                    placeholder="1699900800 or 1699900800000"
+                    value={timestamp}
+                    onChange={(e) => handleTimestampChange(e.target.value)}
+                    id="timestamp"
+                    className="font-mono"
+                    aria-invalid={!!timestampError}
+                  />
                 </div>
-              )}
+                {timestamp && !timestampError && (
+                  <div className="flex items-end">
+                    <CopyButton text={timestamp} />
+                  </div>
+                )}
+              </div>
+              {timestampError && <Alert variant="error" size="sm">{timestampError}</Alert>}
             </div>
 
-            <FlowDivider icon={<ArrowUpDown />} hasOutput={!!timestamp && !!dateString && !timestamp.includes('Invalid') && !dateString.includes('Invalid')} />
+            <FlowDivider icon={<ArrowUpDown />} hasOutput={instant !== null} />
 
-            <div className="flex gap-2">
-              <div className="flex-1">
-                <Input
-                  label="Human Date"
-                  placeholder="2023-11-13T12:00:00"
-                  value={dateString}
-                  onChange={(e) => handleDateChange(e.target.value)}
-                  id="date"
-                />
-              </div>
-              {dateString && !dateString.includes('Invalid') && (
-                <div className="flex items-end">
-                  <CopyButton text={dateString} />
+            <div className="space-y-2">
+              <div className="flex gap-2">
+                <div className="flex-1">
+                  <Input
+                    label="Human Date"
+                    placeholder="2023-11-13T12:00:00"
+                    value={dateString}
+                    onChange={(e) => handleDateChange(e.target.value)}
+                    id="date"
+                    className="font-mono"
+                    aria-invalid={!!dateError}
+                  />
                 </div>
+                {dateString && !dateError && (
+                  <div className="flex items-end">
+                    <CopyButton text={dateString} />
+                  </div>
+                )}
+              </div>
+              {dateError && <Alert variant="error" size="sm">{dateError}</Alert>}
+              {instant !== null && (
+                <p className="text-xs text-[var(--color-ink-muted)]">
+                  {describeDate(instant, zone)}
+                </p>
               )}
             </div>
 
@@ -156,7 +192,7 @@ export default function EpochConverter() {
       {/* Compact Tip */}
       <div className="flex items-center gap-2 px-2 py-1.5 bg-[var(--color-cream-dark)] rounded border border-[var(--color-border)] text-[10px] text-[var(--color-ink-muted)]">
         <Lightbulb className="w-3 h-3 text-[var(--color-accent)]" />
-        <span>Auto-detects seconds (10 digits) vs milliseconds (13 digits)</span>
+        <span>Auto-detects seconds (up to 10 digits) vs milliseconds (11–13 digits). A date without an offset uses the selected time zone.</span>
       </div>
     </div>
   )
