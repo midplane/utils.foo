@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import { Card, CardContent, CardHeader } from '../../components/ui/Card'
 import { Button } from '../../components/ui/Button'
 import { Input } from '../../components/ui/Input'
@@ -8,78 +8,18 @@ import { Alert } from '../../components/ui/Alert'
 import { EmptyState } from '../../components/ui/EmptyState'
 import { Globe, Loader2, Info } from 'lucide-react'
 import { cn } from '../../lib/utils'
-
-// ─── Constants ───────────────────────────────────────────────────────────────
-
-const RECORD_TYPES = ['A', 'AAAA', 'MX', 'TXT', 'NS', 'CNAME', 'SOA'] as const
-type RecordType = typeof RECORD_TYPES[number]
-
-// Cloudflare DNS-over-HTTPS endpoint
-const DOH_URL = 'https://cloudflare-dns.com/dns-query'
-
-// ─── Types ───────────────────────────────────────────────────────────────────
-
-interface DnsAnswer {
-  name: string
-  type: number
-  TTL: number
-  data: string
-}
-
-interface DohResponse {
-  Status: number
-  Answer?: DnsAnswer[]
-  Authority?: DnsAnswer[]
-}
-
-interface RecordResult {
-  type: RecordType
-  status: 'ok' | 'nxdomain' | 'error'
-  answers: DnsAnswer[]
-  error?: string
-}
-
-// ─── DNS helpers ─────────────────────────────────────────────────────────────
-
-const RCODE_MESSAGES: Record<number, string> = {
-  1: 'Format error',
-  2: 'Server failure',
-  3: 'Non-existent domain (NXDOMAIN)',
-  4: 'Not implemented',
-  5: 'Refused',
-}
-
-async function queryDns(domain: string, type: RecordType): Promise<RecordResult> {
-  const url = `${DOH_URL}?name=${encodeURIComponent(domain)}&type=${type}`
-  const res = await fetch(url, { headers: { Accept: 'application/dns-json' } })
-  if (!res.ok) throw new Error(`HTTP ${res.status}`)
-  const data: DohResponse = await res.json() as DohResponse
-  if (data.Status === 3) {
-    return { type, status: 'nxdomain', answers: [] }
-  }
-  if (data.Status !== 0) {
-    return { type, status: 'error', answers: [], error: RCODE_MESSAGES[data.Status] ?? `RCODE ${data.Status}` }
-  }
-  return { type, status: 'ok', answers: data.Answer ?? [] }
-}
-
-function formatAnswer(answer: DnsAnswer, type: RecordType): string {
-  if (type === 'MX') {
-    // MX data is "priority exchange" — already in the data field
-    return answer.data
-  }
-  if (type === 'TXT') {
-    // Strip surrounding quotes from TXT records
-    return answer.data.replace(/^"|"$/g, '')
-  }
-  return answer.data
-}
-
-function ttlLabel(ttl: number): string {
-  if (ttl < 60) return `${ttl}s`
-  if (ttl < 3600) return `${Math.round(ttl / 60)}m`
-  return `${Math.round(ttl / 3600)}h`
-}
+import {
+  RECORD_TYPES,
+  LOOKUP_TIMEOUT_MS,
+  formatAnswer,
+  normaliseDomain,
+  queryDns,
+  resultsToText,
+  ttlLabel,
+  typeName,
+  type RecordResult,
+  type RecordType,
+} from './dns'
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
@@ -121,7 +61,10 @@ function RecordSection({ result }: { result: RecordResult }) {
               className="flex items-start justify-between gap-3 py-1.5 px-2 bg-[var(--color-cream-dark)] rounded border border-[var(--color-border)]"
             >
               <span className="text-xs font-mono text-[var(--color-ink)] break-all flex-1">
-                {formatAnswer(ans, result.type)}
+                {typeName(ans.type) !== result.type && (
+                  <span className="text-[var(--color-ink-muted)] mr-1.5">{typeName(ans.type)}</span>
+                )}
+                {formatAnswer(ans)}
               </span>
               <span className="text-[10px] text-[var(--color-ink-muted)] font-mono flex-shrink-0 pt-0.5">
                 TTL {ttlLabel(ans.TTL)}
@@ -159,9 +102,23 @@ export default function DnsLookupTool() {
     })
   }, [])
 
+  // The controller of the newest lookup. An older lookup that completes later
+  // must not write its results over the newer ones.
+  const lookupRef = useRef<AbortController | null>(null)
+
+  useEffect(() => () => { lookupRef.current?.abort() }, [])
+
   const handleLookup = useCallback(async () => {
-    const d = domain.trim().replace(/^https?:\/\//, '').replace(/\/.*$/, '')
-    if (!d) { setError('Enter a domain name'); return }
+    if (!domain.trim()) { setError('Enter a domain name'); return }
+    const d = normaliseDomain(domain)
+    if (!d) { setError('Enter a valid domain name'); return }
+
+    lookupRef.current?.abort()
+    const controller = new AbortController()
+    lookupRef.current = controller
+    let timedOut = false
+    const timer = setTimeout(() => { timedOut = true; controller.abort() }, LOOKUP_TIMEOUT_MS)
+
     setError('')
     setResults([])
     setIsLoading(true)
@@ -169,21 +126,26 @@ export default function DnsLookupTool() {
 
     const types = RECORD_TYPES.filter(t => selectedTypes.has(t))
     try {
-      const settled = await Promise.allSettled(types.map(t => queryDns(d, t)))
+      const settled = await Promise.allSettled(types.map(t => queryDns(d, t, controller.signal)))
+      if (lookupRef.current !== controller) return
       const resolved: RecordResult[] = settled.map((s, i) => {
         if (s.status === 'fulfilled') return s.value
         return {
           type: types[i]!,
           status: 'error' as const,
           answers: [],
-          error: s.reason instanceof Error ? s.reason.message : 'Request failed',
+          error: timedOut
+            ? 'Request timed out'
+            : s.reason instanceof Error ? s.reason.message : 'Request failed',
         }
       })
       setResults(resolved)
     } catch (e) {
+      if (lookupRef.current !== controller) return
       setError(e instanceof Error ? e.message : 'Lookup failed')
     } finally {
-      setIsLoading(false)
+      clearTimeout(timer)
+      if (lookupRef.current === controller) setIsLoading(false)
     }
   }, [domain, selectedTypes])
 
@@ -195,10 +157,9 @@ export default function DnsLookupTool() {
     (r.status === 'ok' && r.answers.length > 0) || r.status === 'error'
   )
 
-  const resultText = results
-    .filter(r => r.status === 'ok' && r.answers.length > 0)
-    .flatMap(r => r.answers.map(a => `${r.type}\t${a.TTL}\t${a.data}`))
-    .join('\n')
+  const isNxdomain = results.some(r => r.status === 'nxdomain')
+
+  const resultText = resultsToText(results)
 
   return (
     <div className="space-y-4 animate-fade-in">
@@ -265,7 +226,12 @@ export default function DnsLookupTool() {
           </CardHeader>
           <CardContent>
             {visibleResults.length === 0 ? (
-              <EmptyState size="sm" message="No records found for the selected types." />
+              <EmptyState
+                size="sm"
+                message={isNxdomain
+                  ? 'The domain does not exist (NXDOMAIN).'
+                  : 'No records found for the selected types.'}
+              />
             ) : (
               <div className="space-y-4">
                 {visibleResults.map(r => (
