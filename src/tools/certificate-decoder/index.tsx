@@ -8,327 +8,7 @@ import { ToolHeader } from '../../components/ui/ToolHeader'
 import { Alert } from '../../components/ui/Alert'
 import { FlowDivider } from '../../components/ui/FlowDivider'
 import { ClipboardList, Info, Loader2, Search, ShieldCheck, Trash2 } from 'lucide-react'
-
-// ---------------------------------------------------------------------------
-// Minimal ASN.1 / DER / X.509 parser (pure TS, no deps)
-// ---------------------------------------------------------------------------
-
-function b64decode(b64: string): Uint8Array {
-  const bin = atob(b64)
-  const bytes = new Uint8Array(bin.length)
-  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i)
-  return bytes
-}
-
-function stripPem(pem: string): string {
-  return pem
-    .replace(/-----BEGIN [^-]+-----/, '')
-    .replace(/-----END [^-]+-----/, '')
-    .replace(/\s+/g, '')
-}
-
-// ASN.1 tag constants
-const TAG_SEQUENCE   = 0x30
-const TAG_SET        = 0x31
-const TAG_UTF8_STR   = 0x0c
-const TAG_PRINTABLE  = 0x13
-const TAG_T61        = 0x14
-const TAG_IA5        = 0x16
-const TAG_UTC_TIME   = 0x17
-const TAG_GEN_TIME   = 0x18
-const TAG_OCTET_STR  = 0x04
-
-interface AsnNode {
-  tag: number
-  raw: Uint8Array
-  children?: AsnNode[]
-  value?: Uint8Array
-}
-
-function readLength(buf: Uint8Array, offset: number): { length: number; bytesRead: number } {
-  const first = buf[offset] ?? 0
-  if (first < 0x80) return { length: first, bytesRead: 1 }
-  const lenBytes = first & 0x7f
-  let length = 0
-  for (let i = 0; i < lenBytes; i++) length = (length << 8) | (buf[offset + 1 + i] ?? 0)
-  return { length, bytesRead: 1 + lenBytes }
-}
-
-function parseAsn(buf: Uint8Array, offset = 0, end?: number): AsnNode[] {
-  const stop = end ?? buf.length
-  const nodes: AsnNode[] = []
-  while (offset < stop) {
-    const tag = buf[offset] ?? 0
-    offset++
-    const { length, bytesRead } = readLength(buf, offset)
-    offset += bytesRead
-    const raw = buf.slice(offset, offset + length)
-    const constructed = (tag & 0x20) !== 0
-    const node: AsnNode = { tag, raw }
-    if (constructed) {
-      node.children = parseAsn(buf, offset, offset + length)
-    } else {
-      node.value = raw
-    }
-    nodes.push(node)
-    offset += length
-  }
-  return nodes
-}
-
-function oidBytes(bytes: Uint8Array): string {
-  const parts: number[] = []
-  const first = bytes[0] ?? 0
-  parts.push(Math.floor(first / 40))
-  parts.push(first % 40)
-  let val = 0
-  for (let i = 1; i < bytes.length; i++) {
-    const b = bytes[i] ?? 0
-    val = (val << 7) | (b & 0x7f)
-    if ((b & 0x80) === 0) { parts.push(val); val = 0 }
-  }
-  return parts.join('.')
-}
-
-const OID_NAMES: Record<string, string> = {
-  '2.5.4.3':  'CN', '2.5.4.6': 'C', '2.5.4.7': 'L', '2.5.4.8': 'ST',
-  '2.5.4.10': 'O',  '2.5.4.11': 'OU',
-  '1.2.840.113549.1.1.1':  'rsaEncryption',
-  '1.2.840.113549.1.1.11': 'sha256WithRSAEncryption',
-  '1.2.840.113549.1.1.12': 'sha384WithRSAEncryption',
-  '1.2.840.113549.1.1.13': 'sha512WithRSAEncryption',
-  '1.2.840.10045.2.1':     'ecPublicKey',
-  '1.2.840.10045.4.3.2':   'ecdsa-with-SHA256',
-  '1.2.840.10045.4.3.3':   'ecdsa-with-SHA384',
-  '2.5.29.17': 'subjectAltName',
-  '2.5.29.15': 'keyUsage',
-  '2.5.29.37': 'extKeyUsage',
-  '2.5.29.19': 'basicConstraints',
-  '2.5.29.14': 'subjectKeyIdentifier',
-  '2.5.29.35': 'authorityKeyIdentifier',
-}
-
-function oidName(oid: string): string {
-  return OID_NAMES[oid] ?? oid
-}
-
-function asn1String(node: AsnNode): string {
-  if (!node.value) return ''
-  const t = node.tag
-  if (t === TAG_UTF8_STR || t === TAG_PRINTABLE || t === TAG_T61 || t === TAG_IA5) {
-    return new TextDecoder().decode(node.value)
-  }
-  if (t === TAG_UTC_TIME || t === TAG_GEN_TIME) {
-    return new TextDecoder().decode(node.value)
-  }
-  return Array.from(node.value).map(b => b.toString(16).padStart(2, '0')).join('')
-}
-
-function parseTime(raw: string, tag: number): Date {
-  // UTCTime: YYMMDDHHMMSSZ, GeneralizedTime: YYYYMMDDHHMMSSZ
-  if (tag === TAG_UTC_TIME) {
-    const yy = parseInt(raw.slice(0, 2))
-    const year = yy >= 50 ? 1900 + yy : 2000 + yy
-    return new Date(`${year}-${raw.slice(2, 4)}-${raw.slice(4, 6)}T${raw.slice(6, 8)}:${raw.slice(8, 10)}:${raw.slice(10, 12)}Z`)
-  }
-  // GeneralizedTime
-  return new Date(`${raw.slice(0, 4)}-${raw.slice(4, 6)}-${raw.slice(6, 8)}T${raw.slice(8, 10)}:${raw.slice(10, 12)}:${raw.slice(12, 14)}Z`)
-}
-
-function parseName(seqNode: AsnNode): Record<string, string> {
-  const result: Record<string, string> = {}
-  const rdns = seqNode.children ?? []
-  for (const rdn of rdns) {
-    if (rdn.tag !== TAG_SET) continue
-    const atv = rdn.children?.[0]
-    if (!atv || atv.tag !== TAG_SEQUENCE) continue
-    const oidNode = atv.children?.[0]
-    const valNode = atv.children?.[1]
-    if (!oidNode || !valNode) continue
-    const oid = oidBytes(oidNode.value ?? new Uint8Array())
-    const name = oidName(oid)
-    result[name] = asn1String(valNode)
-  }
-  return result
-}
-
-function formatDN(dn: Record<string, string>): string {
-  return Object.entries(dn).map(([k, v]) => `${k}=${v}`).join(', ')
-}
-
-// Parse SubjectAltName extension value (an OCTET STRING wrapping a SEQUENCE)
-function parseSAN(extValue: Uint8Array): string[] {
-  const inner = parseAsn(extValue)
-  const seq = inner[0]
-  if (!seq?.children) return []
-  const names: string[] = []
-  for (const entry of seq.children) {
-    const t = entry.tag & 0x1f
-    if (t === 2) names.push('DNS:' + new TextDecoder().decode(entry.raw))     // dNSName [2]
-    else if (t === 7) names.push('IP:' + Array.from(entry.raw).join('.'))    // iPAddress [7]
-    else if (t === 1) names.push('Email:' + new TextDecoder().decode(entry.raw)) // rfc822Name [1]
-  }
-  return names
-}
-
-interface CertInfo {
-  version: string
-  serialNumber: string
-  signatureAlgorithm: string
-  subject: Record<string, string>
-  issuer: Record<string, string>
-  notBefore: Date
-  notAfter: Date
-  publicKeyAlgorithm: string
-  publicKeyBits?: number
-  san: string[]
-  isCA: boolean
-  fingerprint: string  // hex SHA-256
-  expired: boolean
-  daysRemaining: number
-}
-
-async function parseCertificate(pem: string): Promise<CertInfo> {
-  const b64 = stripPem(pem)
-  const der = b64decode(b64)
-  const nodes = parseAsn(der)
-  const certSeq = nodes[0]
-  if (!certSeq?.children) throw new Error('Invalid certificate structure')
-
-  // Certificate ::= SEQUENCE { tbsCertificate, signatureAlgorithm, signature }
-  const tbs = certSeq.children[0]
-  const sigAlgNode = certSeq.children[1]
-  if (!tbs?.children) throw new Error('Invalid TBSCertificate')
-
-  // TBSCertificate fields
-  let idx = 0
-  const tbsChildren = tbs.children
-
-  // [0] version (optional, explicit context tag)
-  let version = 'v1'
-  if ((tbsChildren[idx]?.tag ?? 0) === 0xa0) {
-    const vNode = tbsChildren[idx]?.children?.[0]
-    version = `v${((vNode?.value?.[0] ?? 0) + 1)}`
-    idx++
-  }
-
-  // serialNumber
-  const serialNode = tbsChildren[idx++]
-  const serialHex = Array.from(serialNode?.value ?? new Uint8Array())
-    .map(b => b.toString(16).padStart(2, '0')).join(':')
-
-  // signature algorithm (inner)
-  idx++ // skip inner sigAlg
-
-  // issuer
-  const issuerNode = tbsChildren[idx++]
-  const issuer = issuerNode ? parseName(issuerNode) : {}
-
-  // validity
-  const validityNode = tbsChildren[idx++]
-  const nbNode = validityNode?.children?.[0]
-  const naNode = validityNode?.children?.[1]
-  const notBefore = parseTime(asn1String(nbNode!), nbNode?.tag ?? TAG_UTC_TIME)
-  const notAfter  = parseTime(asn1String(naNode!), naNode?.tag ?? TAG_UTC_TIME)
-
-  // subject
-  const subjectNode = tbsChildren[idx++]
-  const subject = subjectNode ? parseName(subjectNode) : {}
-
-  // subjectPublicKeyInfo
-  const spkiNode = tbsChildren[idx++]
-  let publicKeyAlgorithm = 'Unknown'
-  let publicKeyBits: number | undefined
-  if (spkiNode?.children) {
-    const algNode = spkiNode.children[0]
-    const algOidNode = algNode?.children?.[0]
-    if (algOidNode?.value) {
-      const oid = oidBytes(algOidNode.value)
-      publicKeyAlgorithm = oidName(oid)
-    }
-    // For RSA, try to extract modulus bit length
-    if (publicKeyAlgorithm === 'rsaEncryption') {
-      const bsNode = spkiNode.children[1]
-      if (bsNode?.value) {
-        // BIT STRING: first byte is unused bits count
-        const inner = parseAsn(bsNode.value.slice(1))
-        const rsaSeq = inner[0]
-        const modNode = rsaSeq?.children?.[0]
-        if (modNode?.value) {
-          // Strip leading zero byte if present
-          let len = modNode.value.length
-          if (modNode.value[0] === 0) len--
-          publicKeyBits = len * 8
-        }
-      }
-    }
-  }
-
-  // Extensions (version 3)
-  let san: string[] = []
-  let isCA = false
-  for (; idx < tbsChildren.length; idx++) {
-    const node = tbsChildren[idx]
-    if (!node) continue
-    // Extensions are wrapped in [3] context tag
-    if ((node.tag & 0xe0) === 0xa0 && node.children) {
-      const extsSeq = node.children[0]
-      if (!extsSeq?.children) continue
-      for (const ext of extsSeq.children) {
-        const oidNode = ext.children?.[0]
-        if (!oidNode?.value) continue
-        const oid = oidBytes(oidNode.value)
-        if (oid === '2.5.29.17') {
-          // SAN — value may be preceded by critical boolean
-          const valNode = ext.children?.find(n => n.tag === TAG_OCTET_STR)
-          if (valNode?.value) san = parseSAN(valNode.value)
-        }
-        if (oid === '2.5.29.19') {
-          // basicConstraints
-          const valNode = ext.children?.find(n => n.tag === TAG_OCTET_STR)
-          if (valNode?.value) {
-            const inner = parseAsn(valNode.value)
-            const bc = inner[0]?.children
-            if (bc?.[0]?.value?.[0] === 0xff) isCA = true
-          }
-        }
-      }
-    }
-  }
-
-  // Signature algorithm (outer)
-  let signatureAlgorithm = 'Unknown'
-  if (sigAlgNode?.children?.[0]?.value) {
-    const oid = oidBytes(sigAlgNode.children[0].value)
-    signatureAlgorithm = oidName(oid)
-  }
-
-  // Fingerprint: SHA-256 of the DER
-  const fpBuffer = await crypto.subtle.digest('SHA-256', der.buffer.slice(der.byteOffset, der.byteOffset + der.byteLength) as ArrayBuffer)
-  const fingerprint = Array.from(new Uint8Array(fpBuffer))
-    .map(b => b.toString(16).padStart(2, '0')).join(':').toUpperCase()
-
-  const now = Date.now()
-  const expired = now > notAfter.getTime()
-  const daysRemaining = Math.floor((notAfter.getTime() - now) / 86_400_000)
-
-  return {
-    version,
-    serialNumber: serialHex,
-    signatureAlgorithm,
-    subject,
-    issuer,
-    notBefore,
-    notAfter,
-    publicKeyAlgorithm,
-    publicKeyBits,
-    san,
-    isCA,
-    fingerprint,
-    expired,
-    daysRemaining,
-  }
-}
+import { countCertificates, parseCertificate, type CertInfo } from './x509'
 
 // Easter egg: self-signed cert for the Ada Lovelace Institute — first programmer 🖥️
 const DEMO_PEM = `-----BEGIN CERTIFICATE-----
@@ -375,6 +55,7 @@ export default function CertificateDecoderTool() {
   const [cert, setCert] = useState<CertInfo | null>(null)
   const [error, setError] = useState('')
   const [isParsing, setIsParsing] = useState(false)
+  const [certCount, setCertCount] = useState(0)
 
   // Auto-decode on mount with the demo cert
   useEffect(() => { handleDecode() }, []) // eslint-disable-line react-hooks/exhaustive-deps
@@ -386,6 +67,7 @@ export default function CertificateDecoderTool() {
     try {
       const result = await parseCertificate(pem.trim())
       setCert(result)
+      setCertCount(countCertificates(pem))
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to parse certificate')
     } finally {
@@ -410,6 +92,8 @@ export default function CertificateDecoderTool() {
                   try {
                     const text = await navigator.clipboard.readText()
                     setPem(text)
+                    setCert(null)
+                    setError('')
                   } catch { /* permission denied */ }
                 }}
                 className="gap-1 text-xs h-7 px-2"
@@ -446,6 +130,9 @@ export default function CertificateDecoderTool() {
           {error && (
             <Alert variant="error" size="sm" className="font-mono">{error}</Alert>
           )}
+          {cert && certCount > 1 && (
+            <Alert variant="info" size="sm">The input has {certCount} certificates. Only the first certificate is shown.</Alert>
+          )}
         </CardContent>
       </Card>
 
@@ -461,6 +148,8 @@ export default function CertificateDecoderTool() {
                 <span className="text-xs font-semibold text-[var(--color-ink)]">Certificate Details</span>
                 {cert.expired ? (
                   <span className="px-1.5 py-0.5 text-[10px] font-semibold rounded bg-[var(--color-error-bg)] text-[var(--color-error-text)] border border-[var(--color-error-border)]">EXPIRED</span>
+                ) : cert.notYetValid ? (
+                  <span className="px-1.5 py-0.5 text-[10px] font-semibold rounded bg-[var(--color-warning-bg)] text-[var(--color-warning-text)] border border-[var(--color-warning-border)]">NOT YET VALID</span>
                 ) : (
                   <span className="px-1.5 py-0.5 text-[10px] font-semibold rounded bg-[var(--color-success-bg)] text-[var(--color-success-text)] border border-[var(--color-success-border)]">VALID</span>
                 )}
@@ -476,7 +165,7 @@ export default function CertificateDecoderTool() {
               {/* Subject */}
               <div>
                 <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-accent)] mb-1">Subject</p>
-                <Row label="DN">{formatDN(cert.subject)}</Row>
+                <Row label="DN">{cert.subject}</Row>
                 {cert.san.length > 0 && (
                   <Row label="SANs">
                     <div className="flex flex-wrap gap-1">
@@ -491,7 +180,7 @@ export default function CertificateDecoderTool() {
               {/* Issuer */}
               <div>
                 <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-accent)] mb-1">Issuer</p>
-                <Row label="DN">{formatDN(cert.issuer)}</Row>
+                <Row label="DN">{cert.issuer}</Row>
               </div>
 
               {/* Validity */}
