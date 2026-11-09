@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
+import { useState, useCallback, useMemo } from 'react'
 import { Card, CardContent, CardHeader } from '../../components/ui/Card'
 import { Button } from '../../components/ui/Button'
 import { Input } from '../../components/ui/Input'
@@ -6,6 +6,7 @@ import { ToolHeader } from '../../components/ui/ToolHeader'
 import { SegmentedControl, SegmentedControlItem } from '../../components/ui/SegmentedControl'
 import { cn } from '../../lib/utils'
 import { Download, SquareAsterisk } from 'lucide-react'
+import { buildSvg } from './svg'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -43,49 +44,14 @@ const BG_PRESETS = [
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function buildSvg(
-  lines: string[],
-  w: number,
-  h: number,
-  fontSize: number,
-  fontFamily: string,
-  fontWeight: string,
-  bgColor: string,
-  fgColor: string,
-  letterSpacing: number,
-  lineHeight: number,
-): string {
-  const lineCount = lines.length
-  // For multi-line: offset each line relative to centre so the block is centred
-  const blockH = lineCount === 1
-    ? 0
-    : (lineCount - 1) * fontSize * lineHeight
-  const startY = h / 2 - blockH / 2
-
-  const tspans = lines.map((line, i) => {
-    const dy = i === 0 ? 0 : fontSize * lineHeight
-    const safeText = line
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-    return `<tspan x="50%" dy="${dy}">${safeText || '&#x200B;'}</tspan>`
-  }).join('')
-
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">
-  <rect width="${w}" height="${h}" fill="${bgColor}"/>
-  <text
-    x="50%"
-    y="${startY.toFixed(1)}"
-    text-anchor="middle"
-    dominant-baseline="central"
-    font-family="${fontFamily}"
-    font-size="${fontSize}"
-    font-weight="${fontWeight}"
-    fill="${fgColor}"
-    letter-spacing="${letterSpacing}"
-  >${tspans}</text>
-</svg>`
+function downloadBlob(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = filename
+  a.click()
+  // Some browsers start the download after click() returns, so keep the URL valid for a short time.
+  setTimeout(() => URL.revokeObjectURL(url), 10_000)
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -101,64 +67,41 @@ export default function LogoGenerator() {
   const [lineHeight, setLineHeight]       = useState(1.2)
   const [ratio, setRatio]                 = useState(ASPECT_RATIOS[0]!)
 
-  const canvasRef = useRef<HTMLCanvasElement>(null)
-
   // ── Compute canvas dimensions from ratio ──────────────────────────────────
   const canvasW = ratio.w
   const canvasH = ratio.h
 
-  // ── Split text on newlines ─────────────────────────────────────────────────
-  const lines = text.split('\n')
-
   // ── Compute SVG string from current settings ───────────────────────────────
-  const svgString = useMemo(() => buildSvg(
-    lines, canvasW, canvasH, fontSize,
+  const svgString = useMemo(() => buildSvg({
+    lines: text.split('\n'), width: canvasW, height: canvasH, fontSize,
     fontFamily, fontWeight, bgColor, fgColor, letterSpacing, lineHeight,
-  ), [lines, canvasW, canvasH, fontSize,
+  }), [text, canvasW, canvasH, fontSize,
       fontFamily, fontWeight, bgColor, fgColor, letterSpacing, lineHeight])
-
-  // ── Draw onto canvas for PNG export ───────────────────────────────────────
-  useEffect(() => {
-    const canvas = canvasRef.current
-    if (!canvas || !svgString) return
-    const ctx = canvas.getContext('2d')
-    if (!ctx) return
-    const img = new Image()
-    const blob = new Blob([svgString], { type: 'image/svg+xml' })
-    const url = URL.createObjectURL(blob)
-    img.onload = () => {
-      ctx.clearRect(0, 0, canvasW, canvasH)
-      ctx.drawImage(img, 0, 0)
-      URL.revokeObjectURL(url)
-    }
-    img.src = url
-  }, [svgString, canvasW, canvasH])
 
   // ── Download handlers ──────────────────────────────────────────────────────
   const downloadSvg = useCallback(() => {
-    if (!svgString) return
-    const blob = new Blob([svgString], { type: 'image/svg+xml' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = 'logo.svg'
-    a.click()
-    URL.revokeObjectURL(url)
+    downloadBlob(new Blob([svgString], { type: 'image/svg+xml' }), 'logo.svg')
   }, [svgString])
 
+  // Rasterise the current SVG when the user clicks, so the PNG always matches the preview.
   const downloadPng = useCallback(() => {
-    const canvas = canvasRef.current
-    if (!canvas) return
-    canvas.toBlob((blob) => {
-      if (!blob) return
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = 'logo.png'
-      a.click()
+    const url = URL.createObjectURL(new Blob([svgString], { type: 'image/svg+xml' }))
+    const img = new Image()
+    img.onload = () => {
       URL.revokeObjectURL(url)
-    }, 'image/png')
-  }, [])
+      const canvas = document.createElement('canvas')
+      canvas.width = canvasW
+      canvas.height = canvasH
+      const ctx = canvas.getContext('2d')
+      if (!ctx) return
+      ctx.drawImage(img, 0, 0, canvasW, canvasH)
+      canvas.toBlob((blob) => {
+        if (blob) downloadBlob(blob, 'logo.png')
+      }, 'image/png')
+    }
+    img.onerror = () => URL.revokeObjectURL(url)
+    img.src = url
+  }, [svgString, canvasW, canvasH])
 
   // ── Apply a color preset ───────────────────────────────────────────────────
   const applyPreset = useCallback((bg: string, fg: string) => {
@@ -187,13 +130,6 @@ export default function LogoGenerator() {
                 `width="${canvasW}" height="${canvasH}"`,
                 `width="100%" height="100%"`
               )}}
-            />
-            {/* Hidden canvas for PNG export */}
-            <canvas
-              ref={canvasRef}
-              width={canvasW}
-              height={canvasH}
-              className="hidden"
             />
           </CardContent>
         </Card>
