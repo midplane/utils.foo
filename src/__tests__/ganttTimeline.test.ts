@@ -4,6 +4,7 @@ import {
   buildTimeline,
   dayForX,
   isoWeekNumber,
+  nonWorkingBands,
   startOfWeek,
   xForDay,
 } from '../tools/gantt-chart/timeline'
@@ -83,5 +84,13 @@ describe('gantt timeline — scale', () => {
     for (let i = 1; i < widths.length; i++) {
       expect(widths[i]).toBeGreaterThan(widths[i - 1] as number)
     }
+  })
+})
+
+describe('gantt timeline — non-working shading', () => {
+  it('shades nothing when the calendar has no working weekday, as the scheduler then works every day', () => {
+    const t = buildTimeline(iso('2024-03-11'), iso('2024-04-19'), 'day')
+    const calendar = { workdays: [false, false, false, false, false, false, false], holidays: new Set<number>() }
+    expect(nonWorkingBands(t, calendar)).toEqual([])
   })
 })

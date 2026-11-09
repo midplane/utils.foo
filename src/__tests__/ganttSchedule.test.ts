@@ -93,7 +93,9 @@ describe('gantt scheduler — dependencies', () => {
         task('b', { start: MONDAY, duration: 3, deps: [link('a', 'SF')] }),
       ])
     )
-    expect(span(schedule, 'b').end).toBe('2024-03-18')
+    // A starts at the beginning of Monday the 18th, so B must be done by the
+    // end of Friday the 15th. Ending on the 18th would overlap A by a day.
+    expect(span(schedule, 'b')).toEqual({ start: '2024-03-13', end: '2024-03-15' })
   })
 
   it('takes the latest of several predecessors', () => {
@@ -233,6 +235,79 @@ describe('gantt scheduler — milestones', () => {
     )
     expect(span(schedule, 'after').start).toBe('2024-03-12')
   })
+
+  it('does not add a day when a milestone sits between two tasks', () => {
+    const schedule = buildSchedule(
+      project([
+        task('a', { start: MONDAY, duration: 5 }),
+        task('m', { duration: 0, deps: [link('a')] }),
+        task('b', { duration: 5, deps: [link('m')] }),
+        task('c', { duration: 5, deps: [link('a')] }),
+      ])
+    )
+    // The milestone marks the end of A, on A's last day.
+    expect(span(schedule, 'm')).toEqual({ start: '2024-03-15', end: '2024-03-15' })
+    // B starts as if it followed A directly.
+    expect(span(schedule, 'b').start).toBe('2024-03-18')
+    // C runs in parallel with B for the same length, so it has no slack.
+    expect(schedule.byId.get('c')?.totalFloat).toBe(0)
+    expect(schedule.byId.get('m')?.critical).toBe(true)
+  })
+})
+
+describe('gantt scheduler — links into summaries', () => {
+  it('applies a link on a summary to the tasks under it', () => {
+    const schedule = buildSchedule(
+      project([
+        task('x', { start: MONDAY, duration: 5 }),
+        task('phase', { deps: [link('x')] }),
+        task('a', { parentId: 'phase', start: MONDAY, duration: 2 }),
+      ])
+    )
+    expect(span(schedule, 'a')).toEqual({ start: '2024-03-18', end: '2024-03-19' })
+    expect(span(schedule, 'phase').start).toBe('2024-03-18')
+    expect(schedule.byId.get('x')?.totalFloat).toBe(0)
+  })
+
+  it('reports a summary link that the stored dates break in manual mode', () => {
+    const schedule = buildSchedule(
+      project(
+        [
+          task('x', { start: MONDAY, duration: 5 }),
+          task('phase', { deps: [link('x')] }),
+          task('a', { parentId: 'phase', start: MONDAY, duration: 2 }),
+        ],
+        false
+      )
+    )
+    expect(schedule.issues.some((i) => i.kind === 'constraint-violation')).toBe(true)
+  })
+
+  it('reports a loop when a task inside a summary feeds the summary’s predecessor', () => {
+    const schedule = buildSchedule(
+      project([
+        task('x', { start: MONDAY, duration: 2, deps: [link('a')] }),
+        task('phase', { deps: [link('x')] }),
+        task('a', { parentId: 'phase', start: MONDAY, duration: 2 }),
+      ])
+    )
+    expect(schedule.issues.find((i) => i.kind === 'cycle')?.taskIds.sort()).toEqual(['a', 'x'])
+  })
+})
+
+describe('gantt scheduler — float', () => {
+  it('uses every link between the same two tasks', () => {
+    const schedule = buildSchedule(
+      project([
+        task('a', { start: MONDAY, duration: 5 }),
+        // The FS link binds; the SS link listed first must not hide it.
+        task('b', { duration: 2, deps: [link('a', 'SS'), link('a', 'FS')] }),
+        task('long', { start: MONDAY, duration: 15 }),
+      ])
+    )
+    expect(schedule.byId.get('b')?.totalFloat).toBe(8)
+    expect(schedule.byId.get('a')?.totalFloat).toBe(8)
+  })
 })
 
 describe('gantt scheduler — invalid input', () => {
@@ -260,6 +335,24 @@ describe('gantt scheduler — invalid input', () => {
       ])
     )
     expect(schedule.issues.some((i) => i.kind === 'cycle')).toBe(true)
+  })
+
+  it('names only the loop members and still schedules the tasks after the loop', () => {
+    const schedule = buildSchedule(
+      project([
+        task('phase'),
+        task('a', { parentId: 'phase', start: '2024-03-18', duration: 2, deps: [link('b')] }),
+        task('b', { start: MONDAY, duration: 2, deps: [link('a')] }),
+        task('after', { start: MONDAY, duration: 2, deps: [link('b')] }),
+      ])
+    )
+    const cycle = schedule.issues.find((i) => i.kind === 'cycle')
+    expect(cycle?.taskIds.sort()).toEqual(['a', 'b'])
+    expect(cycle?.message).not.toContain('after')
+    // A task after the loop keeps its link.
+    expect(span(schedule, 'after').start).toBe('2024-03-13')
+    // The summary still spans its child.
+    expect(span(schedule, 'phase')).toEqual(span(schedule, 'a'))
   })
 
   it('drops a self-dependency', () => {

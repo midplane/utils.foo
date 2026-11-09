@@ -6,7 +6,16 @@
  * a few weeks: "12" means nothing without the month sitting above it.
  */
 
-import { CivilDate, WorkCalendar, dayOfWeek, formatISODate, fromCivil, isWorkday, toCivil } from './calendar'
+import {
+  CivilDate,
+  WorkCalendar,
+  dayOfWeek,
+  formatISODate,
+  fromCivil,
+  isWorkday,
+  safeCalendar,
+  toCivil,
+} from './calendar'
 
 export const ZOOM_LEVELS = ['day', 'week', 'month', 'quarter'] as const
 export type ZoomLevel = (typeof ZOOM_LEVELS)[number]
@@ -250,10 +259,13 @@ export function nonWorkingBands(
   calendar: WorkCalendar
 ): { key: number; x: number; width: number }[] {
   if (timeline.zoom !== 'day' && timeline.zoom !== 'week') return []
+  // The scheduler treats a calendar with no working weekday as continuous, so
+  // the shading must too.
+  const cal = safeCalendar(calendar)
   const bands: { key: number; x: number; width: number }[] = []
   let runStart: number | null = null
   for (let day = timeline.origin; day <= timeline.end + 1; day++) {
-    const off = day <= timeline.end && !isWorkday(calendar, day)
+    const off = day <= timeline.end && !isWorkday(cal, day)
     if (off && runStart === null) runStart = day
     if (!off && runStart !== null) {
       bands.push({

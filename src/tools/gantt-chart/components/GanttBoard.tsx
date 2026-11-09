@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ChevronDown, ChevronRight } from 'lucide-react'
 import { cn } from '../../../lib/utils'
-import { formatISODate, todayDayNumber } from '../calendar'
+import { formatISODate, shiftWorkdays, todayDayNumber, workdaysBetween } from '../calendar'
 import { TASK_COLOR_VAR, Task } from '../model'
 import { Schedule, ScheduledTask, toWorkCalendar } from '../schedule'
 import { Timeline, formatDayLabel, nonWorkingBands, xForDay } from '../timeline'
@@ -292,16 +292,24 @@ export function GanttBoard({
         if (drag.kind === 'move') {
           onEdit(drag.id, { start: formatISODate(row.start + drag.deltaDays) })
         } else if (drag.kind === 'resize-start') {
+          // The end stays where it is, so the duration takes up the change.
           const start = Math.min(row.start + drag.deltaDays, row.end)
-          onEdit(drag.id, { start: formatISODate(start) })
+          onEdit(drag.id, {
+            start: formatISODate(start),
+            duration: Math.max(1, workdaysBetween(workCalendar, start, row.end)),
+          })
         } else {
+          // Durations are working days, so the dragged span is counted that way.
           const end = Math.max(row.end + drag.deltaDays, row.start)
-          onEdit(drag.id, { start: formatISODate(row.start), duration: end - row.start + 1 })
+          onEdit(drag.id, {
+            start: formatISODate(row.start),
+            duration: Math.max(1, workdaysBetween(workCalendar, row.start, end)),
+          })
         }
       }
     }
     setDrag(null)
-  }, [drag, onCreateLink, onEdit, schedule])
+  }, [drag, onCreateLink, onEdit, schedule, workCalendar])
 
   // A drag that ends outside the SVG (or when the tab loses focus) would
   // otherwise leave the bar following the pointer forever.
@@ -326,11 +334,15 @@ export function GanttBoard({
           const duration = Math.max(row.task.duration === 0 ? 0 : 1, row.task.duration + direction * step)
           onFieldChange(row.id, { duration })
         } else {
-          onEdit(row.id, { start: formatISODate(row.start + direction * step) })
+          // Steps are working days: a calendar step from a Monday back onto a
+          // Sunday snaps forward to the same Monday, so the bar would not move.
+          onEdit(row.id, {
+            start: formatISODate(shiftWorkdays(workCalendar, row.start, direction * step)),
+          })
         }
       }
     },
-    [onEdit, onFieldChange]
+    [onEdit, onFieldChange, workCalendar]
   )
 
   // ─── Grid splitter ────────────────────────────────────────────────────────

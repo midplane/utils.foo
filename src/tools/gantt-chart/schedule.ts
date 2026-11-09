@@ -87,7 +87,14 @@ function workdayDelta(calendar: WorkCalendar, a: number, b: number): number {
   return b > a ? workdaysBetween(calendar, a, b) - 1 : -(workdaysBetween(calendar, b, a) - 1)
 }
 
-/** The start a task must not begin before, given one resolved predecessor. */
+/**
+ * The start a task must not begin before, given one resolved predecessor.
+ *
+ * A task occupies whole days, so it starts at the beginning of its first day
+ * and finishes at the end of its last day. A milestone sits at the end of its
+ * day. Thus a link into a finish (FS into a milestone, FF, SF) and a link out
+ * of a start (SS, SF) do not add a day.
+ */
 function constraintStart(
   calendar: WorkCalendar,
   type: Dependency['type'],
@@ -96,9 +103,10 @@ function constraintStart(
   duration: number
 ): number {
   switch (type) {
-    // The successor may begin the working day after the predecessor ends.
+    // The successor may begin the working day after the predecessor ends. A
+    // milestone successor marks that end, so it lands on the same day.
     case 'FS':
-      return shiftWorkdays(calendar, pred.end, 1 + lag)
+      return shiftWorkdays(calendar, pred.end, duration <= 0 ? lag : 1 + lag)
     case 'SS':
       return shiftWorkdays(calendar, pred.start, lag)
     // Finish-anchored links constrain the end, so they are converted back into
@@ -107,8 +115,10 @@ function constraintStart(
       const finish = shiftWorkdays(calendar, pred.end, lag)
       return duration <= 0 ? finish : shiftWorkdays(calendar, finish, -(duration - 1))
     }
+    // The successor must finish by the time the predecessor starts, which is
+    // the end of the working day before that start.
     case 'SF': {
-      const finish = shiftWorkdays(calendar, pred.start, lag)
+      const finish = shiftWorkdays(calendar, pred.start, lag - 1)
       return duration <= 0 ? finish : shiftWorkdays(calendar, finish, -(duration - 1))
     }
   }
@@ -120,11 +130,12 @@ function latestPredecessorFinish(
   type: Dependency['type'],
   lag: number,
   succ: { lateStart: number; lateFinish: number },
-  predDuration: number
+  predDuration: number,
+  succDuration: number
 ): number {
   switch (type) {
     case 'FS':
-      return shiftWorkdays(calendar, succ.lateStart, -1 - lag)
+      return shiftWorkdays(calendar, succ.lateStart, succDuration <= 0 ? -lag : -1 - lag)
     case 'FF':
       return shiftWorkdays(calendar, succ.lateFinish, -lag)
     // Start-anchored links bound the predecessor's *start*, converted forward
@@ -134,10 +145,66 @@ function latestPredecessorFinish(
       return predDuration <= 0 ? start : endFromDuration(calendar, start, predDuration)
     }
     case 'SF': {
-      const start = shiftWorkdays(calendar, succ.lateFinish, -lag)
+      const start = shiftWorkdays(calendar, succ.lateFinish, 1 - lag)
       return predDuration <= 0 ? start : endFromDuration(calendar, start, predDuration)
     }
   }
+}
+
+/**
+ * Members of every dependency loop among `nodes`: strongly connected
+ * components with more than one node, or one node that links to itself.
+ *
+ * Tasks that are only downstream of a loop are not members. They keep their
+ * links and are scheduled after the loop.
+ */
+function loopMembers(nodes: readonly string[], edges: ReadonlyMap<string, readonly Edge[]>): Set<string> {
+  const allowed = new Set(nodes)
+  const index = new Map<string, number>()
+  const low = new Map<string, number>()
+  const stack: string[] = []
+  const onStack = new Set<string>()
+  const members = new Set<string>()
+  let counter = 0
+
+  const visit = (id: string) => {
+    index.set(id, counter)
+    low.set(id, counter)
+    counter++
+    stack.push(id)
+    onStack.add(id)
+    let selfLoop = false
+    for (const edge of edges.get(id) ?? []) {
+      if (!allowed.has(edge.to)) continue
+      if (edge.to === id) selfLoop = true
+      if (!index.has(edge.to)) {
+        visit(edge.to)
+        low.set(id, Math.min(low.get(id) ?? 0, low.get(edge.to) ?? 0))
+      } else if (onStack.has(edge.to)) {
+        low.set(id, Math.min(low.get(id) ?? 0, index.get(edge.to) ?? 0))
+      }
+    }
+    if (low.get(id) !== index.get(id)) return
+    const component: string[] = []
+    let member: string | undefined
+    do {
+      member = stack.pop()
+      if (member === undefined) break
+      onStack.delete(member)
+      component.push(member)
+    } while (member !== id)
+    if (component.length > 1 || selfLoop) for (const m of component) members.add(m)
+  }
+
+  for (const id of nodes) if (!index.has(id)) visit(id)
+  return members
+}
+
+/** A scheduling edge. `dep` is null for the roll-up edge from a child to its summary. */
+interface Edge {
+  from: string
+  to: string
+  dep: Dependency | null
 }
 
 export function buildSchedule(project: Project): Schedule {
@@ -183,53 +250,104 @@ export function buildSchedule(project: Project): Schedule {
     deps.set(task.id, kept)
   }
 
-  // ─── Topological order over dependency and roll-up edges ────────────────
-  const indegree = new Map<string, number>()
-  const successors = new Map<string, string[]>()
-  for (const { task } of flat) {
-    indegree.set(task.id, 0)
-    successors.set(task.id, [])
+  // ─── Links that a summary passes down to its tasks ──────────────────────
+  // A summary has no dates of its own, so a link into a summary applies to
+  // each leaf task under it. Links from inside the summary's own subtree are
+  // not passed down: a summary cannot wait for one of its own parts.
+  const ancestorIds = (id: string): string[] => {
+    const out: string[] = []
+    const guard = new Set<string>([id])
+    let cursor = byId.get(id)?.parentId ?? null
+    while (cursor !== null && byId.has(cursor) && !guard.has(cursor)) {
+      out.push(cursor)
+      guard.add(cursor)
+      cursor = byId.get(cursor)?.parentId ?? null
+    }
+    return out
   }
-  const addEdge = (from: string, to: string) => {
-    successors.get(from)?.push(to)
-    indegree.set(to, (indegree.get(to) ?? 0) + 1)
-  }
+  const scheduleDeps = new Map<string, Dependency[]>()
   for (const { task } of flat) {
-    for (const dep of deps.get(task.id) ?? []) addEdge(dep.from, task.id)
-    // A summary cannot be dated until its children are, so children come first.
-    if (task.parentId !== null && byId.has(task.parentId)) addEdge(task.id, task.parentId)
+    if ((childIds.get(task.id) ?? []).length > 0) continue
+    const own = [...(deps.get(task.id) ?? [])]
+    for (const summary of ancestorIds(task.id)) {
+      for (const dep of deps.get(summary) ?? []) {
+        if (dep.from === task.id || ancestorIds(dep.from).includes(summary)) continue
+        own.push(dep)
+      }
+    }
+    scheduleDeps.set(task.id, own)
   }
 
-  // Document order seeds the queue so the result is stable across runs.
-  const queue = flat.filter(({ task }) => (indegree.get(task.id) ?? 0) === 0).map(({ task }) => task.id)
-  const topo: string[] = []
-  while (queue.length > 0) {
-    const id = queue.shift() as string
-    topo.push(id)
-    for (const next of successors.get(id) ?? []) {
-      const remaining = (indegree.get(next) ?? 0) - 1
-      indegree.set(next, remaining)
-      if (remaining === 0) queue.push(next)
+  // ─── Topological order over dependency and roll-up edges ────────────────
+  const outEdges = new Map<string, Edge[]>()
+  const inEdges = new Map<string, Edge[]>()
+  for (const { task } of flat) {
+    outEdges.set(task.id, [])
+    inEdges.set(task.id, [])
+  }
+  const addEdge = (edge: Edge) => {
+    outEdges.get(edge.from)?.push(edge)
+    inEdges.get(edge.to)?.push(edge)
+  }
+  for (const { task } of flat) {
+    for (const dep of scheduleDeps.get(task.id) ?? []) addEdge({ from: dep.from, to: task.id, dep })
+    // A summary cannot be dated until its children are, so children come first.
+    if (task.parentId !== null && byId.has(task.parentId)) {
+      addEdge({ from: task.id, to: task.parentId, dep: null })
     }
   }
+
+  // Kahn's algorithm over the edges that `counts` accepts. Document order
+  // seeds the queue so the result is stable across runs.
+  const order = (nodes: readonly string[], counts: (edge: Edge) => boolean): string[] => {
+    const allowed = new Set(nodes)
+    const indegree = new Map<string, number>()
+    for (const id of nodes) {
+      indegree.set(id, (inEdges.get(id) ?? []).filter((e) => allowed.has(e.from) && counts(e)).length)
+    }
+    const queue = nodes.filter((id) => indegree.get(id) === 0)
+    const out: string[] = []
+    while (queue.length > 0) {
+      const id = queue.shift() as string
+      out.push(id)
+      for (const edge of outEdges.get(id) ?? []) {
+        if (!allowed.has(edge.to) || !counts(edge)) continue
+        const remaining = (indegree.get(edge.to) ?? 0) - 1
+        indegree.set(edge.to, remaining)
+        if (remaining === 0) queue.push(edge.to)
+      }
+    }
+    return out
+  }
+
+  const flatIds = flat.map(({ task }) => task.id)
+  const topo = order(flatIds, () => true)
 
   const inCycle = new Set<string>()
   if (topo.length < flat.length) {
     const scheduled = new Set(topo)
-    for (const { task } of flat) if (!scheduled.has(task.id)) inCycle.add(task.id)
-    const names = [...inCycle].map((id) => byId.get(id)?.name ?? id)
-    issues.push({
+    const rest = flatIds.filter((id) => !scheduled.has(id))
+    for (const id of loopMembers(rest, outEdges)) inCycle.add(id)
+    const members = rest.filter((id) => inCycle.has(id))
+    const names = members.map((id) => byId.get(id)?.name ?? id)
+    if (members.length > 0) issues.push({
       kind: 'cycle',
-      taskIds: [...inCycle],
+      taskIds: members,
       message:
         names.length === 1
           ? `"${names[0]}" is part of a dependency loop; its links were ignored.`
           : `${names.length} tasks form a dependency loop (${names.slice(0, 4).join(', ')}${names.length > 4 ? '…' : ''}); their links were ignored.`,
     })
-    // Cycle members still need dates, so they are appended and scheduled from
-    // their stored start with their dependencies dropped. Leaving them out
-    // would blank whole rows and hide the very tasks the message points at.
-    for (const id of inCycle) topo.push(id)
+    // Loop members still need dates, so they are scheduled from their stored
+    // start with their links dropped. Leaving them out would blank whole rows
+    // and hide the very tasks the message points at. Roll-up edges stay, so a
+    // summary is still dated after its children, and tasks downstream of the
+    // loop keep their links.
+    const resumed = order(rest, (edge) => edge.dep === null || !inCycle.has(edge.to))
+    topo.push(...resumed)
+    // Only a parent loop (A inside B inside A) is left at this point.
+    const placedIds = new Set(topo)
+    for (const id of rest) if (!placedIds.has(id)) topo.push(id)
   }
 
   // ─── Anchor for tasks with no usable start date ─────────────────────────
@@ -294,7 +412,7 @@ export function buildSchedule(project: Project): Schedule {
 
     let start = manualStart
     if (!inCycle.has(id)) {
-      for (const dep of deps.get(id) ?? []) {
+      for (const dep of scheduleDeps.get(id) ?? []) {
         const pred = placed.get(dep.from)
         if (!pred) continue
         const required = constraintStart(calendar, dep.type, dep.lag, pred, duration)
@@ -307,7 +425,7 @@ export function buildSchedule(project: Project): Schedule {
           issues.push({
             kind: 'constraint-violation',
             taskIds: [id, dep.from],
-            message: `"${task.name}" starts before its ${dep.type} link from "${byId.get(dep.from)?.name ?? dep.from}" allows. Turn on auto-scheduling to fix it.`,
+            message: `"${task.name}" starts before the ${dep.type} link from "${byId.get(dep.from)?.name ?? dep.from}" allows. Turn on auto-scheduling to fix it.`,
           })
         }
       }
@@ -333,18 +451,24 @@ export function buildSchedule(project: Project): Schedule {
     if (!task || !span) continue
 
     let lateFinish = projectEnd
-    if (!inCycle.has(id)) {
-      for (const succId of successors.get(id) ?? []) {
-        const succ = late.get(succId)
-        if (!succ) continue
-        // Roll-up edges carry the parent's own deadline down to the child; a
-        // dependency edge carries the successor's link semantics.
-        const link = (deps.get(succId) ?? []).find((d) => d.from === id)
-        const bound = link
-          ? latestPredecessorFinish(calendar, link.type, link.lag, succ, span.duration)
-          : succ.lateFinish
-        if (bound < lateFinish) lateFinish = bound
-      }
+    for (const edge of outEdges.get(id) ?? []) {
+      // The forward pass ignored the links of loop members, so this does too.
+      if (edge.dep !== null && inCycle.has(edge.to)) continue
+      const succ = late.get(edge.to)
+      if (!succ) continue
+      // Roll-up edges carry the parent's own deadline down to the child; a
+      // dependency edge carries the successor's link semantics.
+      const bound = edge.dep
+        ? latestPredecessorFinish(
+            calendar,
+            edge.dep.type,
+            edge.dep.lag,
+            succ,
+            span.duration,
+            placed.get(edge.to)?.duration ?? 1
+          )
+        : succ.lateFinish
+      if (bound < lateFinish) lateFinish = bound
     }
     const lateStart =
       span.duration <= 0 ? lateFinish : shiftWorkdays(calendar, lateFinish, -(span.duration - 1))

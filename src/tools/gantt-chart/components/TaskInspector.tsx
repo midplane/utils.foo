@@ -29,8 +29,10 @@ export function TaskInspector({ row, schedule, onChange, onDelete }: TaskInspect
   const candidates = schedule.rows.filter(
     (other) =>
       other.id !== row.id &&
-      // Linking to a task's own descendant makes a loop through the roll-up
-      // edge, so those are kept out of the picker rather than reported after.
+      // A link from a task's own summary makes a loop through the roll-up
+      // edge, and a summary cannot wait for one of its own tasks, so both are
+      // kept out of the picker rather than reported after.
+      !isDescendant(schedule, row.id, other.id) &&
       !isDescendant(schedule, other.id, row.id)
   )
 
@@ -141,9 +143,9 @@ export function TaskInspector({ row, schedule, onChange, onDelete }: TaskInspect
           <Button
             variant="ghost"
             size="sm"
-            disabled={candidates.length === 0}
+            disabled={candidates.every((other) => task.deps.some((dep) => dep.from === other.id))}
             onClick={() => {
-              const first = candidates[0]
+              const first = candidates.find((other) => !task.deps.some((dep) => dep.from === other.id))
               if (first) onChange({ deps: [...task.deps, { from: first.id, type: 'FS', lag: 0 }] })
             }}
           >

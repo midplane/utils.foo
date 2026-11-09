@@ -874,7 +874,7 @@ export default function GanttChartTool() {
               variant="ghost"
               size="sm"
               onClick={() =>
-                withNote('Mermaid copied — paste it into the Mermaid tool.', () =>
+                withNote('Mermaid copied. Paste it into a Mermaid renderer that supports Gantt charts.', () =>
                   navigator.clipboard.writeText(projectToMermaid(project, schedule))
                 )
               }

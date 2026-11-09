@@ -73,8 +73,40 @@ describe('gantt CSV', () => {
 
   it('derives a duration from an end date when no duration column exists', () => {
     const { project } = projectFromCSV('name,start,end\nDesign,2024-03-11,2024-03-15')
-    // Inclusive calendar span; the scheduler re-reads it in working days.
     expect(project.tasks[0]?.duration).toBe(5)
+  })
+
+  it('counts a derived duration in working days, not calendar days', () => {
+    // Two working weeks: 12 calendar days, 10 working days.
+    const { project } = projectFromCSV('name,start,end\nDesign,2024-03-11,2024-03-22')
+    expect(project.tasks[0]?.duration).toBe(10)
+    const schedule = scheduleOf(project)
+    expect(schedule.projectEnd).toBe(parseISODate('2024-03-22'))
+  })
+
+  it('reads percent and day units that other planners export', () => {
+    const { project } = projectFromCSV(
+      'name,start,percent complete,duration\nDesign,2024-03-11,40%,8 days\nBuild,2024-03-11,25,3d'
+    )
+    expect(project.tasks[0]?.progress).toBe(40)
+    expect(project.tasks[0]?.duration).toBe(8)
+    expect(project.tasks[1]?.duration).toBe(3)
+  })
+
+  it('keeps the date of a start that carries a time of day', () => {
+    const { project } = projectFromCSV('name,start\nDesign,2024-03-11 09:00')
+    expect(project.tasks[0]?.start).toBe('2024-03-11')
+  })
+
+  it('warns about start dates it cannot read', () => {
+    const { warnings } = projectFromCSV('name,start\nDesign,03/11/2024\nBuild,2024-03-11')
+    expect(warnings.join(' ')).toMatch(/1 start date/)
+  })
+
+  it('warns about a duplicate id and does not take an id a later row uses', () => {
+    const { project, warnings } = projectFromCSV('id,name\na,First\na,Second\na-2,Third')
+    expect(project.tasks.map((t) => t.id)).toEqual(['a', 'a-2-2', 'a-2'])
+    expect(warnings.some((w) => w.includes('"a"'))).toBe(true)
   })
 
   it('defaults a bare link to finish-to-start', () => {
@@ -143,6 +175,22 @@ describe('gantt JSON', () => {
     const back = projectFromJSON('{"tasks":[{"id":"a","name":"A","deps":[{"from":"b","type":"ZZ"}]}]}')
     expect(back.tasks[0]?.deps).toEqual([])
   })
+
+  it('repairs fields of the wrong type so the plan can be scheduled', () => {
+    const back = projectFromJSON(
+      JSON.stringify({
+        calendar: {},
+        tasks: [
+          { id: 'a', name: 'A', start: 20240311, duration: '3', progress: 'lots', parentId: 7 },
+          { id: 'b', name: 'B', start: '2024-03-11', deps: [{ from: 'a', type: 'FS' }] },
+        ],
+      })
+    )
+    expect(back.tasks[0]).toMatchObject({ start: '', duration: 3, progress: 0, parentId: null })
+    expect(back.tasks[1]?.deps).toEqual([{ from: 'a', type: 'FS', lag: 0 }])
+    expect(back.calendar).toEqual(DEFAULT_CALENDAR_CONFIG)
+    expect(() => scheduleOf(back)).not.toThrow()
+  })
 })
 
 describe('gantt Mermaid', () => {
@@ -179,6 +227,34 @@ describe('gantt Mermaid', () => {
 
   it('does not emit a summary row, which Mermaid has no concept of', () => {
     expect(mermaid()).not.toMatch(/^ *Phase one :/m)
+  })
+
+  it('tells Mermaid which days are not working days', () => {
+    const project: Project = {
+      ...fixture(),
+      calendar: { ...DEFAULT_CALENDAR_CONFIG, holidays: ['2024-03-15'] },
+    }
+    expect(projectToMermaid(project, scheduleOf(project))).toContain(
+      'excludes sunday, saturday, 2024-03-15'
+    )
+  })
+
+  it('does not write "after" a summary, which is not emitted', () => {
+    const project = fixture()
+    project.tasks.push(
+      makeTask({ id: 'wrap', name: 'Wrap up', duration: 1, deps: [{ from: 'phase', type: 'FS', lag: 0 }] })
+    )
+    const out = projectToMermaid(project, scheduleOf(project))
+    expect(out).not.toContain('after phase')
+    expect(out).toMatch(/Wrap up :[^\n]*, 2024-04-01, 1d/)
+  })
+
+  it('does not write "after" when a stored start holds the task later', () => {
+    const project = fixture()
+    const ship = project.tasks.find((t) => t.id === 'm')
+    if (ship) ship.start = '2024-06-03'
+    const out = projectToMermaid(project, scheduleOf(project))
+    expect(out).toMatch(/Ship :[^\n]*, 2024-06-03, 0d/)
   })
 })
 

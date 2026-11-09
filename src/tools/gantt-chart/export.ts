@@ -10,7 +10,14 @@
  */
 
 import Papa from 'papaparse'
-import { formatISODate, parseISODate, todayDayNumber } from './calendar'
+import {
+  durationFromRange,
+  formatISODate,
+  nextWorkday,
+  parseISODate,
+  safeCalendar,
+  todayDayNumber,
+} from './calendar'
 import {
   CalendarConfig,
   DEFAULT_CALENDAR_CONFIG,
@@ -411,6 +418,23 @@ function normaliseHeader(header: string): string {
   return HEADER_ALIASES[key] ?? key
 }
 
+/**
+ * `YYYY-MM-DD`, also with a time of day after it, as other planners export.
+ * Returns the date part, or null when the text is not in that form.
+ */
+function importDate(text: string): string | null {
+  const match = /^(\d{4}-\d{2}-\d{2})(?:[T ]\S.*)?$/.exec(text.trim())
+  if (!match?.[1]) return null
+  return parseISODate(match[1]) !== null ? match[1] : null
+}
+
+/** A number with an optional unit suffix, such as "40%" or "5 days". */
+function importNumber(text: string, units: RegExp): number {
+  const match = /^([+-]?\d+(?:\.\d+)?)\s*(.*)$/.exec(text.trim())
+  if (!match || !(match[2] === '' || units.test(match[2] ?? ''))) return Number.NaN
+  return Number(match[1])
+}
+
 export function projectFromCSV(text: string): ImportResult {
   const parsed = Papa.parse<Record<string, string>>(text.trim(), {
     header: true,
@@ -424,40 +448,55 @@ export function projectFromCSV(text: string): ImportResult {
 
   const tasks: Task[] = []
   const seenIds = new Set<string>()
+  // A replacement id must not take an id that a later row uses.
+  const fileIds = new Set(parsed.data.map((row) => (row.id ?? '').trim()).filter(Boolean))
+  const importCalendar = toWorkCalendar(DEFAULT_CALENDAR_CONFIG)
+  let unreadableDates = 0
 
   parsed.data.forEach((row, index) => {
     const name = (row.name ?? '').trim()
     if (!name) return
-    let id = (row.id ?? '').trim()
+    const givenId = (row.id ?? '').trim()
+    let id = givenId
     if (!id || seenIds.has(id)) {
       // Falling back to the row number keeps dependencies that referenced a
       // duplicate id pointing at the first occurrence rather than silently
       // rewiring to the last.
-      id = id ? `${id}-${index + 1}` : `row${index + 1}`
+      const base = id ? `${id}-${index + 1}` : `row${index + 1}`
+      id = base
+      for (let n = 2; seenIds.has(id) || (id !== givenId && fileIds.has(id)); n++) id = `${base}-${n}`
+      if (givenId) {
+        warnings.push(`Row ${index + 1}: the id "${givenId}" is used more than once; this row now has the id "${id}".`)
+      }
     }
     seenIds.add(id)
 
-    const start = (row.start ?? '').trim()
+    const startText = (row.start ?? '').trim()
+    const start = importDate(startText)
+    if (startText !== '' && start === null) unreadableDates++
     // An absent duration column must not read as zero — Number('') is 0, which
     // would quietly turn every imported task into a milestone. Only an explicit
     // 0 means milestone.
     const durationText = (row.duration ?? '').trim()
-    let duration = durationText === '' ? Number.NaN : Number(durationText)
+    let duration = durationText === '' ? Number.NaN : importNumber(durationText, /^(d|days?)$/i)
     if (!Number.isFinite(duration)) {
-      const end = parseISODate((row.end ?? '').trim())
-      const from = parseISODate(start)
-      duration = end !== null && from !== null ? Math.max(1, end - from + 1) : 5
+      const end = importDate(row.end ?? '')
+      const from = start === null ? null : parseISODate(start)
+      const endDay = end === null ? null : parseISODate(end)
+      // Durations are in working days, so the end date is counted that way too.
+      duration =
+        endDay !== null && from !== null ? durationFromRange(importCalendar, from, endDay) : 5
     }
 
     const colorText = (row.color ?? '').trim().toLowerCase() as TaskColor
-    const progress = Number((row.progress ?? '').trim())
+    const progress = importNumber(row.progress ?? '', /^%$/)
 
     tasks.push(
       makeTask({
         id,
         name,
         parentId: (row.parent ?? '').trim() || null,
-        start: parseISODate(start) !== null ? start : '',
+        start: start ?? '',
         duration: Math.max(0, Math.round(duration)),
         progress: Number.isFinite(progress) ? Math.min(100, Math.max(0, progress)) : 0,
         assignee: (row.assignee ?? '').trim(),
@@ -473,6 +512,11 @@ export function projectFromCSV(text: string): ImportResult {
 
   if (tasks.length === 0) {
     throw new Error('No rows with a task name were found. A "name" column is required.')
+  }
+  if (unreadableDates > 0) {
+    warnings.unshift(
+      `${unreadableDates} start date${unreadableDates === 1 ? ' is' : 's are'} not in the YYYY-MM-DD format; ${unreadableDates === 1 ? 'that task starts' : 'those tasks start'} at the project start.`
+    )
   }
 
   return {
@@ -499,28 +543,54 @@ export function projectFromJSON(text: string): Project {
   if (!Array.isArray(raw.tasks)) throw new Error('Expected a "tasks" array.')
 
   const tasks = raw.tasks.map((task, index) => {
-    const source = (task ?? {}) as Partial<Task>
+    const source = (typeof task === 'object' && task !== null ? task : {}) as Record<string, unknown>
     const color = source.color as TaskColor
+    const text = (value: unknown) => (typeof value === 'string' ? value : '')
+    const progress = finiteNumber(source.progress)
+    // Hand-edited JSON can hold any type in any field, and the scheduler reads
+    // these fields without checks, so each one is coerced to its declared type.
     return makeTask({
-      ...source,
       id: typeof source.id === 'string' && source.id ? source.id : `row${index + 1}`,
       name: typeof source.name === 'string' ? source.name : `Task ${index + 1}`,
+      start: text(source.start),
+      duration: Math.max(0, finiteNumber(source.duration) ?? 5),
+      progress: Math.min(100, Math.max(0, progress ?? 0)),
+      parentId: typeof source.parentId === 'string' && source.parentId ? source.parentId : null,
+      collapsed: source.collapsed === true,
+      assignee: text(source.assignee),
+      notes: text(source.notes),
       color: TASK_COLORS.includes(color) ? color : 'blue',
       deps: Array.isArray(source.deps)
-        ? source.deps.filter(
-            (dep): dep is Dependency =>
-              typeof dep?.from === 'string' && DEPENDENCY_TYPES.includes(dep.type)
-          )
+        ? source.deps
+            .filter(
+              (dep): dep is Dependency =>
+                typeof dep?.from === 'string' && DEPENDENCY_TYPES.includes(dep.type)
+            )
+            .map((dep) => ({ from: dep.from, type: dep.type, lag: Math.round(finiteNumber(dep.lag) ?? 0) }))
         : [],
     })
   })
 
+  const calendar = raw.calendar as Partial<CalendarConfig> | undefined
   return {
     name: typeof raw.name === 'string' ? raw.name : 'Imported plan',
     tasks,
-    calendar: raw.calendar ?? DEFAULT_CALENDAR_CONFIG,
+    calendar: {
+      workdays:
+        Array.isArray(calendar?.workdays) && calendar.workdays.length === 7
+          ? calendar.workdays.map((on) => on === true)
+          : [...DEFAULT_CALENDAR_CONFIG.workdays],
+      holidays: Array.isArray(calendar?.holidays)
+        ? calendar.holidays.filter((day): day is string => typeof day === 'string' && parseISODate(day) !== null)
+        : [],
+    },
     autoSchedule: raw.autoSchedule !== false,
   }
+}
+
+function finiteNumber(value: unknown): number | null {
+  const number = typeof value === 'string' && value.trim() !== '' ? Number(value) : value
+  return typeof number === 'number' && Number.isFinite(number) ? number : null
 }
 
 // ─── Mermaid ──────────────────────────────────────────────────────────────────
@@ -530,8 +600,12 @@ function mermaidId(id: string): string {
   return id.replace(/[^A-Za-z0-9_]/g, '_')
 }
 
+/** Indexed by weekday, 0 = Sunday, in the form Mermaid's `excludes` reads. */
+const WEEKDAY_NAMES = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday']
+
 /**
- * A `gantt` block for the Mermaid tool elsewhere on this site.
+ * A Mermaid `gantt` block. The Mermaid tool on this site cannot render Gantt
+ * charts, so this output is for other Mermaid renderers.
  *
  * Mermaid has no notion of SS/FF/SF links or of lag, so only a plain
  * finish-to-start chain survives as `after`; everything else is written out as
@@ -540,6 +614,14 @@ function mermaidId(id: string): string {
  */
 export function projectToMermaid(project: Project, schedule: Schedule): string {
   const lines = ['gantt', `    title ${project.name || 'Project plan'}`, '    dateFormat YYYY-MM-DD']
+  // Mermaid counts durations in calendar days unless it is told which days do
+  // not count, so without this line every task that spans a weekend ends early.
+  const calendar = safeCalendar(toWorkCalendar(project.calendar))
+  const excluded = [
+    ...WEEKDAY_NAMES.filter((_, index) => !calendar.workdays[index]),
+    ...[...calendar.holidays].sort((a, b) => a - b).map(formatISODate),
+  ]
+  if (excluded.length > 0) lines.push(`    excludes ${excluded.join(', ')}`)
   const bySection = new Map<string, string[]>()
 
   for (const row of schedule.rows) {
@@ -553,9 +635,18 @@ export function projectToMermaid(project: Project, schedule: Schedule): string {
     else if (row.progress > 0) tags.push('active')
     if (row.critical) tags.push('crit')
 
+    // `after` is written only when it gives the same date as the plan. A
+    // summary is not emitted, so `after` it would name an unknown id, and a
+    // stored start later than the link allows would be lost.
+    const only = row.deps.length === 1 ? row.deps[0] : undefined
+    const pred = only ? schedule.byId.get(only.from) : undefined
     const simpleChain =
-      row.deps.length === 1 && row.deps[0]?.type === 'FS' && row.deps[0]?.lag === 0
-        ? row.deps[0]?.from
+      only?.type === 'FS' &&
+      only.lag === 0 &&
+      pred &&
+      !pred.isSummary &&
+      row.start === (row.duration === 0 ? pred.end : nextWorkday(calendar, pred.end + 1))
+        ? pred.id
         : undefined
     const when = simpleChain ? `after ${mermaidId(simpleChain)}` : formatISODate(row.start)
     const length = row.duration === 0 ? '0d' : `${row.duration}d`
