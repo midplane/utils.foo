@@ -20,7 +20,6 @@ const CURRENCY_DATA: CurrencyEntry[] = [
   { code: 'AFN', numeric: '971', name: 'Afghan Afghani',                    symbol: '؋',    countries: 'Afghanistan' },
   { code: 'ALL', numeric: '008', name: 'Albanian Lek',                      symbol: 'L',    countries: 'Albania' },
   { code: 'AMD', numeric: '051', name: 'Armenian Dram',                     symbol: '֏',    countries: 'Armenia' },
-  { code: 'ANG', numeric: '532', name: 'Netherlands Antillean Guilder',     symbol: 'ƒ',    countries: 'Curaçao, Sint Maarten' },
   { code: 'AOA', numeric: '973', name: 'Angolan Kwanza',                    symbol: 'Kz',   countries: 'Angola' },
   { code: 'ARS', numeric: '032', name: 'Argentine Peso',                    symbol: '$',    countries: 'Argentina' },
   { code: 'AUD', numeric: '036', name: 'Australian Dollar',                 symbol: 'A$',   countries: 'Australia, Pacific territories' },
@@ -29,7 +28,6 @@ const CURRENCY_DATA: CurrencyEntry[] = [
   { code: 'BAM', numeric: '977', name: 'Bosnian Convertible Mark',          symbol: 'KM',   countries: 'Bosnia and Herzegovina' },
   { code: 'BBD', numeric: '052', name: 'Barbadian Dollar',                  symbol: '$',    countries: 'Barbados' },
   { code: 'BDT', numeric: '050', name: 'Bangladeshi Taka',                  symbol: '৳',    countries: 'Bangladesh' },
-  { code: 'BGN', numeric: '975', name: 'Bulgarian Lev',                     symbol: 'лв',   countries: 'Bulgaria' },
   { code: 'BHD', numeric: '048', name: 'Bahraini Dinar',                    symbol: '.د.ب', countries: 'Bahrain' },
   { code: 'BIF', numeric: '108', name: 'Burundian Franc',                   symbol: 'Fr',   countries: 'Burundi' },
   { code: 'BMD', numeric: '060', name: 'Bermudian Dollar',                  symbol: '$',    countries: 'Bermuda' },
@@ -58,7 +56,7 @@ const CURRENCY_DATA: CurrencyEntry[] = [
   { code: 'EGP', numeric: '818', name: 'Egyptian Pound',                    symbol: '£',    countries: 'Egypt' },
   { code: 'ERN', numeric: '232', name: 'Eritrean Nakfa',                    symbol: 'Nfk',  countries: 'Eritrea' },
   { code: 'ETB', numeric: '230', name: 'Ethiopian Birr',                    symbol: 'Br',   countries: 'Ethiopia' },
-  { code: 'EUR', numeric: '978', name: 'Euro',                              symbol: '€',    countries: 'Eurozone (20 countries)' },
+  { code: 'EUR', numeric: '978', name: 'Euro',                              symbol: '€',    countries: 'Eurozone (21 countries)' },
   { code: 'FJD', numeric: '242', name: 'Fijian Dollar',                     symbol: '$',    countries: 'Fiji' },
   { code: 'FKP', numeric: '238', name: 'Falkland Islands Pound',            symbol: '£',    countries: 'Falkland Islands' },
   { code: 'GBP', numeric: '826', name: 'British Pound Sterling',            symbol: '£',    countries: 'United Kingdom' },
@@ -164,31 +162,42 @@ const CURRENCY_DATA: CurrencyEntry[] = [
   { code: 'WST', numeric: '882', name: 'Samoan Tālā',                       symbol: 'T',    countries: 'Samoa' },
   { code: 'XAF', numeric: '950', name: 'Central African CFA Franc',         symbol: 'Fr',   countries: 'Central Africa (6 countries)' },
   { code: 'XCD', numeric: '951', name: 'East Caribbean Dollar',             symbol: '$',    countries: 'East Caribbean (8 countries)' },
+  { code: 'XCG', numeric: '532', name: 'Caribbean Guilder',                 symbol: 'Cg',   countries: 'Curaçao, Sint Maarten' },
   { code: 'XOF', numeric: '952', name: 'West African CFA Franc',            symbol: 'Fr',   countries: 'West Africa (8 countries)' },
   { code: 'XPF', numeric: '953', name: 'CFP Franc',                         symbol: 'Fr',   countries: 'French Polynesia, New Caledonia, Wallis and Futuna' },
   { code: 'YER', numeric: '886', name: 'Yemeni Rial',                       symbol: '﷼',    countries: 'Yemen' },
   { code: 'ZAR', numeric: '710', name: 'South African Rand',                symbol: 'R',    countries: 'South Africa' },
   { code: 'ZMW', numeric: '967', name: 'Zambian Kwacha',                    symbol: 'ZK',   countries: 'Zambia' },
-  { code: 'ZWL', numeric: '932', name: 'Zimbabwean Dollar',                 symbol: '$',    countries: 'Zimbabwe' },
+  { code: 'ZWG', numeric: '924', name: 'Zimbabwe Gold',                     symbol: 'ZiG',  countries: 'Zimbabwe' },
 ]
 
 const SORTED = [...CURRENCY_DATA].sort((a, b) => a.code.localeCompare(b.code))
+
+// Remove diacritics so that a plain ASCII query ("zloty") finds "Złoty".
+// NFD does not decompose ł and đ, thus they get a direct mapping.
+function fold(s: string): string {
+  return s
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/\p{M}/gu, '')
+    .replace(/ł/g, 'l')
+    .replace(/đ/g, 'd')
+    .replace(/[ʻ']/g, '')
+}
+
+const SEARCH_INDEX = SORTED.map((e) => ({
+  entry: e,
+  fields: [e.code, e.name, e.symbol, e.countries, e.numeric].map(fold),
+}))
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function CurrencyCodesTool() {
   const [query, setQuery] = useState('')
 
-  const q = query.trim().toLowerCase()
+  const q = fold(query.trim())
   const rows = q
-    ? SORTED.filter(
-        (e) =>
-          e.code.toLowerCase().includes(q) ||
-          e.name.toLowerCase().includes(q) ||
-          e.symbol.toLowerCase().includes(q) ||
-          e.countries.toLowerCase().includes(q) ||
-          e.numeric.includes(q)
-      )
+    ? SEARCH_INDEX.filter(({ fields }) => fields.some((f) => f.includes(q))).map(({ entry }) => entry)
     : SORTED
 
   return (
