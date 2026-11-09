@@ -39,8 +39,28 @@ export function parseInput(raw: string): { data: ParsedData; error: string } {
 
 // ─── Numeric coercion ─────────────────────────────────────────────────────────
 
-/** Currency symbols, thousands separators and percent signs seen in real exports. */
-const NUMERIC_NOISE = /[\s,_'$£€¥%]/g
+/** Currency symbols, spaces, apostrophes and percent signs seen in real exports. */
+const NUMERIC_NOISE = /[\s_'$£€¥%]/g
+
+/** Comma thousands grouping: "1,234", "1,234,567.8", and Indian "1,00,000". */
+const COMMA_GROUPING = /^[-+]?\d{1,3}(,\d{2,3})*,\d{3}(\.\d*)?$/
+
+/** Decimal comma, with optional dot grouping: "12,5", "1.234,56". */
+const DECIMAL_COMMA = /^[-+]?(\d{1,3}(\.\d{3})+|\d+),\d+$/
+
+/**
+ * Remove the thousands separators and make the decimal mark a dot.
+ *
+ * Removing every comma read "1.234,56" as 1.23456 and "12,5" as 125. A comma
+ * that cannot be thousands grouping is a decimal comma. Text that matches
+ * neither form gives null.
+ */
+function normaliseSeparators(body: string): string | null {
+  if (!body.includes(',')) return body
+  if (COMMA_GROUPING.test(body)) return body.replace(/,/g, '')
+  if (DECIMAL_COMMA.test(body)) return body.replace(/\./g, '').replace(',', '.')
+  return null
+}
 
 /**
  * Coerce a cell to a number, or null when it genuinely isn't one.
@@ -62,8 +82,10 @@ export function toNumber(value: unknown): number | null {
 
   // Parenthesised negatives, as accounting exports write them.
   const negated = /^\((.*)\)$/.exec(text)
-  const body = (negated ? negated[1]! : text).replace(NUMERIC_NOISE, '')
-  if (body === '' || body === '-' || body === '.') return null
+  const stripped = (negated ? negated[1]! : text).replace(NUMERIC_NOISE, '')
+  if (stripped === '' || stripped === '-' || stripped === '.') return null
+  const body = normaliseSeparators(stripped)
+  if (body === null) return null
 
   const n = Number(body)
   if (!isFinite(n)) return null

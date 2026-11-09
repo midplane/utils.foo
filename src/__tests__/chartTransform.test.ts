@@ -239,6 +239,165 @@ describe('transform — dates', () => {
   })
 })
 
+describe('transform — row alignment', () => {
+  it('keeps values on their own row when a date row is dropped', () => {
+    // The row with no usable date is skipped. Values must still come from the
+    // row that owns each date, not from the row at the same position.
+    const d = data(['Date', 'V'], [
+      { Date: 'not a date', V: 999 },
+      { Date: '2024-01-15', V: 1 },
+      { Date: '2024-02-15', V: 2 },
+      { Date: '2024-03-15', V: 3 },
+      { Date: '2024-04-15', V: 4 },
+      { Date: '2024-05-15', V: 5 },
+    ])
+    const summed = transform(d, cfg({ xCol: 'Date', series: ['V'], aggregation: 'sum', dateBin: 'month' }))
+    expect(summed.values.get('V')).toEqual([1, 2, 3, 4, 5])
+
+    const raw = transform(d, cfg({ xCol: 'Date', series: ['V'], dateBin: 'month' }))
+    expect(raw.values.get('V')).toEqual([1, 2, 3, 4, 5])
+  })
+
+  it('keeps values on their own row when a numeric X row is dropped', () => {
+    const d = data(['X', 'Y'], [
+      { X: 'bad', Y: 999 },
+      { X: 1, Y: 10 }, { X: 2, Y: 20 }, { X: 3, Y: 30 }, { X: 4, Y: 40 }, { X: 5, Y: 50 },
+    ])
+    const r = transform(d, cfg({ xCol: 'X', series: ['Y'], numericX: true }))
+    expect(r.categories).toEqual([1, 2, 3, 4, 5])
+    expect(r.values.get('Y')).toEqual([10, 20, 30, 40, 50])
+  })
+})
+
+describe('transform — date-only strings', () => {
+  // Under a negative UTC offset, `new Date('2024-03-01')` is the evening of
+  // 29 February in local time. Run with TZ=America/Los_Angeles to see it.
+  it('buckets a date-only value on its own calendar day', () => {
+    const d = data(['Date', 'V'], [
+      { Date: '2024-03-01', V: 1 },
+      { Date: '2024-03-10', V: 2 },
+    ])
+    const days = transform(d, cfg({ xCol: 'Date', series: ['V'], aggregation: 'sum', dateBin: 'day' }))
+    expect(days.categories).toEqual([new Date(2024, 2, 1).getTime(), new Date(2024, 2, 10).getTime()])
+
+    const months = transform(d, cfg({ xCol: 'Date', series: ['V'], aggregation: 'sum', dateBin: 'month' }))
+    expect(months.categories).toEqual([new Date(2024, 2, 1).getTime()])
+    expect(months.values.get('V')).toEqual([3])
+  })
+
+  it('puts 1 January in the new year and a Monday in its own week', () => {
+    const d = data(['Date', 'V'], [
+      { Date: '2024-01-01', V: 1 },
+      { Date: '2023-12-31', V: 2 },
+    ])
+    const years = transform(d, cfg({ xCol: 'Date', series: ['V'], aggregation: 'sum', dateBin: 'year' }))
+    expect(years.categories).toEqual([new Date(2023, 0, 1).getTime(), new Date(2024, 0, 1).getTime()])
+    expect(years.values.get('V')).toEqual([2, 1])
+
+    // 2024-01-01 is a Monday; 2023-12-31 is the Sunday before it.
+    const weeks = transform(d, cfg({ xCol: 'Date', series: ['V'], aggregation: 'sum', dateBin: 'week' }))
+    expect(weeks.categories).toEqual([new Date(2023, 11, 25).getTime(), new Date(2024, 0, 1).getTime()])
+  })
+
+  it('accepts single-digit month and day parts', () => {
+    const d = data(['Date', 'V'], [{ Date: '2024-3-1', V: 1 }, { Date: '2024/3/2', V: 2 }])
+    const r = transform(d, cfg({ xCol: 'Date', series: ['V'], aggregation: 'sum', dateBin: 'day' }))
+    expect(r.categories).toEqual([new Date(2024, 2, 1).getTime(), new Date(2024, 2, 2).getTime()])
+  })
+})
+
+describe('transform — Other bucket', () => {
+  const d = data(['K', 'V'], [
+    { K: 'a', V: 100 }, { K: 'a', V: 100 },
+    { K: 'b', V: 50 },
+    { K: 'c', V: 10 }, { K: 'c', V: 30 },
+    { K: 'd', V: 20 },
+  ])
+  const base = { xCol: 'K', series: ['V'], sort: 'value-desc' as const, topN: 2, groupOther: true }
+
+  it('averages the remaining rows rather than adding up their averages', () => {
+    const r = transform(d, cfg({ ...base, aggregation: 'average' }))
+    expect(r.categories).toEqual(['a', 'b', OTHER_LABEL])
+    // c: 10, 30 and d: 20, so the remainder averages to 20, not 20 + 20.
+    expect(r.values.get('V')).toEqual([100, 50, 20])
+  })
+
+  it('takes the max of the remaining rows', () => {
+    const r = transform(d, cfg({ ...base, aggregation: 'max' }))
+    expect(r.values.get('V')).toEqual([100, 50, 30])
+  })
+
+  it('still sums for sum and count', () => {
+    expect(transform(d, cfg({ ...base, aggregation: 'sum' })).values.get('V')).toEqual([200, 50, 60])
+    const counts = transform(d, cfg({ ...base, aggregation: 'count', sort: 'none' }))
+    expect(counts.categories).toEqual(['a', 'b', OTHER_LABEL])
+    expect(counts.values.get('V')).toEqual([2, 1, 3])
+  })
+
+  it('counts distinct values across the remainder once', () => {
+    const u = data(['K', 'V'], [
+      { K: 'a', V: 1 }, { K: 'a', V: 2 }, { K: 'a', V: 3 },
+      { K: 'b', V: 7 },
+      { K: 'c', V: 7 },
+    ])
+    const r = transform(u, cfg({ ...base, topN: 1, aggregation: 'countUnique' }))
+    expect(r.values.get('V')).toEqual([3, 1])
+  })
+
+  it('adds no Other category to a numeric X axis', () => {
+    const n = data(['X', 'Y'], [{ X: 1, Y: 5 }, { X: 2, Y: 4 }, { X: 3, Y: 3 }])
+    const r = transform(n, cfg({ xCol: 'X', series: ['Y'], numericX: true, topN: 2, groupOther: true }))
+    expect(r.xKind).toBe('value')
+    expect(r.categories).toEqual([1, 2])
+  })
+})
+
+describe('transform — counts and blanks', () => {
+  it('count unique ignores blank cells', () => {
+    const d = data(['K', 'V'], [
+      { K: 'a', V: 1 }, { K: 'a', V: '' }, { K: 'a', V: null }, { K: 'a', V: 1 }, { K: 'a', V: 2 },
+    ])
+    const r = transform(d, cfg({ xCol: 'K', series: ['V'], aggregation: 'countUnique' }))
+    expect(r.values.get('V')).toEqual([2])
+  })
+
+  it('a group with only blank cells counts as 0, not as a gap', () => {
+    const d = data(['K', 'V'], [{ K: 'a', V: 1 }, { K: 'b', V: '' }])
+    expect(transform(d, cfg({ xCol: 'K', series: ['V'], aggregation: 'count' })).values.get('V'))
+      .toEqual([1, 0])
+    expect(transform(d, cfg({ xCol: 'K', series: ['V'], aggregation: 'countUnique' })).values.get('V'))
+      .toEqual([1, 0])
+  })
+
+  it('average and median skip blank cells instead of reading them as 0', () => {
+    const d = data(['K', 'V'], [{ K: 'a', V: 10 }, { K: 'a', V: '' }, { K: 'a', V: '-' }, { K: 'a', V: 20 }])
+    expect(transform(d, cfg({ xCol: 'K', series: ['V'], aggregation: 'average' })).values.get('V')).toEqual([15])
+    expect(transform(d, cfg({ xCol: 'K', series: ['V'], aggregation: 'median' })).values.get('V')).toEqual([15])
+  })
+})
+
+describe('transform — time axis with a value sort', () => {
+  it('ranks by value but plots the kept buckets in date order', () => {
+    // Lines connect points in data order. A value order on a time axis made
+    // the line jump back and forth in time.
+    const d = data(['Date', 'V'], [
+      { Date: '2024-01-10', V: 5 },
+      { Date: '2024-02-10', V: 1 },
+      { Date: '2024-03-10', V: 9 },
+      { Date: '2024-04-10', V: 7 },
+    ])
+    const r = transform(d, cfg({
+      xCol: 'Date', series: ['V'], aggregation: 'sum', dateBin: 'month', sort: 'value-desc', topN: 3,
+    }))
+    expect(r.categories).toEqual([
+      new Date(2024, 0, 1).getTime(),
+      new Date(2024, 2, 1).getTime(),
+      new Date(2024, 3, 1).getTime(),
+    ])
+    expect(r.values.get('V')).toEqual([5, 9, 7])
+  })
+})
+
 describe('transform — guards', () => {
   it('no series yields the empty result', () => {
     expect(transform(sales, cfg({ xCol: 'Region', series: [] })).categories).toEqual([])

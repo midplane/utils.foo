@@ -167,7 +167,9 @@ export default function ChartBuilderTool() {
     const xCol = prev.xCol && data.columns.includes(prev.xCol) ? prev.xCol : data.columns[0] ?? ''
     const numeric = numericColumns(data, xCol)
     const carried = prev.series.filter((s) => numeric.includes(s))
-    return { ...prev, xCol, series: carried.length > 0 ? carried : numeric }
+    // A rule on a column that is gone matches no row, so it would hide all the data.
+    const filters = prev.filters.filter((f) => data.columns.includes(f.column))
+    return { ...prev, xCol, series: carried.length > 0 ? carried : numeric, filters }
   }, [data, dataKey, stored])
 
   const numericCols = useMemo(
@@ -280,7 +282,7 @@ export default function ChartBuilderTool() {
     setSettingsOnlyLink(false)
   }, [])
 
-  const handleShare = useCallback(() => {
+  const handleShare = useCallback(async () => {
     const { hash, dataOmitted } = encodeState({
       v: 1,
       transform: { ...config, series: effectiveSeries },
@@ -291,7 +293,8 @@ export default function ChartBuilderTool() {
     const url = `${window.location.origin}${window.location.pathname}${hash}`
     window.history.replaceState(null, '', hash)
     try {
-      void navigator.clipboard.writeText(url)
+      // Awaited: the browser can refuse the write after the call returns.
+      await navigator.clipboard.writeText(url)
       return { ok: true, dataOmitted }
     } catch {
       return { ok: false, dataOmitted }
@@ -324,7 +327,7 @@ export default function ChartBuilderTool() {
   const shapeSummary = [
     config.xCol,
     config.aggregation === 'none' ? null : AGGREGATION_LABELS[config.aggregation],
-    config.dateBin === 'none' ? null : DATE_BIN_LABELS[config.dateBin],
+    config.dateBin === 'none' || !xIsDate ? null : DATE_BIN_LABELS[config.dateBin],
   ].filter(Boolean).join(' · ')
 
   const rail = (
@@ -408,7 +411,9 @@ export default function ChartBuilderTool() {
           {boot.shared?.transform.xCol && (
             <> Load data with a <strong>{boot.shared.transform.xCol}</strong> column
             {boot.shared.transform.series.length > 0 && (
-              <> and <strong>{boot.shared.transform.series.join('</strong>, <strong>')}</strong></>
+              <> and {boot.shared.transform.series.map((s, i) => (
+                <span key={`${i}-${s}`}>{i > 0 && ', '}<strong>{s}</strong></span>
+              ))}</>
             )} to rebuild the chart.</>
           )}
         </Alert>

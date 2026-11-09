@@ -195,6 +195,30 @@ export function isDateColumn(column: string, rows: DataRecord[]): boolean {
   return looksLikeDate(rows as Parameters<typeof looksLikeDate>[0], column)
 }
 
+const DATE_ONLY = /^(\d{4})[-/](\d{1,2})(?:[-/](\d{1,2}))?$/
+
+/**
+ * Parse an X value as a date, with date-only text read in local time.
+ *
+ * `new Date('2024-03-01')` is UTC midnight, which is 29 February in any
+ * negative UTC offset, so the value went into the wrong day, week, month or
+ * year bucket. Bucketing and axis labels use local time, so the parse must too.
+ */
+export function parseLocalDate(value: unknown): Date | null {
+  if (typeof value === 'string') {
+    const m = DATE_ONLY.exec(value.trim())
+    if (m) {
+      const year = Number(m[1])
+      const month = Number(m[2]) - 1
+      const day = m[3] === undefined ? 1 : Number(m[3])
+      const date = new Date(year, month, day)
+      // Reject 2024-02-31 rather than roll it into March.
+      return date.getMonth() === month && date.getDate() === day ? date : null
+    }
+  }
+  return parseDate(value)
+}
+
 // ─── Pipeline ─────────────────────────────────────────────────────────────────
 
 /** Group key for a raw X value. Numbers and strings must not collide. */
@@ -223,25 +247,27 @@ export function transform(data: ParsedData, config: TransformConfig): TransformR
   const useValue = !useTime && numericX && isNumericColumn(xCol, rows as ParsedData['rows'])
 
   // ── Derive the X value for each row ───────────────────────────────────────
-  type Entry = { key: string; x: string | number; order: number }
+  // `row` is the index into `rows`. Rows without a usable X are skipped, so
+  // the entry index and the row index are not the same.
+  type Entry = { key: string; x: string | number; order: number; row: number }
   const entries: Entry[] = []
 
   for (let i = 0; i < rows.length; i++) {
     const raw = rows[i]![xCol]
     if (useTime) {
-      const parsed = parseDate(raw)
+      const parsed = parseLocalDate(raw)
       if (parsed === null) continue // a row without a usable date cannot sit on a time axis
       const stamp = bucketDate(parsed, dateBin)
-      entries.push({ key: String(stamp), x: stamp, order: stamp })
+      entries.push({ key: String(stamp), x: stamp, order: stamp, row: i })
     } else if (useValue) {
       const n = toNumber(raw)
       // A single junk row is dropped rather than snapped to 0, which would
       // stack points on the axis and misrepresent the data.
       if (n === null) continue
-      entries.push({ key: String(n), x: n, order: n })
+      entries.push({ key: String(n), x: n, order: n, row: i })
     } else {
       const key = categoryKey(raw)
-      entries.push({ key, x: key, order: i })
+      entries.push({ key, x: key, order: i, row: i })
     }
   }
 
@@ -256,11 +282,31 @@ export function transform(data: ParsedData, config: TransformConfig): TransformR
     // Without aggregation every row is its own point, so the key must be unique.
     const key = aggregated ? entry.key : `${entry.key}\u0000${i}`
     const existing = groups.get(key)
-    if (existing) existing.rowIndexes.push(i)
-    else groups.set(key, { x: entry.x, order: entry.order, rowIndexes: [i] })
+    if (existing) existing.rowIndexes.push(entry.row)
+    else groups.set(key, { x: entry.x, order: entry.order, rowIndexes: [entry.row] })
   }
 
   // ── Aggregate ─────────────────────────────────────────────────────────────
+  const aggregate = (col: string, rowIndexes: number[]): number | null => {
+    // Count works on any value; every other aggregation needs numbers, so
+    // coerce first — the aggregators' own parser rejects "$1,200" and "45%".
+    const agg = createAggregator(aggregation as AggregationType)
+    let pushed = 0
+    for (const idx of rowIndexes) {
+      const raw = rows[idx]![col]
+      if (aggregation === 'count' || aggregation === 'countUnique') {
+        // A blank cell is missing, not a value to count.
+        if (raw !== null && raw !== undefined && String(raw).trim() !== '') { agg.push(raw); pushed++ }
+      } else {
+        const n = toNumber(raw)
+        if (n !== null) { agg.push(n); pushed++ }
+      }
+    }
+    // A count of nothing is 0. Any other statistic of nothing is a gap.
+    if (aggregation === 'count' || aggregation === 'countUnique') return agg.value()
+    return pushed === 0 ? null : agg.value()
+  }
+
   const columnValues = new Map<string, (number | null)[]>()
 
   for (const col of series) {
@@ -271,22 +317,7 @@ export function transform(data: ParsedData, config: TransformConfig): TransformR
         out.push(toNumber(row[col]))
         continue
       }
-      // Count works on any value; every other aggregation needs numbers, so
-      // coerce first — the aggregators' own parser rejects "$1,200" and "45%".
-      const agg = createAggregator(aggregation as AggregationType)
-      let pushed = 0
-      for (const idx of group.rowIndexes) {
-        const raw = rows[idx]![col]
-        if (aggregation === 'count') {
-          if (raw !== null && raw !== undefined && String(raw).trim() !== '') { agg.push(raw); pushed++ }
-        } else if (aggregation === 'countUnique') {
-          agg.push(raw); pushed++
-        } else {
-          const n = toNumber(raw)
-          if (n !== null) { agg.push(n); pushed++ }
-        }
-      }
-      out.push(pushed === 0 ? null : agg.value())
+      out.push(aggregate(col, group.rowIndexes))
     }
     columnValues.set(col, out)
   }
@@ -328,9 +359,16 @@ export function transform(data: ParsedData, config: TransformConfig): TransformR
     const kept = order.slice(0, topN)
     const rest = order.slice(topN)
 
-    if (groupOther && !useTime) {
+    // "Other" is a label, so it cannot sit on a time or numeric axis.
+    if (groupOther && !useTime && !useValue) {
       const sums = new Map<string, number | null>()
       for (const col of series) {
+        if (aggregated) {
+          // Aggregate the remaining rows again. The sum of the per-group
+          // averages, medians or maxima is not the value of the remainder.
+          sums.set(col, aggregate(col, rest.flatMap((g) => g.rowIndexes)))
+          continue
+        }
         const vals = columnValues.get(col) ?? []
         let total: number | null = null
         for (const g of rest) {
@@ -347,6 +385,10 @@ export function transform(data: ParsedData, config: TransformConfig): TransformR
   // ── Point cap ─────────────────────────────────────────────────────────────
   const capped = order.length > MAX_PLOT_POINTS
   if (capped) order = order.slice(0, MAX_PLOT_POINTS)
+
+  // A value sort picks which buckets to keep, but a line on a time axis joins
+  // points in array order, so the kept buckets go back into date order.
+  if (useTime && (sort === 'value-desc' || sort === 'value-asc')) order.sort(compareX)
 
   // ── Emit ──────────────────────────────────────────────────────────────────
   const categories: (string | number)[] = order.map((g) => g.x)

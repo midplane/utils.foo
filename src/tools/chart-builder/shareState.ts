@@ -1,5 +1,22 @@
-import type { TransformConfig } from './transform'
-import type { ChartType, Cosmetics, Orientation, SeriesStyle } from './chartOption'
+import {
+  DEFAULT_TRANSFORM,
+  DATE_BIN_LABELS,
+  FILTER_OP_LABELS,
+  SORT_LABELS,
+  type FilterRule,
+  type TransformConfig,
+} from './transform'
+import {
+  CHART_TYPE_LABELS,
+  DEFAULT_COSMETICS,
+  NUMBER_STYLE_LABELS,
+  PALETTE_LABELS,
+  type ChartType,
+  type Cosmetics,
+  type Orientation,
+  type SeriesStyle,
+} from './chartOption'
+import { AGGREGATION_LABELS } from '../pivot-table/types'
 
 /**
  * Everything needed to reproduce a chart, minus the data.
@@ -75,13 +92,98 @@ export function encodeState(state: ShareState): EncodeResult {
   return { hash: PREFIX + toBase64(JSON.stringify(withoutData)), dataOmitted: true }
 }
 
+// ─── Validation ───────────────────────────────────────────────────────────────
+
+type Plain = Record<string, unknown>
+
+const isPlain = (value: unknown): value is Plain =>
+  typeof value === 'object' && value !== null && !Array.isArray(value)
+
+function oneOf<T extends string>(value: unknown, allowed: Record<T, unknown>, fallback: T): T {
+  return typeof value === 'string' && Object.prototype.hasOwnProperty.call(allowed, value)
+    ? (value as T)
+    : fallback
+}
+
+/** Keep each field of `input` that has the same type as its default. */
+function sameTypes<T extends object>(defaults: T, input: Plain): T {
+  const out = { ...defaults } as Plain
+  for (const [key, fallback] of Object.entries(defaults)) {
+    if (typeof input[key] === typeof fallback && input[key] !== null) out[key] = input[key]
+  }
+  return out as T
+}
+
+function readTransform(input: Plain): TransformConfig {
+  const t = sameTypes(DEFAULT_TRANSFORM, input)
+  const aggregations = { none: '', ...AGGREGATION_LABELS }
+  const filters = Array.isArray(input.filters) ? input.filters : []
+  return {
+    ...t,
+    series: Array.isArray(input.series)
+      ? input.series.filter((s): s is string => typeof s === 'string')
+      : [],
+    filters: filters.filter((f): f is FilterRule =>
+      isPlain(f) &&
+      typeof f.id === 'string' &&
+      typeof f.column === 'string' &&
+      typeof f.value === 'string' &&
+      oneOf(f.op, FILTER_OP_LABELS, 'eq') === f.op
+    ),
+    aggregation: oneOf(t.aggregation, aggregations, 'none'),
+    dateBin: oneOf(t.dateBin, DATE_BIN_LABELS, 'none'),
+    sort: oneOf(t.sort, SORT_LABELS, 'none'),
+    topN: Number.isFinite(t.topN) && t.topN > 0 ? Math.floor(t.topN) : 0,
+  }
+}
+
+function readCosmetics(input: unknown): Cosmetics {
+  if (!isPlain(input)) return DEFAULT_COSMETICS
+  const c = sameTypes(DEFAULT_COSMETICS, input)
+  return {
+    ...c,
+    decimals: typeof input.decimals === 'number' && Number.isFinite(input.decimals)
+      ? Math.max(0, Math.min(6, Math.floor(input.decimals)))
+      : null,
+    scale: c.scale === 'log' ? 'log' : 'linear',
+    numberStyle: oneOf(c.numberStyle, NUMBER_STYLE_LABELS, 'auto'),
+    palette: oneOf(c.palette, PALETTE_LABELS, 'wong'),
+  }
+}
+
+function readStyles(input: unknown): Record<string, SeriesStyle> {
+  const out: Record<string, SeriesStyle> = {}
+  if (!isPlain(input)) return out
+  for (const [col, raw] of Object.entries(input)) {
+    if (!isPlain(raw)) continue
+    const style: SeriesStyle = {}
+    if (raw.mark === 'bar' || raw.mark === 'line' || raw.mark === 'area') style.mark = raw.mark
+    if (raw.axis === 'left' || raw.axis === 'right') style.axis = raw.axis
+    if (typeof raw.color === 'string') style.color = raw.color
+    out[col] = style
+  }
+  return out
+}
+
 export function decodeState(hash: string): ShareState | null {
   if (!hash.startsWith(PREFIX)) return null
   try {
-    const parsed = JSON.parse(fromBase64(hash.slice(PREFIX.length))) as ShareState
+    const parsed: unknown = JSON.parse(fromBase64(hash.slice(PREFIX.length)))
     // Only accept the shape this build understands.
-    if (parsed?.v !== 1 || typeof parsed.transform !== 'object') return null
-    return parsed
+    if (!isPlain(parsed) || parsed.v !== 1 || !isPlain(parsed.transform)) return null
+    // The link can come from anywhere. Replace each missing or bad field with
+    // its default, so the tool does not crash when it reads the field.
+    const state: ShareState = {
+      v: 1,
+      transform: readTransform(parsed.transform),
+      cosmetics: readCosmetics(parsed.cosmetics),
+      chartType: oneOf(parsed.chartType, CHART_TYPE_LABELS, 'bar'),
+      orientation: parsed.orientation === 'horizontal' ? 'horizontal' : 'vertical',
+      styles: readStyles(parsed.styles),
+    }
+    if (typeof parsed.data === 'string') state.data = parsed.data
+    if (typeof parsed.sampleId === 'string') state.sampleId = parsed.sampleId
+    return state
   } catch {
     return null
   }

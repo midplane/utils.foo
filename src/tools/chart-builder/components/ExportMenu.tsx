@@ -21,7 +21,7 @@ interface ExportMenuProps {
    * it comes from a DOM rect, which is not available during render.
    */
   measured: () => { width: number; height: number }
-  onShare: () => { ok: boolean; dataOmitted: boolean }
+  onShare: () => Promise<{ ok: boolean; dataOmitted: boolean }>
 }
 
 type Flash = { ok: boolean; text: string } | null
@@ -78,8 +78,8 @@ export function ExportMenu({ option, background, measured, onShare }: ExportMenu
     }
   }
 
-  const handleShare = () => {
-    const { ok, dataOmitted } = onShare()
+  const handleShare = async () => {
+    const { ok, dataOmitted } = await onShare()
     if (!ok) return show(false, 'Could not copy the link')
     show(true, dataOmitted ? 'Link copied — settings only, data too large' : 'Link copied')
   }
@@ -175,7 +175,7 @@ export function ExportMenu({ option, background, measured, onShare }: ExportMenu
 
           <button
             type="button" role="menuitem" className={item}
-            onClick={() => { handleShare(); setOpen(false) }}
+            onClick={() => { void handleShare(); setOpen(false) }}
           >
             <Link2 className="w-3 h-3" aria-hidden="true" />
             Copy shareable link

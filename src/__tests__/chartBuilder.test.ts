@@ -62,6 +62,28 @@ describe('numeric coercion', () => {
     expect(toNumber('abc')).toBeNull()
     expect(toNumber(Infinity)).toBeNull()
   })
+
+  it('reads a decimal comma when the grouping cannot be thousands', () => {
+    // Stripping every comma read "1.234,56" as 1.23456 and "12,5" as 125.
+    expect(toNumber('1.234,56')).toBe(1234.56)
+    expect(toNumber('€1.234.567,8')).toBe(1234567.8)
+    expect(toNumber('12,5')).toBe(12.5)
+    expect(toNumber('-0,75')).toBe(-0.75)
+    expect(toNumber('(1.200,50)')).toBe(-1200.5)
+    // Valid US grouping is unchanged.
+    expect(toNumber('1,234')).toBe(1234)
+    expect(toNumber('1,234,567.89')).toBe(1234567.89)
+    expect(toNumber('(1,200)')).toBe(-1200)
+    expect(toNumber('-$1,200')).toBe(-1200)
+  })
+
+  it('rejects text that is not one number', () => {
+    expect(toNumber('1,2,3')).toBeNull()
+    expect(toNumber('-')).toBeNull()
+    expect(toNumber('—')).toBeNull()
+    expect(toNumber('$')).toBeNull()
+    expect(toNumber('()')).toBeNull()
+  })
 })
 
 describe('column classification', () => {
@@ -154,6 +176,12 @@ describe('option building', () => {
     const option = build(data, { xCol: 'Month', series: ['Revenue'] })
     const series = (option!.series ?? []) as { data: (number | null)[] }[]
     expect(series[0]!.data).toEqual([100, null, 300])
+  })
+
+  it('leaves a missing value out of a pie rather than drawing a 0 slice', () => {
+    const option = build(data, { xCol: 'Month', series: ['Revenue'] }, { chartType: 'pie' })
+    const series = (option!.series ?? []) as { data: { name: string; value: number }[] }[]
+    expect(series[0]!.data).toEqual([{ name: 'Jan', value: 100 }, { name: 'Mar', value: 300 }])
   })
 
   it('inverts the category axis for horizontal bars so order is preserved', () => {
@@ -278,6 +306,20 @@ describe('data labels', () => {
 
   it('draws no label when the toggle is off', () => {
     expect(labelOf({}).show).toBe(false)
+  })
+})
+
+describe('time axis labels', () => {
+  it('shows the time of day for hourly buckets', () => {
+    // Every hourly tick was labelled with the same date and no time.
+    const data = rows(`When,V\n2024-03-10 09:15,1\n2024-03-10 13:40,2`)
+    const option = build(data, { xCol: 'When', series: ['V'], aggregation: 'sum', dateBin: 'hour' }) as unknown as {
+      xAxis: { axisLabel: { formatter: (v: number) => string } }
+    }
+    const format = option.xAxis.axisLabel.formatter
+    expect(format(new Date(2024, 2, 10, 13).getTime())).toBe('2024-03-10 13:00')
+    // Midnight stays a plain date, so day and month buckets are unchanged.
+    expect(format(new Date(2024, 2, 10).getTime())).toBe('2024-03-10')
   })
 })
 

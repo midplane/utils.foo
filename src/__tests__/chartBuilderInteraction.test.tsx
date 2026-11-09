@@ -16,6 +16,9 @@ vi.mock('echarts-for-react', () => ({
 vi.mock('../contexts/ThemeContext', () => ({ useTheme: () => ({ isDark: false, toggle: () => {} }) }))
 
 const { default: ChartBuilder } = await import('../tools/chart-builder/index')
+const { encodeState } = await import('../tools/chart-builder/shareState')
+const { DEFAULT_TRANSFORM } = await import('../tools/chart-builder/transform')
+const { DEFAULT_COSMETICS } = await import('../tools/chart-builder/chartOption')
 
 const CSV = `Month,Revenue,Expenses,Profit
 Jan,42000,31000,11000
@@ -93,6 +96,58 @@ describe('chart builder interaction', () => {
     await user.click(screen.getByLabelText('Data'))
     await user.paste('Country,Population\nIndia,1429\nChina,1412')
     expect(seriesOf()).toBe('Population')
+  })
+
+  it('drops filters on columns that the new dataset does not have', async () => {
+    const user = await setup()
+    await user.click(screen.getByRole('button', { name: /Filters/ }))
+    await user.click(screen.getByRole('button', { name: /Add/ }))
+    await user.type(screen.getByLabelText('Filter value'), 'Jan')
+    expect(chart()).not.toBeNull()
+
+    await user.click(screen.getByRole('button', { name: /Change data/ }))
+    await user.clear(screen.getByLabelText('Data'))
+    await user.click(screen.getByLabelText('Data'))
+    await user.paste('Country,Population\nIndia,1429\nChina,1412')
+
+    // A rule on "Month" matched no row of the new data, so nothing was drawn.
+    expect(seriesOf()).toBe('Population')
+    expect(screen.queryByText(/No rows match/)).toBeNull()
+  })
+
+  it('names every expected column in plain text for a settings-only link', async () => {
+    const hash = encodeState({
+      v: 1,
+      transform: { ...DEFAULT_TRANSFORM, xCol: 'Month', series: ['Revenue', 'Expenses'] },
+      cosmetics: DEFAULT_COSMETICS,
+      chartType: 'bar',
+      orientation: 'vertical',
+      styles: {},
+    }).hash
+    window.history.replaceState(null, '', hash)
+    try {
+      render(<ChartBuilder />)
+      const alert = screen.getByText(/chart settings only/)
+      // The series were joined with a literal "</strong>" string, which React
+      // printed as text.
+      expect(alert.textContent).not.toContain('<strong>')
+      expect(alert.textContent).toContain('Revenue, Expenses')
+    } finally {
+      window.history.replaceState(null, '', window.location.pathname)
+    }
+  })
+
+  it('reports a failed clipboard write for the share link', async () => {
+    const user = await setup()
+    vi.spyOn(navigator.clipboard, 'writeText').mockRejectedValue(new Error('denied'))
+    try {
+      await user.click(screen.getByRole('button', { name: /Export/ }))
+      await user.click(screen.getByRole('menuitem', { name: /Copy shareable link/ }))
+      expect(await screen.findByText('Could not copy the link')).toBeDefined()
+      expect(screen.queryByText(/Link copied/)).toBeNull()
+    } finally {
+      window.history.replaceState(null, '', window.location.pathname)
+    }
   })
 
   it('draws a dot plot when scatter X is categorical', async () => {

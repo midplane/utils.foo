@@ -95,6 +95,52 @@ describe('share state rejection', () => {
     expect(decodeState(encoded)).not.toBeNull()
     expect(decodeState('#c=' + btoa(JSON.stringify(bumped)))).toBeNull()
   })
+
+  const raw = (payload: unknown) => '#c=' + btoa(JSON.stringify(payload))
+
+  it('rejects a null or array transform', () => {
+    expect(decodeState(raw({ v: 1, transform: null }))).toBeNull()
+    expect(decodeState(raw({ v: 1, transform: [] }))).toBeNull()
+    expect(decodeState(raw(null))).toBeNull()
+  })
+
+  it('fills missing or mistyped fields with defaults, so the tool can render', () => {
+    const decoded = decodeState(raw({
+      v: 1,
+      transform: { xCol: 'Month', series: 'Revenue', filters: null, topN: '5' },
+      cosmetics: { title: 'Kept', min: 3, palette: 'nope' },
+      chartType: 'radar',
+      orientation: 'sideways',
+      styles: null,
+      data: 42,
+      sampleId: {},
+    }))!
+    expect(decoded).not.toBeNull()
+    expect(decoded.transform).toEqual({ ...DEFAULT_TRANSFORM, xCol: 'Month' })
+    expect(decoded.cosmetics).toEqual({ ...DEFAULT_COSMETICS, title: 'Kept' })
+    expect(decoded.chartType).toBe('bar')
+    expect(decoded.orientation).toBe('vertical')
+    expect(decoded.styles).toEqual({})
+    expect(decoded.data).toBeUndefined()
+    expect(decoded.sampleId).toBeUndefined()
+  })
+
+  it('drops malformed filter rules and series names but keeps valid ones', () => {
+    const decoded = decodeState(raw({
+      v: 1,
+      transform: {
+        xCol: 'Month',
+        series: ['Revenue', 7, null],
+        filters: [
+          { id: '1', column: 'Revenue', op: 'gt', value: '10' },
+          { id: '2', column: 'Revenue', op: 'explode', value: '1' },
+          null,
+        ],
+      },
+    }))!
+    expect(decoded.transform.series).toEqual(['Revenue'])
+    expect(decoded.transform.filters).toEqual([{ id: '1', column: 'Revenue', op: 'gt', value: '10' }])
+  })
 })
 
 describe('pivot handoff', () => {

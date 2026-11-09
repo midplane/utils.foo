@@ -231,10 +231,12 @@ export function contrastTextOn(fill: string | undefined, palette: Palette): stri
   }
 }
 
-/** Axis label for a time axis, chosen to suit the span being displayed. */
+/** Axis label for a time axis. Adds the time of day when the stamp is not at midnight. */
 function formatTimeLabel(stamp: number): string {
   const d = new Date(stamp)
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+  const pad = (n: number) => String(n).padStart(2, '0')
+  const date = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+  return d.getHours() === 0 && d.getMinutes() === 0 ? date : `${date} ${pad(d.getHours())}:${pad(d.getMinutes())}`
 }
 
 // ─── Option builder ───────────────────────────────────────────────────────────
@@ -326,7 +328,7 @@ export function buildOption({
         data: result.categories
           .map((name, i) => ({
             name: String(typeof name === 'number' && result.xKind === 'time' ? formatTimeLabel(name) : name),
-            value: values[i] ?? 0,
+            value: values[i] ?? null,
           }))
           .filter((d) => d.value !== null),
         itemStyle: { borderColor: palette.background, borderWidth: 2 },
