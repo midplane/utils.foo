@@ -8,61 +8,14 @@ import { FlowDivider } from '../../components/ui/FlowDivider'
 import { SectionLabel } from '../../components/ui/SectionLabel'
 import { SegmentedControl, SegmentedControlItem } from '../../components/ui/SegmentedControl'
 import { Dices, Info, RefreshCw, ShieldCheck } from 'lucide-react'
+import { uuidV4, uuidV5, uuidV7 } from './uuid'
 
 type UuidVersion = 'v4' | 'v5' | 'v7'
 
-// --- UUID generation ---
-
-function uuidV4(): string {
-  const bytes = crypto.getRandomValues(new Uint8Array(16))
-  bytes[6] = ((bytes[6] ?? 0) & 0x0f) | 0x40
-  bytes[8] = ((bytes[8] ?? 0) & 0x3f) | 0x80
-  return formatUuidBytes(bytes)
-}
-
-async function uuidV5(namespace: string, name: string): Promise<string> {
-  // Parse namespace UUID
-  const nsBytes = parseUuidToBytes(namespace)
-  if (!nsBytes) throw new Error('Invalid namespace UUID')
-
-  const nameBytes = new TextEncoder().encode(name)
-  const combined = new Uint8Array(nsBytes.length + nameBytes.length)
-  combined.set(nsBytes)
-  combined.set(nameBytes, nsBytes.length)
-
-  const hashBuffer = await crypto.subtle.digest('SHA-1', combined)
-  const bytes = new Uint8Array(hashBuffer).slice(0, 16)
-  bytes[6] = ((bytes[6] ?? 0) & 0x0f) | 0x50
-  bytes[8] = ((bytes[8] ?? 0) & 0x3f) | 0x80
-  return formatUuidBytes(bytes)
-}
-
-function uuidV7(): string {
-  const bytes = crypto.getRandomValues(new Uint8Array(16))
-  const now = BigInt(Date.now())
-  // Set top 48 bits to millisecond timestamp
-  bytes[0] = Number((now >> 40n) & 0xffn)
-  bytes[1] = Number((now >> 32n) & 0xffn)
-  bytes[2] = Number((now >> 24n) & 0xffn)
-  bytes[3] = Number((now >> 16n) & 0xffn)
-  bytes[4] = Number((now >> 8n) & 0xffn)
-  bytes[5] = Number(now & 0xffn)
-  bytes[6] = ((bytes[6] ?? 0) & 0x0f) | 0x70
-  bytes[8] = ((bytes[8] ?? 0) & 0x3f) | 0x80
-  return formatUuidBytes(bytes)
-}
-
-function formatUuidBytes(bytes: Uint8Array): string {
-  const hex = Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('')
-  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`
-}
-
-function parseUuidToBytes(uuid: string): Uint8Array | null {
-  const clean = uuid.replace(/-/g, '')
-  if (!/^[0-9a-fA-F]{32}$/.test(clean)) return null
-  const bytes = new Uint8Array(16)
-  for (let i = 0; i < 16; i++) bytes[i] = parseInt(clean.slice(i * 2, i * 2 + 2), 16)
-  return bytes
+function generateList(version: UuidVersion, count: number): string[] {
+  if (version === 'v4') return Array.from({ length: count }, () => uuidV4())
+  if (version === 'v7') return Array.from({ length: count }, () => uuidV7())
+  return []
 }
 
 // Well-known namespace UUIDs (RFC 4122)
@@ -76,28 +29,36 @@ const NAMESPACES: Record<string, string> = {
 export default function UuidGeneratorTool() {
   const [version, setVersion] = useState<UuidVersion>('v7')
   const [count, setCount] = useState(5)
-  const [uuids, setUuids] = useState<string[]>(() => Array.from({ length: 5 }, uuidV7))
+  const [uuids, setUuids] = useState<string[]>(() => generateList('v7', 5))
   const [v5Namespace, setV5Namespace] = useState<string>(NAMESPACES['DNS'] ?? '')
   const [v5Name, setV5Name] = useState('example.com')
   const [v5Result, setV5Result] = useState('')
   const [v5Error, setV5Error] = useState('')
 
-  const generateBulk = useCallback(async () => {
-    if (version === 'v4') {
-      setUuids(Array.from({ length: count }, uuidV4))
-    } else if (version === 'v7') {
-      // slight delay between each so timestamps differ
-      const results: string[] = []
-      for (let i = 0; i < count; i++) {
-        await new Promise(r => setTimeout(r, 1))
-        results.push(uuidV7())
-      }
-      setUuids(results)
-    } else {
-      // v5 — single deterministic UUID shown in its own section
-      setUuids([])
-    }
+  const generateBulk = useCallback(() => {
+    setUuids(generateList(version, count))
   }, [version, count])
+
+  const handleVersionChange = (val: string) => {
+    const next = val as UuidVersion
+    setVersion(next)
+    if (next !== 'v5') setUuids(generateList(next, count))
+  }
+
+  const handleCountChange = (val: string) => {
+    const next = Number(val)
+    setCount(next)
+    setUuids(generateList(version, next))
+  }
+
+  // A shown result must always match the inputs, so clear it when they change.
+  const handleV5NamespaceChange = (val: string) => {
+    setV5Namespace(val); setV5Result(''); setV5Error('')
+  }
+
+  const handleV5NameChange = (val: string) => {
+    setV5Name(val); setV5Result(''); setV5Error('')
+  }
 
   const generateV5 = useCallback(async () => {
     setV5Error('')
@@ -122,7 +83,7 @@ export default function UuidGeneratorTool() {
         <CardHeader>
           <div className="flex items-center justify-between flex-wrap gap-2">
             {/* Version Toggle */}
-            <SegmentedControl value={version} onChange={(val) => setVersion(val as UuidVersion)}>
+            <SegmentedControl value={version} onChange={handleVersionChange}>
               {(['v4', 'v5', 'v7'] as UuidVersion[]).map((v) => (
                 <SegmentedControlItem key={v} value={v}>{v.toUpperCase()}</SegmentedControlItem>
               ))}
@@ -130,7 +91,7 @@ export default function UuidGeneratorTool() {
             {version !== 'v5' && (
               <div className="flex items-center gap-2">
                 <span className="text-xs text-[var(--color-ink-muted)]">Count:</span>
-                <SegmentedControl value={count.toString()} onChange={(v) => setCount(Number(v))} variant="bordered">
+                <SegmentedControl value={count.toString()} onChange={handleCountChange} variant="bordered">
                   {[1, 5, 10, 25].map(n => (
                     <SegmentedControlItem key={n} value={n.toString()} className="w-8 h-7">
                       {n}
@@ -152,7 +113,7 @@ export default function UuidGeneratorTool() {
             <div className="space-y-3">
               <div className="space-y-1">
                 <SectionLabel>Namespace</SectionLabel>
-                <SegmentedControl value={v5Namespace} onChange={setV5Namespace} variant="bordered" className="mb-1">
+                <SegmentedControl value={v5Namespace} onChange={handleV5NamespaceChange} variant="bordered" className="mb-1">
                   {Object.entries(NAMESPACES).map(([label, ns]) => (
                     <SegmentedControlItem key={label} value={ns} className="px-2 py-0.5 text-[10px]">
                       {label}
@@ -162,7 +123,7 @@ export default function UuidGeneratorTool() {
                 <input
                   className="w-full px-3 py-2 text-xs font-mono bg-[var(--color-input-bg)] border border-[var(--color-input-border)] shadow-[var(--shadow-input-inset)] rounded-lg focus:border-[var(--color-accent)] transition-colors"
                   value={v5Namespace}
-                  onChange={e => setV5Namespace(e.target.value)}
+                  onChange={e => handleV5NamespaceChange(e.target.value)}
                   placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
                   spellCheck={false}
                 />
@@ -172,7 +133,7 @@ export default function UuidGeneratorTool() {
                 <input
                   className="w-full px-3 py-2 text-xs font-mono bg-[var(--color-input-bg)] border border-[var(--color-input-border)] shadow-[var(--shadow-input-inset)] rounded-lg focus:border-[var(--color-accent)] transition-colors"
                   value={v5Name}
-                  onChange={e => setV5Name(e.target.value)}
+                  onChange={e => handleV5NameChange(e.target.value)}
                   placeholder="e.g. example.com"
                   spellCheck={false}
                 />
