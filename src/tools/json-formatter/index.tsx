@@ -24,6 +24,7 @@ import {
 import { cn } from "../../lib/utils";
 import { appTheme, appThemeDark } from "../../lib/codemirrorTheme";
 import { useTheme } from "../../contexts/ThemeContext";
+import { minifyJson, prettifyJson } from "./format";
 
 // ─── Validation helpers ────────────────────────────────────────────────────────
 
@@ -201,7 +202,7 @@ export default function JsonFormatterTool() {
     const text = currentText.trim();
     if (!text) return;
     try {
-      const prettified = JSON.stringify(JSON.parse(text), null, 2);
+      const prettified = prettifyJson(text);
       setEditorContent(prettified);
       setValidState("valid");
     } catch {
@@ -213,7 +214,7 @@ export default function JsonFormatterTool() {
     const text = currentText.trim();
     if (!text) return;
     try {
-      const minified = JSON.stringify(JSON.parse(text));
+      const minified = minifyJson(text);
       setEditorContent(minified);
       setValidState("valid");
     } catch {
@@ -270,7 +271,7 @@ export default function JsonFormatterTool() {
     const path = (expr ?? filterExpr).trim();
     if (!path) { setFilterResult(""); setFilterError(""); return; }
     try {
-      const parsed = JSON.parse(currentText) as object;
+      const parsed = JSON.parse(currentText.trim()) as object;
       const result = JSONPath({ path, json: parsed });
       setFilterResult(JSON.stringify(result, null, 2));
       setFilterError("");
