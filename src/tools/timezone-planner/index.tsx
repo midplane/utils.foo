@@ -4,6 +4,23 @@ import { Button } from '../../components/ui/Button'
 import { CopyButton } from '../../components/ui/CopyButton'
 import { ToolHeader } from '../../components/ui/ToolHeader'
 import { Calendar, CalendarClock, ChevronDown, Globe, MousePointer2, Search, Sparkles } from 'lucide-react'
+import {
+  MS_PER_HOUR,
+  buildSlotText,
+  cellStatus,
+  dayShift,
+  findZone,
+  formatClockAt,
+  formatDayShift,
+  getOffsetLabel,
+  isWorkingAt,
+  offsetMinutesAt,
+  rangeVerdict,
+  sameZone,
+  searchZones,
+  utcDayStart,
+  zoneAbbrAt,
+} from './planner'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -126,97 +143,39 @@ function getLocalIANA(): string {
   try { return Intl.DateTimeFormat().resolvedOptions().timeZone } catch { return 'UTC' }
 }
 
-function getTZInfo(iana: string): { abbr: string; offsetMinutes: number } {
-  try {
-    const now = new Date()
-    const abbr = new Intl.DateTimeFormat('en-US', { timeZone: iana, timeZoneName: 'short' })
-      .formatToParts(now).find(p => p.type === 'timeZoneName')?.value ?? iana
-    // Calculate UTC offset
-    const utcDate = new Date(now.toLocaleString('en-US', { timeZone: 'UTC' }))
-    const tzDate = new Date(now.toLocaleString('en-US', { timeZone: iana }))
-    const offsetMinutes = (tzDate.getTime() - utcDate.getTime()) / 60000
-    return { abbr, offsetMinutes }
-  } catch {
-    return { abbr: iana, offsetMinutes: 0 }
-  }
-}
-
-function getHourInTZ(utcHour: number, offsetMinutes: number): number {
-  // Given a UTC hour (0-23) and a timezone offset in minutes, return local hour (0-23)
-  return ((utcHour * 60 + offsetMinutes) / 60 + 24) % 24
-}
-
-function formatHourInTZ(utcHour: number, offsetMinutes: number): string {
-  const localHour = getHourInTZ(utcHour, offsetMinutes)
-  const h = Math.floor(localHour)
-  const ampm = h < 12 ? 'am' : 'pm'
-  const display = h % 12 === 0 ? 12 : h % 12
-  return `${display}${ampm}`
-}
-
-function formatTimeInTZ(iana: string): string {
+function formatTimeInTZ(iana: string, nowMs: number): string {
   return new Intl.DateTimeFormat('en-US', {
     timeZone: iana,
     hour: 'numeric',
     minute: '2-digit',
     hour12: true,
-  }).format(new Date())
-}
-
-function getOffsetLabel(offsetMinutes: number): string {
-  const sign = offsetMinutes >= 0 ? '+' : '-'
-  const abs = Math.abs(offsetMinutes)
-  const h = Math.floor(abs / 60)
-  const m = abs % 60
-  return m === 0 ? `UTC${sign}${h}` : `UTC${sign}${h}:${String(m).padStart(2, '0')}`
+  }).format(new Date(nowMs))
 }
 
 function makeTZEntry(iana: string, isLocal = false): TZEntry {
-  const found = TIMEZONE_LIST.find(t => t.iana === iana)
+  const found = findZone(TIMEZONE_LIST, iana)
   const label = found?.label ?? iana.split('/').pop()?.replace(/_/g, ' ') ?? iana
-  const { abbr } = getTZInfo(iana)
+  const abbr = zoneAbbrAt(iana, Date.now())
   return { id: crypto.randomUUID(), iana, label, abbr, isLocal }
-}
-
-// Cell color logic
-// For each UTC hour, check how many zones have it in working hours
-function getCellColor(utcHour: number, zones: TZEntry[], workStart: number, workEnd: number): 'good' | 'partial' | 'bad' {
-  if (zones.length === 0) return 'bad'
-  let countWorking = 0
-  for (const tz of zones) {
-    const { offsetMinutes } = getTZInfo(tz.iana)
-    const localHour = getHourInTZ(utcHour, offsetMinutes)
-    const h = Math.floor(localHour)
-    if (h >= workStart && h < workEnd) countWorking++
-  }
-  if (countWorking === zones.length) return 'good'
-  if (countWorking > 0) return 'partial'
-  return 'bad'
 }
 
 // ─── Components ───────────────────────────────────────────────────────────────
 
 function SearchDropdown({
   onAdd,
-  existingIANAs,
+  isExisting,
+  nowMs,
 }: {
   onAdd: (iana: string) => void
-  existingIANAs: Set<string>
+  isExisting: (iana: string) => boolean
+  nowMs: number
 }) {
   const [query, setQuery] = useState('')
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
-  const filtered = query.trim()
-    ? TIMEZONE_LIST.filter(
-        t =>
-          !existingIANAs.has(t.iana) &&
-          (t.label.toLowerCase().includes(query.toLowerCase()) ||
-           t.iana.toLowerCase().includes(query.toLowerCase()) ||
-           t.region.toLowerCase().includes(query.toLowerCase()))
-      ).slice(0, 8)
-    : TIMEZONE_LIST.filter(t => !existingIANAs.has(t.iana)).slice(0, 8)
+  const filtered = searchZones(TIMEZONE_LIST, query, isExisting)
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
@@ -249,7 +208,8 @@ function SearchDropdown({
       {open && filtered.length > 0 && (
         <div className="absolute top-full mt-1 left-0 right-0 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg shadow-[var(--shadow-medium)] z-50 overflow-hidden">
           {filtered.map(t => {
-            const { abbr, offsetMinutes } = getTZInfo(t.iana)
+            const abbr = zoneAbbrAt(t.iana, nowMs)
+            const offsetMinutes = offsetMinutesAt(t.iana, nowMs)
             return (
               <button
                 key={t.iana}
@@ -289,6 +249,8 @@ function TZRow({
   isDragging,
   isLocal,
   currentHour,
+  dayStart,
+  nowMs,
 }: {
   tz: TZEntry
   pinnedHour: number | null
@@ -304,9 +266,11 @@ function TZRow({
   isDragging: boolean
   isLocal: boolean
   currentHour: number   // UTC current hour
+  dayStart: number      // UTC midnight of the day the grid shows, in ms
+  nowMs: number
 }) {
-  const { offsetMinutes } = getTZInfo(tz.iana)
-  const currentTime = formatTimeInTZ(tz.iana)
+  const currentTime = formatTimeInTZ(tz.iana, nowMs)
+  const allIANAs = allZones.map(z => z.iana)
 
   const rangeMin = selectedRange ? Math.min(selectedRange[0], selectedRange[1]) : -1
   const rangeMax = selectedRange ? Math.max(selectedRange[0], selectedRange[1]) : -1
@@ -348,10 +312,9 @@ function TZRow({
         onMouseLeave={() => onHover(null)}
       >
         {Array.from({ length: 24 }, (_, utcHour) => {
-          const localH = getHourInTZ(utcHour, offsetMinutes)
-          const h = Math.floor(localH)
-          const isWork = h >= workStart && h < workEnd
-          const cellColor = getCellColor(utcHour, allZones, workStart, workEnd)
+          const cellMs = dayStart + utcHour * MS_PER_HOUR
+          const isWork = isWorkingAt(tz.iana, cellMs, workStart, workEnd)
+          const cellColor = cellStatus(allIANAs, cellMs, workStart, workEnd)
           const isPinned = pinnedHour === utcHour
           const inRange = selectedRange !== null && utcHour >= rangeMin && utcHour <= rangeMax
           const isNow = utcHour === currentHour
@@ -415,16 +378,22 @@ export default function TimezonePlanner() {
   const [workStart, setWorkStart] = useState(9)
   const [workEnd, setWorkEnd] = useState(18)
   const [showWorkSettings, setShowWorkSettings] = useState(false)
-  const [currentUTCHour, setCurrentUTCHour] = useState(() => new Date().getUTCHours())
+  const [nowMinute, setNowMinute] = useState(() => Math.floor(Date.now() / 60_000))
   const [showAddPreset, setShowAddPreset] = useState(false)
   const presetsRef = useRef<HTMLDivElement>(null)
 
-  // Tick every minute to keep "now" indicator fresh
+  // Check the clock each second; state changes (and the page renders) only when the minute changes
   useEffect(() => {
-    const tick = () => setCurrentUTCHour(new Date().getUTCHours())
-    const id = setInterval(tick, 60_000)
+    const tick = () => setNowMinute(Math.floor(Date.now() / 60_000))
+    const id = setInterval(tick, 1000)
     return () => clearInterval(id)
   }, [])
+
+  const nowMs = nowMinute * 60_000
+  const currentUTCHour = new Date(nowMs).getUTCHours()
+  // The grid shows the hours of the current UTC day
+  const dayStart = utcDayStart(nowMs)
+  const hourMs = (utcHour: number) => dayStart + utcHour * MS_PER_HOUR
 
   // Close presets on outside click
   useEffect(() => {
@@ -446,11 +415,12 @@ export default function TimezonePlanner() {
     return () => window.removeEventListener('mouseup', handler)
   }, [isDragging])
 
-  const existingIANAs = new Set(zones.map(z => z.iana))
+  const hasZone = (iana: string) => zones.some(z => sameZone(z.iana, iana))
 
   function addZone(iana: string) {
-    if (existingIANAs.has(iana)) return
-    setZones(prev => [...prev, makeTZEntry(iana, iana === localIANA)])
+    setZones(prev =>
+      prev.some(z => sameZone(z.iana, iana)) ? prev : [...prev, makeTZEntry(iana, sameZone(iana, localIANA))]
+    )
   }
 
   function removeZone(id: string) {
@@ -464,7 +434,7 @@ export default function TimezonePlanner() {
   function applyPreset(preset: typeof PRESETS[0]) {
     const newZones: TZEntry[] = [makeTZEntry(localIANA, true)]
     for (const iana of preset.zones) {
-      if (iana !== localIANA) newZones.push(makeTZEntry(iana))
+      if (!sameZone(iana, localIANA)) newZones.push(makeTZEntry(iana))
     }
     setZones(newZones)
     setSelectedRange(null)
@@ -492,37 +462,12 @@ export default function TimezonePlanner() {
   const rangeMax = selectedRange ? Math.max(selectedRange[0], selectedRange[1]) : -1
   const rangeLength = selectedRange ? rangeMax - rangeMin + 1 : 0
 
-  function getRangeSummary(): { working: number; partial: number; label: string } | null {
-    if (!selectedRange) return null
-    let working = 0, partial = 0
-    for (let h = rangeMin; h <= rangeMax; h++) {
-      const color = getCellColor(h, zones, workStart, workEnd)
-      if (color === 'good') working++
-      else if (color === 'partial') partial++
-    }
-    // Format label: use first zone as reference display
-    const firstZone = zones[0]
-    if (!firstZone) return { working, partial, label: '' }
-    const { offsetMinutes } = getTZInfo(firstZone.iana)
-    const startLocal = formatHourInTZ(rangeMin, offsetMinutes)
-    const endLocal = formatHourInTZ(rangeMax + 1, offsetMinutes)
-    return { working, partial, label: `${startLocal}–${endLocal} ${firstZone.abbr}` }
-  }
-
-  const summary = getRangeSummary()
-
-  // Build copy string for selected range
-  function buildCopyText(): string {
-    if (!selectedRange) return ''
-    const lines: string[] = [`Meeting slot: ${rangeLength}h block`]
-    for (const tz of zones) {
-      const { offsetMinutes } = getTZInfo(tz.iana)
-      const start = formatHourInTZ(rangeMin, offsetMinutes)
-      const end = formatHourInTZ(rangeMax + 1, offsetMinutes)
-      lines.push(`  ${tz.label} (${tz.abbr}): ${start} – ${end}`)
-    }
-    return lines.join('\n')
-  }
+  const zoneIANAs = zones.map(z => z.iana)
+  const verdict = selectedRange
+    ? rangeVerdict(Array.from({ length: rangeLength }, (_, i) => cellStatus(zoneIANAs, hourMs(rangeMin + i), workStart, workEnd)))
+    : null
+  const rangeStartMs = hourMs(rangeMin)
+  const rangeEndMs = hourMs(rangeMax + 1)
 
   // Hour axis labels (UTC hours 0-23, shown at key positions)
   const AXIS_LABELS = [0, 3, 6, 9, 12, 15, 18, 21]
@@ -535,7 +480,7 @@ export default function TimezonePlanner() {
       <div className="flex flex-wrap items-center gap-2">
         {/* Add timezone search */}
         <div className="w-52">
-          <SearchDropdown onAdd={addZone} existingIANAs={existingIANAs} />
+          <SearchDropdown onAdd={addZone} isExisting={hasZone} nowMs={nowMs} />
         </div>
 
         {/* Presets */}
@@ -653,6 +598,8 @@ export default function TimezonePlanner() {
               isDragging={isDragging}
               isLocal={tz.isLocal}
               currentHour={currentUTCHour}
+              dayStart={dayStart}
+              nowMs={nowMs}
             />
           ))
         )}
@@ -663,20 +610,17 @@ export default function TimezonePlanner() {
             <span className="font-semibold text-[var(--color-accent)]">
               {pinnedHour === 0 ? '12 AM' : pinnedHour < 12 ? `${pinnedHour} AM` : pinnedHour === 12 ? '12 PM' : `${pinnedHour - 12} PM`} UTC
             </span>
-            {zones.map(tz => {
-              const { offsetMinutes } = getTZInfo(tz.iana)
-              return (
-                <span key={tz.id} className="text-[var(--color-cream)]/70">
-                  {tz.label}: <span className="text-[var(--color-cream)] tabular-nums">{formatHourInTZ(pinnedHour, offsetMinutes)}</span>
-                </span>
-              )
-            })}
+            {zones.map(tz => (
+              <span key={tz.id} className="text-[var(--color-cream)]/70">
+                {tz.label}: <span className="text-[var(--color-cream)] tabular-nums">{formatClockAt(tz.iana, hourMs(pinnedHour))}</span>
+              </span>
+            ))}
           </div>
         )}
       </Card>
 
       {/* Selection result card */}
-      {selectedRange && summary && (
+      {selectedRange && verdict && (
         <Card className="border-[var(--color-accent)]/30 bg-[var(--color-accent)]/5">
           <div className="px-3 py-2.5 flex items-center justify-between gap-4 flex-wrap">
             <div className="flex items-center gap-3">
@@ -685,12 +629,12 @@ export default function TimezonePlanner() {
                 <span className="text-xs font-semibold text-[var(--color-ink)]">{rangeLength}h slot selected</span>
               </div>
               <div className="flex items-center gap-2">
-                {summary.working === rangeLength ? (
+                {verdict === 'all' ? (
                   <span className="inline-flex items-center gap-1 text-[10px] bg-[var(--color-success-bg)] text-[var(--color-success-text)] px-2 py-0.5 rounded-full font-medium">
                     <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-success-icon)] inline-block" />
                     Works for all {zones.length} zones
                   </span>
-                ) : summary.partial > 0 ? (
+                ) : verdict === 'some' ? (
                   <span className="inline-flex items-center gap-1 text-[10px] bg-[var(--color-warning-bg)] text-[var(--color-warning-text)] px-2 py-0.5 rounded-full font-medium">
                     <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-warning-icon)] inline-block" />
                     Partial overlap
@@ -708,19 +652,20 @@ export default function TimezonePlanner() {
               {/* Per-zone times */}
               <div className="flex items-center gap-3 flex-wrap">
                 {zones.map(tz => {
-                  const { offsetMinutes } = getTZInfo(tz.iana)
-                  const start = formatHourInTZ(rangeMin, offsetMinutes)
-                  const end = formatHourInTZ(rangeMax + 1, offsetMinutes)
+                  const start = formatClockAt(tz.iana, rangeStartMs)
+                  const end = formatClockAt(tz.iana, rangeEndMs)
+                  const shift = zones[0] ? dayShift(tz.iana, zones[0].iana, rangeStartMs) : 0
                   return (
                     <div key={tz.id} className="text-[10px]">
                       <span className="text-[var(--color-ink-muted)]">{tz.label}: </span>
                       <span className="text-[var(--color-ink)] font-mono tabular-nums font-medium">{start}–{end}</span>
+                      {shift !== 0 && <span className="text-[var(--color-ink-muted)]">{formatDayShift(shift)}</span>}
                     </div>
                   )
                 })}
               </div>
               <div className="flex items-center gap-1 ml-2">
-                <CopyButton text={buildCopyText()} />
+                <CopyButton text={buildSlotText(zones, rangeStartMs, rangeEndMs)} />
                 <Button
                   variant="ghost"
                   size="sm"
