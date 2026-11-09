@@ -9,49 +9,7 @@ import { SectionLabel } from '../../components/ui/SectionLabel'
 import { SegmentedControl, SegmentedControlItem } from '../../components/ui/SegmentedControl'
 import { cn } from '../../lib/utils'
 import { Info, LockKeyhole, RefreshCw, ShieldCheck } from 'lucide-react'
-
-const CHARSETS = {
-  uppercase: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
-  lowercase: 'abcdefghijklmnopqrstuvwxyz',
-  digits:    '0123456789',
-  symbols:   '!@#$%^&*()-_=+[]{}|;:,.<>?',
-}
-
-type CharsetKey = keyof typeof CHARSETS
-
-function generatePassword(length: number, enabled: Record<CharsetKey, boolean>, excludeAmbiguous: boolean): string {
-  let pool = ''
-  for (const [key, chars] of Object.entries(CHARSETS) as [CharsetKey, string][]) {
-    if (enabled[key]) pool += chars
-  }
-  if (excludeAmbiguous) pool = pool.replace(/[0Ol1I]/g, '')
-  if (!pool) return ''
-
-  // Use crypto.getRandomValues for cryptographically secure generation
-  const poolLen = pool.length
-  const result: string[] = []
-  while (result.length < length) {
-    const rand = new Uint32Array(length - result.length)
-    crypto.getRandomValues(rand)
-    for (const n of rand) {
-      if (result.length >= length) break
-      // Discard values that would introduce modulo bias
-      const limit = Math.floor(0xffffffff / poolLen) * poolLen
-      if (n <= limit) result.push(pool[n % poolLen]!)
-    }
-  }
-  return result.join('')
-}
-
-function calcEntropy(length: number, enabled: Record<CharsetKey, boolean>, excludeAmbiguous: boolean): number {
-  let pool = ''
-  for (const [key, chars] of Object.entries(CHARSETS) as [CharsetKey, string][]) {
-    if (enabled[key]) pool += chars
-  }
-  if (excludeAmbiguous) pool = pool.replace(/[0Ol1I]/g, '')
-  if (!pool) return 0
-  return Math.floor(length * Math.log2(pool.length))
-}
+import { CHARSETS, calcEntropy, generatePassword, type CharsetKey } from './generate'
 
 function entropyLabel(bits: number): { label: string; color: string } {
   if (bits < 40)  return { label: 'Very Weak',  color: 'text-[var(--color-error-text)]' }
@@ -209,7 +167,7 @@ export default function PasswordGeneratorTool() {
           <div className="space-y-1">
             <div className="flex items-center justify-between">
               <SectionLabel>Generated passwords</SectionLabel>
-              {passwords.length > 1 && <CopyButton text={passwords.join('\n')} />}
+              {anyEnabled && passwords.length > 1 && <CopyButton text={passwords.join('\n')} />}
             </div>
             {anyEnabled ? (
               <div className="space-y-1">
