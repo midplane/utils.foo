@@ -22,6 +22,7 @@ import {
 } from '../../components/ui/ExpandableCard'
 import { cn } from '../../lib/utils'
 import { countLineChanges } from './stats'
+import { detectLanguage } from './detectLanguage'
 import { diffTheme, diffThemeDark } from '../../lib/codemirrorTheme'
 import { useTheme } from '../../contexts/ThemeContext'
 import { ArrowLeftRight, GitCompare, Sparkles, Trash2 } from 'lucide-react'
@@ -55,67 +56,6 @@ const LANG_OPTIONS = [
   'Dockerfile',
   'TOML',
 ]
-
-// ─── Content-based language heuristic ────────────────────────────────────────
-
-function detectLanguage(text: string): string {
-  const t = text.trimStart()
-  if (!t) return 'Plain'
-
-  // JSON
-  if ((t.startsWith('{') || t.startsWith('[')) && (() => { try { JSON.parse(t); return true } catch { return false } })()) return 'JSON'
-
-  // HTML / XML
-  if (/^<!DOCTYPE\s+html/i.test(t) || /^<html[\s>]/i.test(t)) return 'HTML'
-  if (/^<\?xml/i.test(t)) return 'XML'
-  if (t.startsWith('<') && /<\/\w+>/.test(t)) return 'HTML'
-
-  // Markdown
-  if (/^#{1,6}\s/.test(t) || /^\s*[-*]\s/.test(t) || /^```/.test(t)) return 'Markdown'
-
-  // YAML
-  if (/^---\s*\n/.test(t) || /^\w[\w\s]*:\s+\S/.test(t) && !/[{(]/.test(t.slice(0, 60))) return 'YAML'
-
-  // TOML
-  if (/^\[[\w.]+\]/.test(t) || /^\w+ = /.test(t)) return 'TOML'
-
-  // Shell
-  if (/^#!/.test(t) || /\b(echo|export|source|chmod|grep|awk|sed)\b/.test(t.slice(0, 200))) return 'Shell'
-
-  // Dockerfile
-  if (/^FROM\s+\w/im.test(t) && /\b(RUN|CMD|ENTRYPOINT|COPY|ADD|ENV)\b/.test(t)) return 'Dockerfile'
-
-  // SQL
-  if (/^\s*(SELECT|INSERT|UPDATE|DELETE|CREATE|DROP|ALTER|WITH)\b/i.test(t)) return 'SQL'
-
-  // Python
-  if (/\bdef\s+\w+\s*\(/.test(t) || /^import\s+\w/m.test(t) || /^from\s+\w+\s+import\b/m.test(t)) return 'Python'
-
-  // TypeScript (must come before JS — checks for TS-specific syntax)
-  if (/:\s*(string|number|boolean|void|any|never|unknown)\b/.test(t) ||
-      /\binterface\s+\w/.test(t) || /\btype\s+\w+\s*=/.test(t) || /\benum\s+\w/.test(t)) return 'TypeScript'
-
-  // JSX / TSX — angle brackets mixed with JS
-  if (/return\s*\(?\s*<[A-Z]/.test(t) || /import\s+React/.test(t)) return 'JSX'
-
-  // JavaScript
-  if (/\b(const|let|var|function|=>|async|await|require|module\.exports)\b/.test(t)) return 'JavaScript'
-
-  // CSS / SCSS / LESS
-  if (/[\w#.[\]:]+\s*\{[^}]*\}/.test(t) || /^@(import|media|keyframes|mixin)\b/m.test(t)) return 'CSS'
-
-  // Rust
-  if (/\bfn\s+\w+/.test(t) || /\blet\s+mut\b/.test(t) || /\bimpl\s+\w/.test(t)) return 'Rust'
-
-  // Go
-  if (/^package\s+\w/m.test(t) || /\bfunc\s+\w/.test(t)) return 'Go'
-
-  // Java / Kotlin
-  if (/\bpublic\s+(class|interface|enum)\b/.test(t) || /\bimport\s+java\./.test(t)) return 'Java'
-  if (/\bfun\s+\w+\s*\(/.test(t) && /\bval\b|\bvar\b/.test(t)) return 'Kotlin'
-
-  return 'Plain'
-}
 
 // ─── Load a LanguageDescription by name (async, lazy) ─────────────────────────
 
@@ -228,10 +168,14 @@ export default function DiffViewerTool() {
   }, [isDark])
 
   // ── Apply language to both panes ─────────────────────────────────────────────
+  // A language loads asynchronously. Ignore a load that completes after a newer request,
+  // because it would replace the language that the user selected last.
+  const langRequestRef = useRef(0)
   const applyLanguage = useCallback(async (name: string) => {
-    const mv = mergeViewRef.current
-    if (!mv) return
+    const request = ++langRequestRef.current
     const ext = await loadLanguageExtension(name)
+    const mv = mergeViewRef.current
+    if (!mv || request !== langRequestRef.current) return
     mv.a.dispatch({ effects: langCompartmentA.current.reconfigure(ext) })
     mv.b.dispatch({ effects: langCompartmentB.current.reconfigure(ext) })
   }, [])

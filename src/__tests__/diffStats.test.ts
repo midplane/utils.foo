@@ -35,3 +35,15 @@ describe('countLineChanges — empty inputs', () => {
   it('clearing the right side removes every line', () =>
     expect(countLineChanges('a\nb\nc', '')).toEqual({ added: 0, removed: 3 }))
 })
+
+describe('countLineChanges — line terminators', () => {
+  // A newline-terminated diff saw "b" and "b\n" as different lines and reported +2/-1.
+  it('adding a line after a last line without a newline is +1/-0', () =>
+    expect(countLineChanges('a\nb', 'a\nb\nc')).toEqual({ added: 1, removed: 0 }))
+
+  it('removing the last line when no newline follows it is +0/-1', () =>
+    expect(countLineChanges('a\nb\nc', 'a\nb')).toEqual({ added: 0, removed: 1 }))
+
+  it('CRLF and LF line breaks are equal', () =>
+    expect(countLineChanges('a\r\nb\r\nc', 'a\nb\nc')).toEqual({ added: 0, removed: 0 }))
+})
