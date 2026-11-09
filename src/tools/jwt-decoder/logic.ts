@@ -14,8 +14,14 @@ export interface DecodedJWT {
   signature: string
 }
 
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === 'object' && !Array.isArray(value)
+}
+
 export function decodeJWT(token: string): DecodedJWT {
-  const parts = token.split('.')
+  // Accept a value copied from an Authorization header, and a token that wraps across lines.
+  const normalized = token.trim().replace(/^Bearer\s+/i, '').replace(/\s+/g, '')
+  const parts = normalized.split('.')
   if (parts.length !== 3) {
     throw new Error('Invalid JWT format: must have 3 parts separated by dots')
   }
@@ -31,13 +37,22 @@ export function decodeJWT(token: string): DecodedJWT {
     return decodeURIComponent(escape(atob(base64)))
   }
 
+  let header: unknown
+  let payload: unknown
   try {
-    const header = JSON.parse(decodeBase64Url(headerB64 ?? ''))
-    const payload = JSON.parse(decodeBase64Url(payloadB64 ?? ''))
-    return { header, payload, signature: signature ?? '' }
+    header = JSON.parse(decodeBase64Url(headerB64 ?? ''))
+    payload = JSON.parse(decodeBase64Url(payloadB64 ?? ''))
   } catch {
     throw new Error('Invalid JWT: failed to decode')
   }
+
+  if (!isPlainObject(header)) {
+    throw new Error('Invalid JWT: header is not a JSON object')
+  }
+  if (!isPlainObject(payload)) {
+    throw new Error('Invalid JWT: payload is not a JSON object')
+  }
+  return { header, payload, signature: signature ?? '' }
 }
 
 export function formatPayloadValue(value: unknown): string {

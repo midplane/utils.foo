@@ -67,6 +67,33 @@ describe('decodeJWT', () => {
     expect(typeof result.payload.exp).toBe('number')
     expect(typeof result.payload.iat).toBe('number')
   })
+
+  it('decodes UTF-8 claims', () => {
+    const token = makeJWT({ alg: 'HS256' }, { name: 'Zoë 日本' })
+    expect(decodeJWT(token).payload.name).toBe('Zoë 日本')
+  })
+
+  it('accepts a token with a "Bearer " prefix', () => {
+    const token = makeJWT({ alg: 'HS256' }, { sub: '123' })
+    expect(decodeJWT(`Bearer ${token}`).payload.sub).toBe('123')
+    expect(decodeJWT(`bearer   ${token}`).payload.sub).toBe('123')
+  })
+
+  it('accepts a token that wraps across lines', () => {
+    const token = makeJWT({ alg: 'HS256' }, { sub: '123', name: 'Alice Example' })
+    const wrapped = `  ${token.slice(0, 10)}\n${token.slice(10, 30)}\r\n ${token.slice(30)}  `
+    expect(decodeJWT(wrapped).payload).toMatchObject({ sub: '123', name: 'Alice Example' })
+  })
+
+  it('throws when the payload is not a JSON object', () => {
+    for (const payload of [null, 42, 'text', [1, 2]]) {
+      expect(() => decodeJWT(makeJWT({ alg: 'HS256' }, payload))).toThrow('payload is not a JSON object')
+    }
+  })
+
+  it('throws when the header is not a JSON object', () => {
+    expect(() => decodeJWT(makeJWT(null, { sub: '1' }))).toThrow('header is not a JSON object')
+  })
 })
 
 describe('formatPayloadValue', () => {

@@ -77,7 +77,7 @@ export default function JwtDecoderTool() {
     }
   }
 
-  const expired = decoded?.payload?.exp ? isExpired(decoded.payload.exp) : false
+  const expired = isExpired(decoded?.payload.exp)
 
   return (
     <div className="space-y-4 animate-fade-in">
