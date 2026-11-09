@@ -1,6 +1,9 @@
 export const MONTH_ABBR = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
 export const DAY_ABBR   = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']
 
+// Weekday 7 is also Sunday, so the label list has one more entry.
+const DOW_LABELS = [...DAY_ABBR, 'Sun']
+
 export interface CronField {
   raw: string
   description: string
@@ -22,6 +25,82 @@ export interface ParsedCron {
   nextDates: Date[]
 }
 
+// ─── Field expansion ──────────────────────────────────────────────────────────
+
+type Expanded =
+  | { ok: true; values: Set<number>; description: string }
+  | { ok: false; error: string }
+
+function expandField(
+  value: string,
+  min: number,
+  max: number,
+  names?: string[],
+  nameOffset: number = 0
+): Expanded {
+  const label = (n: number) => (names ? (names[n - nameOffset] ?? String(n)) : String(n))
+
+  const toNumber = (token: string): number | null => {
+    if (/^\d+$/.test(token)) return parseInt(token, 10)
+    if (names) {
+      const idx = names.findIndex(name => name.toLowerCase() === token.toLowerCase())
+      if (idx !== -1) return idx + nameOffset
+    }
+    return null
+  }
+
+  const values = new Set<number>()
+  const descriptions: string[] = []
+
+  for (const item of value.split(',')) {
+    const slash = item.split('/')
+    if (slash.length > 2) return { ok: false, error: `Invalid value "${item}"` }
+    const [base = '', stepText] = slash
+
+    let step = 1
+    if (stepText !== undefined) {
+      if (!/^\d+$/.test(stepText) || parseInt(stepText, 10) < 1) return { ok: false, error: 'Invalid step' }
+      step = parseInt(stepText, 10)
+    }
+
+    let start: number
+    let end: number
+    let description: string
+
+    if (base === '*') {
+      start = min
+      end = max
+      description = stepText === undefined ? 'every' : `every ${step} (starting at ${label(min)})`
+    } else if (base.includes('-')) {
+      const bounds = base.split('-')
+      if (bounds.length !== 2) return { ok: false, error: `Invalid range (${min}-${max})` }
+      const a = toNumber(bounds[0]!)
+      const b = toNumber(bounds[1]!)
+      if (a === null || b === null || a < min || b > max || a > b) {
+        return { ok: false, error: `Invalid range (${min}-${max})` }
+      }
+      start = a
+      end = b
+      description = stepText === undefined
+        ? `${label(a)} through ${label(b)}`
+        : `every ${step} from ${label(a)} through ${label(b)}`
+    } else {
+      const n = toNumber(base)
+      if (n === null) return { ok: false, error: `Invalid value "${item}"` }
+      if (n < min || n > max) return { ok: false, error: `Value out of range (${min}-${max})` }
+      start = n
+      // "n/step" means from n to the maximum value, every step.
+      end = stepText === undefined ? n : max
+      description = stepText === undefined ? label(n) : `every ${step} (starting at ${label(n)})`
+    }
+
+    for (let v = start; v <= end; v += step) values.add(v)
+    descriptions.push(description)
+  }
+
+  return { ok: true, values, description: descriptions.join(', ') }
+}
+
 export function parseField(
   value: string,
   min: number,
@@ -29,82 +108,31 @@ export function parseField(
   names?: string[],
   nameOffset: number = 0
 ): CronField {
-  const raw = value
+  const result = expandField(value, min, max, names, nameOffset)
+  if (!result.ok) return { raw: value, description: '', valid: false, error: result.error }
+  return { raw: value, description: result.description, valid: true }
+}
 
-  let v = value.toLowerCase()
-  if (names) {
-    names.forEach((name, idx) => {
-      v = v.replace(new RegExp(name.toLowerCase(), 'g'), String(idx + nameOffset))
-    })
-  }
+function fieldNames(min: number, max: number): string[] | undefined {
+  if (min === 1 && max === 12) return MONTH_ABBR
+  if (max === 7) return DAY_ABBR
+  return undefined
+}
 
-  if (v === '*') return { raw, description: 'every', valid: true }
-
-  const stepMatch = v.match(/^(\*|\d+)\/(\d+)$/)
-  if (stepMatch) {
-    const step = parseInt(stepMatch[2]!)
-    const start = stepMatch[1] === '*' ? min : parseInt(stepMatch[1]!)
-    if (isNaN(step) || step < 1) return { raw, description: '', valid: false, error: `Invalid step` }
-    if (isNaN(start) || start < min || start > max) return { raw, description: '', valid: false, error: `Value out of range (${min}-${max})` }
-    const label = names ? (names[start - nameOffset] ?? String(start)) : String(start)
-    return { raw, description: `every ${step} (starting at ${label})`, valid: true }
-  }
-
-  if (v.includes(',')) {
-    const parts = v.split(',')
-    const nums = parts.map(p => parseInt(p))
-    if (nums.some(n => isNaN(n) || n < min || n > max)) {
-      return { raw, description: '', valid: false, error: `Value out of range (${min}-${max})` }
-    }
-    const labels = nums.map(n => names ? (names[n - nameOffset] ?? String(n)) : String(n))
-    return { raw, description: labels.join(', '), valid: true }
-  }
-
-  if (v.includes('-')) {
-    const [a, b] = v.split('-').map(p => parseInt(p))
-    if (isNaN(a!) || isNaN(b!) || a! < min || b! > max || a! > b!) {
-      return { raw, description: '', valid: false, error: `Invalid range (${min}-${max})` }
-    }
-    const la = names ? (names[a! - nameOffset] ?? String(a)) : String(a)
-    const lb = names ? (names[b! - nameOffset] ?? String(b)) : String(b)
-    return { raw, description: `${la} through ${lb}`, valid: true }
-  }
-
-  const n = parseInt(v)
-  if (isNaN(n) || n < min || n > max) {
-    return { raw, description: '', valid: false, error: `Value out of range (${min}-${max})` }
-  }
-  const label = names ? (names[n - nameOffset] ?? String(n)) : String(n)
-  return { raw, description: label, valid: true }
+function fieldValues(expr: string, min: number, max: number): Set<number> | null {
+  const names = fieldNames(min, max)
+  const result = expandField(expr, min, max, names, names === MONTH_ABBR ? 1 : 0)
+  if (!result.ok) return null
+  // Weekday 7 is Sunday.
+  if (max === 7 && result.values.has(7)) result.values.add(0)
+  return result.values
 }
 
 export function matchesField(value: number, expr: string, min: number, max: number): boolean {
-  const v = expr.toLowerCase()
-    .replace(/jan/g,'1').replace(/feb/g,'2').replace(/mar/g,'3').replace(/apr/g,'4')
-    .replace(/may/g,'5').replace(/jun/g,'6').replace(/jul/g,'7').replace(/aug/g,'8')
-    .replace(/sep/g,'9').replace(/oct/g,'10').replace(/nov/g,'11').replace(/dec/g,'12')
-    .replace(/sun/g,'0').replace(/mon/g,'1').replace(/tue/g,'2').replace(/wed/g,'3')
-    .replace(/thu/g,'4').replace(/fri/g,'5').replace(/sat/g,'6')
-
-  if (v === '*') return true
-
-  const stepMatch = v.match(/^(\*|\d+)\/(\d+)$/)
-  if (stepMatch) {
-    const start = stepMatch[1] === '*' ? min : parseInt(stepMatch[1]!)
-    const step  = parseInt(stepMatch[2]!)
-    return value >= start && (value - start) % step === 0
-  }
-
-  if (v.includes(',')) return v.split(',').map(Number).includes(value)
-
-  if (v.includes('-')) {
-    const [a, b] = v.split('-').map(Number)
-    return value >= a! && value <= b!
-  }
-
-  const n = parseInt(v)
-  return value === n || (max === 7 && n === 7 && value === 0)
+  return fieldValues(expr, min, max)?.has(value) ?? false
 }
+
+// ─── Description ──────────────────────────────────────────────────────────────
 
 function humanMinute(f: CronField) {
   if (f.description === 'every') return 'every minute'
@@ -131,39 +159,68 @@ function humanDOW(f: CronField) {
   return `on ${f.description}`
 }
 
-export function computeNextDates(parts: [string,string,string,string,string], count: number): Date[] {
+// Cron rule: when the day-of-month and the day-of-week fields are both
+// restricted (they do not start with "*"), a day matches if EITHER field matches.
+function daysAreOred(domExpr: string, dowExpr: string): boolean {
+  return !domExpr.startsWith('*') && !dowExpr.startsWith('*')
+}
+
+// ─── Next runs ────────────────────────────────────────────────────────────────
+
+// Search limit. It is sufficiently long to find five Feb 29 runs, and it stops
+// impossible schedules such as "0 0 31 2 *".
+const SEARCH_DAYS = 366 * 30
+
+export function computeNextDates(
+  parts: [string,string,string,string,string],
+  count: number,
+  from: Date = new Date()
+): Date[] {
   const [mExpr, hExpr, domExpr, monthExpr, dowExpr] = parts
+  const minutes = fieldValues(mExpr, 0, 59)
+  const hours   = fieldValues(hExpr, 0, 23)
+  const doms    = fieldValues(domExpr, 1, 31)
+  const months  = fieldValues(monthExpr, 1, 12)
+  const dows    = fieldValues(dowExpr, 0, 7)
+  if (!minutes || !hours || !doms || !months || !dows) return []
+
+  const sortedHours   = [...hours].sort((a, b) => a - b)
+  const sortedMinutes = [...minutes].sort((a, b) => a - b)
+  const ored = daysAreOred(domExpr, dowExpr)
+
+  // The first possible run is the start of the next minute.
+  const earliest = Math.floor(from.getTime() / 60000) * 60000 + 60000
+  const startDay = new Date(earliest)
+
   const results: Date[] = []
-  const d = new Date()
-  d.setSeconds(0, 0)
-  d.setMinutes(d.getMinutes() + 1)
+  for (let i = 0; i < SEARCH_DAYS && results.length < count; i++) {
+    const day = new Date(startDay.getFullYear(), startDay.getMonth(), startDay.getDate() + i)
+    const year = day.getFullYear()
+    const month = day.getMonth()
+    const date = day.getDate()
 
-  const limit = 200000
-  let iterations = 0
+    if (!months.has(month + 1)) continue
+    const domMatch = doms.has(date)
+    const dowMatch = dows.has(day.getDay())
+    if (ored ? !(domMatch || dowMatch) : !(domMatch && dowMatch)) continue
 
-  while (results.length < count && iterations < limit) {
-    iterations++
-    const min   = d.getMinutes()
-    const hour  = d.getHours()
-    const dom   = d.getDate()
-    const month = d.getMonth() + 1
-    const dow   = d.getDay()
-
-    if (
-      matchesField(month, monthExpr!, 1, 12) &&
-      matchesField(dom,   domExpr!,   1, 31) &&
-      matchesField(dow,   dowExpr!,   0, 7)  &&
-      matchesField(hour,  hExpr!,     0, 23) &&
-      matchesField(min,   mExpr!,     0, 59)
-    ) {
-      results.push(new Date(d))
+    for (const h of sortedHours) {
+      for (const m of sortedMinutes) {
+        const candidate = new Date(year, month, date, h, m)
+        // Skip local times that do not exist (the gap at a DST change).
+        if (candidate.getDate() !== date || candidate.getHours() !== h || candidate.getMinutes() !== m) continue
+        if (candidate.getTime() < earliest) continue
+        results.push(candidate)
+        if (results.length >= count) return results
+      }
     }
-    d.setMinutes(d.getMinutes() + 1)
   }
   return results
 }
 
-export function parseCron(expr: string): ParsedCron {
+// ─── Entry point ──────────────────────────────────────────────────────────────
+
+export function parseCron(expr: string, from: Date = new Date()): ParsedCron {
   const parts = expr.trim().split(/\s+/)
 
   if (parts.length !== 5) {
@@ -189,7 +246,7 @@ export function parseCron(expr: string): ParsedCron {
     hour:   parseField(h,    0, 23),
     dom:    parseField(dom,  1, 31),
     month:  parseField(month, 1, 12, MONTH_ABBR, 1),
-    dow:    parseField(dow,   0,  7, DAY_ABBR,   0),
+    dow:    parseField(dow,   0,  7, DOW_LABELS, 0),
   }
 
   const invalid = Object.entries(fields).find(([, f]) => !f.valid)
@@ -209,12 +266,17 @@ export function parseCron(expr: string): ParsedCron {
   const domStr  = humanDOM(fields.dom)
   const monthStr = humanMonth(fields.month)
   const dowStr  = humanDOW(fields.dow)
-  if (domStr)   segments.push(domStr)
-  if (monthStr) segments.push(monthStr)
-  if (dowStr)   segments.push(dowStr)
+  if (domStr && dowStr && daysAreOred(dom, dow)) {
+    segments.push(`${domStr} or ${dowStr}`)
+    if (monthStr) segments.push(monthStr)
+  } else {
+    if (domStr)   segments.push(domStr)
+    if (monthStr) segments.push(monthStr)
+    if (dowStr)   segments.push(dowStr)
+  }
   const description = segments.join(', ')
 
-  const nextDates = computeNextDates(parts as [string,string,string,string,string], 5)
+  const nextDates = computeNextDates(parts as [string,string,string,string,string], 5, from)
 
   return { valid: true, description, fields, nextDates }
 }

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { parseField, matchesField, parseCron } from '../tools/cron-parser/logic'
+import { parseField, matchesField, parseCron, computeNextDates } from '../tools/cron-parser/logic'
 
 describe('parseField', () => {
   it('wildcard * → "every"', () => {
@@ -189,5 +189,111 @@ describe('parseCron', () => {
 
   it('returns no nextDates for invalid expressions', () => {
     expect(parseCron('99 * * * *').nextDates).toHaveLength(0)
+  })
+})
+
+// ─── Regression tests ─────────────────────────────────────────────────────────
+
+// All dates use local-time constructors, so the tests pass in all time zones.
+const FROM = new Date(2026, 10, 9, 10, 15, 30) // Mon 2026-11-09 10:15:30
+
+const local = (d: Date) =>
+  `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()} ${d.getHours()}:${String(d.getMinutes()).padStart(2, '0')}`
+
+describe('field syntax', () => {
+  it('range with step a-b/n', () => {
+    expect(parseField('1-10/3', 0, 59).valid).toBe(true)
+    expect([0, 1, 2, 4, 7, 10, 13].map(v => matchesField(v, '1-10/3', 0, 59)))
+      .toEqual([false, true, false, true, true, true, false])
+  })
+
+  it('list that contains ranges and steps', () => {
+    const f = parseField('1-3,10,*/20', 0, 59)
+    expect(f.valid).toBe(true)
+    expect(f.description).toBe('1 through 3, 10, every 20 (starting at 0)')
+    expect([2, 10, 40, 11].map(v => matchesField(v, '1-3,10,*/20', 0, 59)))
+      .toEqual([true, true, true, false])
+  })
+
+  it('rejects malformed values', () => {
+    for (const bad of ['5abc', '1.5', '1-2-3', '1,,2', '1,', '*/0', '1/2/3', '*/x', 'monday']) {
+      expect(parseField(bad, 0, 59, ['Mon']).valid, bad).toBe(false)
+    }
+  })
+
+  it('names are case-insensitive and work in ranges', () => {
+    expect(parseCron('0 0 * jan-MAR mon-fri').valid).toBe(true)
+    expect(matchesField(3, 'JAN-mar', 1, 12)).toBe(true)
+    expect(matchesField(4, 'jan-mar', 1, 12)).toBe(false)
+  })
+
+  it('weekday 7 is Sunday in ranges and lists', () => {
+    expect(matchesField(0, '5-7', 0, 7)).toBe(true)
+    expect(matchesField(0, '1,7', 0, 7)).toBe(true)
+    expect(parseCron('0 9 * * 5-7').description).toContain('Fri through Sun')
+  })
+})
+
+describe('computeNextDates', () => {
+  it('ORs day-of-month and day-of-week when both are restricted', () => {
+    const r = parseCron('0 0 13 * 5', FROM)
+    expect(r.description).toContain('on day 13 of the month or on Fri')
+    expect(r.nextDates.map(local)).toEqual([
+      '2026-11-13 0:00', // Friday the 13th
+      '2026-11-20 0:00',
+      '2026-11-27 0:00',
+      '2026-12-4 0:00',
+      '2026-12-11 0:00',
+    ])
+    expect(parseCron('0 0 1 * 1', FROM).nextDates.map(local)).toContain('2026-12-1 0:00') // a Tuesday
+  })
+
+  it('ANDs the day fields when one starts with *', () => {
+    const r = parseCron('0 0 */2 * 1', FROM)
+    r.nextDates.forEach(d => {
+      expect(d.getDay()).toBe(1)
+      expect(d.getDate() % 2).toBe(1)
+    })
+    expect(r.nextDates).toHaveLength(5)
+  })
+
+  it('finds five runs for a yearly schedule', () => {
+    expect(computeNextDates(['0', '0', '1', '1', '*'], 5, FROM).map(local))
+      .toEqual(['2027-1-1 0:00', '2028-1-1 0:00', '2029-1-1 0:00', '2030-1-1 0:00', '2031-1-1 0:00'])
+  })
+
+  it('finds Feb 29 only in leap years', () => {
+    expect(parseCron('0 0 29 2 *', FROM).nextDates.map(local))
+      .toEqual(['2028-2-29 0:00', '2032-2-29 0:00', '2036-2-29 0:00', '2040-2-29 0:00', '2044-2-29 0:00'])
+  })
+
+  it('returns no runs for an impossible schedule, and does not hang', () => {
+    const start = Date.now()
+    expect(parseCron('0 0 31 2 *', FROM).nextDates).toEqual([])
+    expect(parseCron('0 0 30 2 *', FROM).nextDates).toEqual([])
+    expect(Date.now() - start).toBeLessThan(1000)
+  })
+
+  it('skips months that do not have day 31', () => {
+    expect(parseCron('0 12 31 * *', FROM).nextDates.map(local))
+      .toEqual(['2026-12-31 12:00', '2027-1-31 12:00', '2027-3-31 12:00', '2027-5-31 12:00', '2027-7-31 12:00'])
+  })
+
+  it('starts at the next minute', () => {
+    expect(local(parseCron('* * * * *', FROM).nextDates[0]!)).toBe('2026-11-9 10:16')
+    expect(local(parseCron('15 10 * * *', FROM).nextDates[0]!)).toBe('2026-11-10 10:15')
+  })
+
+  it('gives unique, ascending runs at the requested local time across DST changes', () => {
+    // These ranges include the US and EU DST changes in March and October/November.
+    for (const from of [new Date(2026, 2, 1), new Date(2026, 9, 20)]) {
+      const r = parseCron('30 1,2 * * *', from)
+      expect(r.nextDates.length).toBe(5)
+      r.nextDates.forEach((d, i) => {
+        expect([1, 2]).toContain(d.getHours())
+        expect(d.getMinutes()).toBe(30)
+        if (i > 0) expect(d.getTime()).toBeGreaterThan(r.nextDates[i - 1]!.getTime())
+      })
+    }
   })
 })
