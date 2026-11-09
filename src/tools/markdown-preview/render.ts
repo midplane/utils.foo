@@ -87,6 +87,23 @@ function escapeHtml(value: string): string {
     .replace(/"/g, '&quot;')
 }
 
+// ─── Sanitiser ────────────────────────────────────────────────────────────────
+// A private DOMPurify instance, so that the link hook below does not change
+// the output of other tools that use the shared default instance.
+
+const purifier = DOMPurify(window)
+
+// The preview is in the app page, not in an iframe. A link that opens in the
+// same tab removes the page and the user's document. Thus links open in a new
+// tab. The rel value is always set, so that a source `rel="opener"` cannot
+// give the new tab access to this page.
+purifier.addHook('afterSanitizeAttributes', (node) => {
+  if (node.tagName !== 'A' && node.tagName !== 'AREA') return
+  const href = node.getAttribute('href')
+  if (href && !href.startsWith('#')) node.setAttribute('target', '_blank')
+  if (node.hasAttribute('target')) node.setAttribute('rel', 'noopener noreferrer')
+})
+
 // ─── Public API ───────────────────────────────────────────────────────────────
 
 /**
@@ -99,9 +116,11 @@ function escapeHtml(value: string): string {
  */
 export function renderMarkdown(source: string): string {
   const raw = marked.parse(source) as string
-  return DOMPurify.sanitize(raw, {
-    // Task lists render as disabled checkboxes; keep them.
+  return purifier.sanitize(raw, {
     ADD_ATTR: ['target', 'rel'],
+    // The preview is not isolated from the app page. A <style> element would
+    // apply to the full app, and a submitted <form> would remove the page.
+    FORBID_TAGS: ['style', 'form'],
     USE_PROFILES: { html: true },
   })
 }
