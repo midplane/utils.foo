@@ -78,6 +78,24 @@ describe('D2 live preview', () => {
     expect(result.current.output).toContain('Diagram')
   })
 
+  it('renders the current source on a new worker when a stale render times out', async () => {
+    // A real worker runs one request at a time, and dispose() rejects every queued request.
+    const queued: Array<(error: Error) => void> = []
+    const stall = () => new Promise((_resolve, reject) => { queued.push(reject) })
+    mocks.compile.mockImplementationOnce(stall).mockImplementationOnce(stall)
+    mocks.dispose.mockImplementation(async () => {
+      queued.splice(0).forEach(reject => reject(new Error('D2 instance has been disposed')))
+    })
+    const { result, rerender } = renderHook(({ code }) => useD2(code, 'tala', 0, false, 0), { initialProps: { code: 'huge' } })
+    await advance(10_000)
+    rerender({ code: 'small' })
+    await advance(20_400)
+    expect(mocks.dispose).toHaveBeenCalledTimes(1)
+    expect(result.current.error).toBe('')
+    expect(result.current.output).toContain('Diagram')
+    expect(mocks.compile).toHaveBeenLastCalledWith('small', expect.anything())
+  })
+
   it('disposes its worker when leaving the tool', async () => {
     const { unmount } = renderHook(() => useD2('a', 'tala', 0, false, 0))
     await advance()

@@ -23,6 +23,20 @@ describe('D2 SVG sanitization', () => {
     expect(svg).toContain('<strong>Label</strong>')
     expect(svg).toContain('d="M0 0L10 10"')
   })
+
+  it('returns well-formed XML so the preview image and the SVG file can load', () => {
+    const svg = sanitizeSvg(`<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 200 100">
+      <text xml:space="preserve">two\u00a0words &amp; 5 &lt; 6</text>
+      <a xlink:href="https://example.com"><text>Link</text></a>
+      <foreignObject width="100" height="50"><div xmlns="http://www.w3.org/1999/xhtml">one<br />two<hr /></div></foreignObject>
+    </svg>`)
+    const doc = new DOMParser().parseFromString(svg, 'image/svg+xml')
+    expect(doc.getElementsByTagName('parsererror')).toHaveLength(0)
+    expect(doc.documentElement.namespaceURI).toBe('http://www.w3.org/2000/svg')
+    expect(doc.querySelector('text')?.textContent).toBe('two\u00a0words & 5 < 6')
+    expect(doc.querySelector('div')?.namespaceURI).toBe('http://www.w3.org/1999/xhtml')
+    expect(svg).not.toContain('&nbsp;')
+  })
 })
 
 describe('D2 diagnostics', () => {

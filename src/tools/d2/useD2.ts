@@ -25,38 +25,50 @@ export function useD2(code: string, layout: Layout, themeID: number, sketch: boo
   useEffect(() => {
     if (!code.trim()) return
     let cancelled = false
-    let deadline: ReturnType<typeof setTimeout> | undefined
-    const timer = setTimeout(async () => {
+    const attempt = async (): Promise<string> => {
       const engine = engineRef.current ?? new D2()
       engineRef.current = engine
-      try {
-        const render = async () => {
-          const ascii = format !== 'svg'
-          const options: CompileOptions = {
-            layout: ascii && layout === 'dagre' ? 'elk' : layout,
-            themeID, sketch: !ascii && sketch, pad: 32,
-            ascii, asciiMode: ascii ? format : undefined,
-          }
-          const compiled = await engine.compile(code, options)
-          if (cancelled) return ''
-          return engine.render(compiled.diagram, {
-            ...compiled.renderOptions, noXMLTag: true,
-            ascii, asciiMode: options.asciiMode,
-          })
+      let deadline: ReturnType<typeof setTimeout> | undefined
+      let timedOut = false
+      const render = async () => {
+        const ascii = format !== 'svg'
+        const options: CompileOptions = {
+          layout: ascii && layout === 'dagre' ? 'elk' : layout,
+          themeID, sketch: !ascii && sketch, pad: 32,
+          ascii, asciiMode: ascii ? format : undefined,
         }
-        const timeout = new Promise<never>((_resolve, reject) => {
-          deadline = setTimeout(() => {
-            reject(new Error('Rendering took too long. Try a smaller diagram or another layout, then retry.'))
-            if (engineRef.current === engine) engineRef.current = null
-            void engine.dispose()
-          }, 30_000)
+        const compiled = await engine.compile(code, options)
+        if (cancelled) return ''
+        return engine.render(compiled.diagram, {
+          ...compiled.renderOptions, noXMLTag: true,
+          ascii, asciiMode: options.asciiMode,
         })
-        const output = await Promise.race([render(), timeout])
+      }
+      const timeout = new Promise<never>((_resolve, reject) => {
+        deadline = setTimeout(() => {
+          timedOut = true
+          reject(new Error('Rendering took too long. Try a smaller diagram or another layout, then retry.'))
+          if (engineRef.current === engine) engineRef.current = null
+          void engine.dispose()
+        }, 30_000)
+      })
+      try {
+        return await Promise.race([render(), timeout])
+      } catch (error) {
+        // The deadline of a stale request can dispose the shared engine while
+        // this request waits behind it. Run this request again on a new engine.
+        if (!cancelled && !timedOut && engineRef.current !== engine) return attempt()
+        throw error
+      } finally {
+        clearTimeout(deadline)
+      }
+    }
+    const timer = setTimeout(async () => {
+      try {
+        const output = await attempt()
         if (!cancelled) setResult({ key, output: format === 'svg' ? sanitizeSvg(output) : output, error: '' })
       } catch (error) {
         if (!cancelled) setResult({ key, output: '', error: formatD2Error(error) })
-      } finally {
-        clearTimeout(deadline)
       }
     }, 400)
     return () => {
