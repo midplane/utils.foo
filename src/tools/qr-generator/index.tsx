@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import QRCode from 'qrcode'
 import { Card, CardContent, CardHeader } from '../../components/ui/Card'
 import { Button } from '../../components/ui/Button'
@@ -8,10 +8,10 @@ import { ToolHeader } from '../../components/ui/ToolHeader'
 import { SectionLabel } from '../../components/ui/SectionLabel'
 import { SegmentedControl, SegmentedControlItem } from '../../components/ui/SegmentedControl'
 import { Check, Copy, Download, QrCode } from 'lucide-react'
+import { fitsInQr, qrOptions, type ErrorLevel } from './qr'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type ErrorLevel = 'L' | 'M' | 'Q' | 'H'
 type OutputFormat = 'png' | 'svg'
 
 const ERROR_LEVELS: { value: ErrorLevel; label: string; desc: string }[] = [
@@ -57,15 +57,11 @@ export default function QrGeneratorTool() {
       return
     }
 
-    const opts = {
-      errorCorrectionLevel: errorLevel,
-      margin,
-      color: { dark: fgColor, light: bgColor },
-    }
-
     try {
+      const opts = qrOptions({ errorLevel, size, margin, fgColor, bgColor })
+
       // PNG via canvas
-      const url = await QRCode.toDataURL(trimmed, { ...opts, width: size, type: 'image/png' })
+      const url = await QRCode.toDataURL(trimmed, { ...opts, type: 'image/png' })
       setDataUrl(url)
 
       // SVG string
@@ -115,6 +111,7 @@ export default function QrGeneratorTool() {
 
   const hasContent = text.trim().length > 0
   const byteLen    = new TextEncoder().encode(text.trim()).length
+  const fits       = useMemo(() => fitsInQr(text.trim(), errorLevel), [text, errorLevel])
 
   return (
     <div className="space-y-4 animate-fade-in">
@@ -130,7 +127,7 @@ export default function QrGeneratorTool() {
                 <span className="text-xs font-semibold text-[var(--color-ink)]">Content</span>
                 <div className="flex items-center gap-1">
                   {byteLen > 0 && (
-                    <Badge variant={byteLen > 2000 ? 'error' : 'default'} className="text-[10px]">
+                    <Badge variant={fits ? 'default' : 'error'} className="text-[10px]">
                       {byteLen} bytes
                     </Badge>
                   )}
