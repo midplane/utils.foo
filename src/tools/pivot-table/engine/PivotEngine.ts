@@ -162,7 +162,18 @@ export function computePivot(
 
   // ── Order each level of both hierarchies ──────────────────────────────────
 
-  sortTree(rowRoot, rowOrder, config.rowSortBy, (node, target) =>
+  // A column sort target can outlive its column: a filter, a reordered column
+  // field or a removed metric leaves it pointing at nothing. Every value then
+  // reads as null, which leaves the rows in record order. Fall back to the
+  // ordinary row order instead.
+  const rowSortBy =
+    config.rowSortBy &&
+    config.rowSortBy.valueIndex < values.length &&
+    groups.has(compositeKey('', config.rowSortBy.flatKey))
+      ? config.rowSortBy
+      : undefined
+
+  sortTree(rowRoot, rowOrder, rowSortBy, (node, target) =>
     groups.get(compositeKey(node.flatKey, target))?.values()
   )
   sortTree(colRoot, colOrder, undefined, (node, target) =>

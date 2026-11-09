@@ -74,11 +74,38 @@ export function parseDate(value: unknown): Date | null {
   const text = String(value).trim()
   // Require a date-like shape. `new Date("Action")` is Invalid Date on modern
   // engines, but "5" or "2020" would silently parse and mis-group real data.
-  if (!/^\d{4}[-/]\d{1,2}([-/]\d{1,2})?([ T].*)?$/.test(text) && !/^\d{1,2}[-/]\d{1,2}[-/]\d{4}/.test(text)) {
-    return null
+  const ymd = YMD_SHAPE.exec(text)
+  const mdy = ymd ? null : MDY_SHAPE.exec(text)
+  if (!ymd && !mdy) return null
+
+  const [year, month, day, rest] = ymd
+    ? [Number(ymd[1]), Number(ymd[2]), ymd[3] === undefined ? 1 : Number(ymd[3]), ymd[4] ?? '']
+    : [Number(mdy![3]), Number(mdy![1]), Number(mdy![2]), mdy![4]!]
+
+  // `new Date` rolls an impossible day such as 2024-02-31 over into March.
+  if (month < 1 || month > 12 || day < 1 || day > daysInMonth(year, month)) return null
+
+  if (rest === '') {
+    // `new Date('2024-03-10')` is UTC midnight, which is 9 March in every
+    // negative UTC offset. A date with no time is a calendar day, so build it
+    // at local midnight.
+    const date = new Date(0)
+    date.setFullYear(year, month - 1, day)
+    date.setHours(0, 0, 0, 0)
+    return date
   }
+
   const date = new Date(text)
   return isNaN(date.getTime()) ? null : date
+}
+
+const YMD_SHAPE = /^(\d{4})[-/](\d{1,2})(?:[-/](\d{1,2}))?([ T].*)?$/
+const MDY_SHAPE = /^(\d{1,2})[-/](\d{1,2})[-/](\d{4})(.*)$/
+
+function daysInMonth(year: number, month: number): number {
+  const date = new Date(0)
+  date.setFullYear(year, month, 0)
+  return date.getDate()
 }
 
 function datePartValue(date: Date, part: DatePart): string {
@@ -116,7 +143,9 @@ function binValue(value: unknown, size: number): string {
   const num = toNumber(value)
   if (isNaN(num) || size <= 0) return BLANK_KEY
 
-  const lower = Math.floor(num / size) * size
+  // Float division drifts just below a boundary: 0.3 / 0.1 is 2.9999999999999996,
+  // which would put 0.3 in the 0.2 – 0.3 bin. Round away that noise first.
+  const lower = Math.floor(Number((num / size).toPrecision(12))) * size
   const upper = lower + size
   return orderedKey(lower, `${trim(lower)} – ${trim(upper)}`)
 }
@@ -191,11 +220,13 @@ export function derivedFieldInfo(
     let overflowed = false
 
     for (const record of records) {
+      const key = normalizeKey(resolver(record, name))
+      if (unique.has(key)) continue
       if (unique.size >= MAX_TRACKED_UNIQUE_VALUES) {
         overflowed = true
         break
       }
-      unique.add(normalizeKey(resolver(record, name)))
+      unique.add(key)
     }
 
     out.push({

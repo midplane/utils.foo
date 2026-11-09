@@ -20,6 +20,7 @@ import { cn } from '../../../lib/utils'
 import { FilterModal } from './FilterModal'
 import { GroupingModal } from './GroupingModal'
 import { datePartField, binnedField } from '../engine/grouping'
+import { retainValues } from '../configEdits'
 import {
   PivotConfig,
   ValueConfig,
@@ -672,8 +673,9 @@ export function ConfigPanel({
         const filters: FilterConfig[] = current.filters.some((f) => f.field === filter.field)
           ? current.filters.map((f) => (f.field === filter.field ? filter : f))
           : [...current.filters, filter]
-        // Item filters change which rows exist, so a saved column-sort target
-        // or collapse key may no longer resolve.
+        // Item filters change which rows exist, so a collapse key may no
+        // longer resolve. The engine ignores a column-sort target that no
+        // longer resolves, so that target can stay.
         return { ...current, filters, collapsedRows: [], collapsedCols: [] }
       })
     },
@@ -846,10 +848,7 @@ export function ConfigPanel({
                 }))
               }
               onRemove={() =>
-                update((current) => ({
-                  ...current,
-                  values: current.values.filter((v) => v.id !== vc.id),
-                }))
+                update((current) => retainValues(current, (v) => v.id !== vc.id))
               }
             />
           ))}

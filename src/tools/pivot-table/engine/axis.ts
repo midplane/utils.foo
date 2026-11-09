@@ -1,5 +1,5 @@
 import { AxisNode, LayoutMode, SubtotalPosition } from '../types'
-import { flattenKey } from './sorters'
+import { flattenKey, keyLabel } from './sorters'
 
 // ─── Row Lines ────────────────────────────────────────────────────────────────
 
@@ -113,7 +113,7 @@ export function flattenRows(root: AxisNode, options: FlattenRowsOptions): RowLin
           node: child,
           kind: 'subtotal',
           depth: child.depth,
-          label: `${child.label} Total`,
+          label: `${keyLabel(child.label)} Total`,
           showsValues: true,
           collapsible: false,
           collapsed: false,
@@ -334,7 +334,7 @@ function subtotalSlot(node: AxisNode): ColSlot {
     key: `${node.flatKey}\u0000sub`,
     node,
     kind: 'subtotal',
-    headerPath: [...node.path, `${node.label} Total`],
+    headerPath: [...node.path, `${keyLabel(node.label)} Total`],
     collapsible: true,
     collapsed: false,
   }

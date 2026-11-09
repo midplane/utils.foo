@@ -25,7 +25,10 @@ export function computeFilteredPivot(
   config: PivotComputeConfig
 ): PivotResult {
   const measureRules = config.filters.filter(
-    (f): f is typeof f & { measure: MeasureRule } => f.measure !== undefined
+    (f): f is typeof f & { measure: MeasureRule } =>
+      // A rule whose metric was removed has nothing to test. Without this
+      // check, every item reads as null and the rule removes all of them.
+      f.measure !== undefined && f.measure.valueIndex < config.values.length
   )
 
   if (measureRules.length === 0) return computePivot(records, config)

@@ -65,9 +65,10 @@ export function analyzeData(records: DataRecord[]): FieldInfo[] {
       const value = record[name]
 
       const set = uniqueSets.get(name)!
+      const key = normalizeKey(value)
       if (set.size < MAX_TRACKED_UNIQUE_VALUES) {
-        set.add(normalizeKey(value))
-      } else {
+        set.add(key)
+      } else if (!set.has(key)) {
         overflowed.add(name)
       }
 

@@ -1,14 +1,15 @@
 import { useState, useCallback, useEffect, useMemo, useDeferredValue, useRef } from 'react'
-import Papa from 'papaparse'
 import { Table2 } from 'lucide-react'
 import { ToolHeader } from '../../components/ui'
 import { DataInput } from '../../components/ui/DataInput'
 import { ConfigPanel } from './components/ConfigPanel'
 import { PivotGrid } from './components/PivotGrid'
-import { usePivotData, analyzeData } from './hooks/usePivotData'
+import { usePivotData } from './hooks/usePivotData'
 import { derivedFieldInfo, derivedFieldNames, looksLikeDate } from './engine/grouping'
 import { SAMPLES, DEFAULT_SAMPLE, loadSample, Sample } from './samples'
-import { PivotConfig, DataRecord, FieldInfo, ValueConfig } from './types'
+import { PivotConfig, FieldInfo, ValueConfig } from './types'
+import { parseCsvData } from './parse'
+import { retainValues } from './configEdits'
 
 
 
@@ -16,49 +17,6 @@ type SampleState =
   | { status: 'loading' }
   | { status: 'ready' }
   | { status: 'error'; message: string }
-
-// ─── CSV Parsing ──────────────────────────────────────────────────────────────
-
-interface ParseResult {
-  records: DataRecord[]
-  fields: FieldInfo[]
-  error: string
-  warning: string
-}
-
-const EMPTY_PARSE: ParseResult = { records: [], fields: [], error: '', warning: '' }
-
-function parseCsvData(csvText: string): ParseResult {
-  if (!csvText.trim()) return EMPTY_PARSE
-
-  const result = Papa.parse<Record<string, string>>(csvText.trim(), {
-    header: true,
-    skipEmptyLines: true,
-    dynamicTyping: true,
-  })
-
-  // Papa reports ragged rows and delimiter guesses as row-level errors. Those
-  // are recoverable - discarding an otherwise valid file because one line has
-  // an extra comma is far worse than showing the data with a warning.
-  const fatal = result.errors.find(
-    (e) => e.type === 'Delimiter' || e.type === 'Quotes'
-  )
-  if (fatal) {
-    return { ...EMPTY_PARSE, error: fatal.message || 'Could not parse the CSV.' }
-  }
-
-  if (result.data.length === 0) {
-    return { ...EMPTY_PARSE, error: 'No data rows found.' }
-  }
-
-  const records = result.data as DataRecord[]
-  const warning =
-    result.errors.length > 0
-      ? `${result.errors.length.toLocaleString()} row${result.errors.length === 1 ? '' : 's'} had a formatting problem and may be incomplete.`
-      : ''
-
-  return { records, fields: analyzeData(records), error: '', warning }
-}
 
 // ─── Config Reconciliation ────────────────────────────────────────────────────
 
@@ -86,9 +44,13 @@ function reconcileConfig(config: PivotConfig, fields: FieldInfo[]): PivotConfig 
   const cols = config.cols.filter((f) => names.has(f))
   const filters = config.filters.filter((f) => names.has(f.field))
 
-  const values = config.values.filter(
+  // Sort targets and Top N rules point at metrics by index, so they have to
+  // follow the metrics that survive.
+  const pruned = retainValues(
+    { ...config, filters },
     (v) => names.has(v.field) && (v.field2 === undefined || names.has(v.field2))
   )
+  const values = pruned.values
 
   const unchanged =
     rows.length === config.rows.length &&
@@ -103,7 +65,7 @@ function reconcileConfig(config: PivotConfig, fields: FieldInfo[]): PivotConfig 
     ...config,
     rows,
     cols,
-    filters,
+    filters: pruned.filters,
     groupings,
     values: values.length > 0 ? values : defaultValues(fields, numeric),
     // Collapse keys and column sort targets are built from field values, so

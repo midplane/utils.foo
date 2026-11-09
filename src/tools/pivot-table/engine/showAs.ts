@@ -81,6 +81,11 @@ export function applyShowAs(
               write(n, col, i, v)
             )
           }
+          // The grand total row has no siblings to rank, difference or
+          // accumulate against. Left alone it shows the raw total, so a rank
+          // column ended in "155" and a % running total in "15,500.0%". A
+          // plain running total keeps the raw grand total.
+          if (showAs !== 'runningTotalRows') write(rowRoot, col, i, null)
         }
         break
       }
