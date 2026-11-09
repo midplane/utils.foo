@@ -6,64 +6,12 @@ import { Input } from '../../components/ui/Input'
 import { ToolHeader } from '../../components/ui/ToolHeader'
 import { Table, Plus, Trash2, AlignLeft, AlignCenter, AlignRight, RefreshCw } from 'lucide-react'
 import { cn } from '../../lib/utils'
-
-// ─── Types ────────────────────────────────────────────────────────────────────
-
-type Alignment = 'left' | 'center' | 'right'
-
-interface Column {
-  id: string
-  header: string
-  align: Alignment
-}
-
-interface Row {
-  id: string
-  cells: Record<string, string>   // column id → cell value
-}
+import { buildMarkdown, type Alignment, type Column, type Row } from './markdown'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 let _id = 0
 function uid() { return String(++_id) }
-
-function buildMarkdown(columns: Column[], rows: Row[]): string {
-  if (columns.length === 0) return ''
-
-  // Column widths: max of header length and any cell length (min 3)
-  const widths = columns.map(col => {
-    const headerLen = col.header.length || col.id.length
-    const cellMax = rows.reduce((max, row) => {
-      return Math.max(max, (row.cells[col.id] ?? '').length)
-    }, 0)
-    return Math.max(3, headerLen, cellMax)
-  })
-
-  const pad = (s: string, w: number, align: Alignment) => {
-    if (align === 'right')  return s.padStart(w)
-    if (align === 'center') return s.padStart(Math.ceil((w + s.length) / 2)).padEnd(w)
-    return s.padEnd(w)
-  }
-
-  const headerRow = '| ' + columns.map((col, i) =>
-    pad(col.header || `Col ${i + 1}`, widths[i]!, col.align)
-  ).join(' | ') + ' |'
-
-  const sepRow = '| ' + columns.map((col, i) => {
-    const w = widths[i]!
-    if (col.align === 'center') return ':' + '-'.repeat(w - 2) + ':'
-    if (col.align === 'right')  return '-'.repeat(w - 1) + ':'
-    return '-'.repeat(w)
-  }).join(' | ') + ' |'
-
-  const dataRows = rows.map(row =>
-    '| ' + columns.map((col, i) =>
-      pad(row.cells[col.id] ?? '', widths[i]!, col.align)
-    ).join(' | ') + ' |'
-  )
-
-  return [headerRow, sepRow, ...dataRows].join('\n')
-}
 
 // ─── Default data ─────────────────────────────────────────────────────────────
 
@@ -94,8 +42,10 @@ const ALIGN_ICONS: Record<Alignment, React.ReactNode> = {
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function MarkdownTableTool() {
-  const [columns, setColumns] = useState<Column[]>(() => makeDefaultState().columns)
-  const [rows, setRows]       = useState<Row[]>(() => makeDefaultState().rows)
+  // One call, so that the row cells use the same column ids as the columns.
+  const [initial] = useState(makeDefaultState)
+  const [columns, setColumns] = useState<Column[]>(initial.columns)
+  const [rows, setRows]       = useState<Row[]>(initial.rows)
 
   // ── Column operations ───────────────────────────────────────────────────────
 
