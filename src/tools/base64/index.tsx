@@ -11,6 +11,7 @@ import { SegmentedControl, SegmentedControlItem } from '../../components/ui/Segm
 import { Alert } from '../../components/ui/Alert'
 import { cn } from '../../lib/utils'
 import { ArrowLeftRight, Binary, Check, Info, MoveLeft, MoveRight, Trash2 } from 'lucide-react'
+import { decodeBase64, encodeBase64 } from './logic'
 
 type Mode = 'encode' | 'decode'
 
@@ -21,27 +22,22 @@ export default function Base64Tool() {
   const [output, setOutput] = useState('VGhlIGFuc3dlciBpcyA0Mg==')
   const [error, setError] = useState('')
 
-  const handleInputChange = (value: string) => {
-    setInput(value)
+  const convert = (value: string, targetMode: Mode) => {
     setError('')
-
-    if (!value.trim()) {
-      setOutput('')
-      return
-    }
+    // Whitespace is real text to encode, but atob ignores it when decoding.
+    if (targetMode === 'encode' ? !value : !value.trim()) { setOutput(''); return }
 
     try {
-      if (mode === 'encode') {
-        const encoded = btoa(unescape(encodeURIComponent(value)))
-        setOutput(encoded)
-      } else {
-        const decoded = decodeURIComponent(escape(atob(value)))
-        setOutput(decoded)
-      }
-    } catch {
-      setError(mode === 'decode' ? 'Invalid Base64 input' : 'Failed to encode')
+      setOutput(targetMode === 'encode' ? encodeBase64(value) : decodeBase64(value))
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Operation failed')
       setOutput('')
     }
+  }
+
+  const handleInputChange = (value: string) => {
+    setInput(value)
+    convert(value, mode)
   }
 
   const handleModeChange = (newMode: Mode) => {
@@ -62,18 +58,7 @@ export default function Base64Tool() {
       const newMode = mode === 'encode' ? 'decode' : 'encode'
       setMode(newMode)
       setInput(output)
-      try {
-        if (newMode === 'encode') {
-          const encoded = btoa(unescape(encodeURIComponent(output)))
-          setOutput(encoded)
-        } else {
-          const decoded = decodeURIComponent(escape(atob(output)))
-          setOutput(decoded)
-        }
-      } catch {
-        setError(newMode === 'decode' ? 'Invalid Base64 input' : 'Failed to encode')
-        setOutput('')
-      }
+      convert(output, newMode)
     }
   }
 
