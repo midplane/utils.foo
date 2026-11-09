@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader } from '../../components/ui/Card'
 import { Textarea } from '../../components/ui/Textarea'
 import { Button } from '../../components/ui/Button'
+import { Alert } from '../../components/ui/Alert'
 import { CopyButton } from '../../components/ui/CopyButton'
 import { InfoCard } from '../../components/ui/InfoCard'
 import { ToolHeader } from '../../components/ui/ToolHeader'
@@ -22,29 +23,44 @@ export default function HashTool() {
   const [selectedAlgorithm, setSelectedAlgorithm] = useState<HashAlgorithm | 'all'>('all')
   const [hashes, setHashes] = useState<HashResult[]>([])
   const [isComputing, setIsComputing] = useState(false)
+  const [error, setError] = useState('')
 
   useEffect(() => {
+    // Ignore the result of a run when the input or algorithm changed before it finished.
+    let cancelled = false
+
     const computeHashes = async () => {
-      if (!input.trim()) {
+      // Whitespace is valid input and has its own digest, so do not trim.
+      if (input === '') {
         setHashes([])
+        setError('')
+        setIsComputing(false)
         return
       }
 
       setIsComputing(true)
-      
+
       const algorithms = selectedAlgorithm === 'all' ? ALGORITHMS : [selectedAlgorithm]
       const results: HashResult[] = []
-      
-      for (const algo of algorithms) {
-        const hash = await computeHash(input, algo)
-        results.push({ algorithm: algo, hash })
+
+      try {
+        for (const algo of algorithms) {
+          const hash = await computeHash(input, algo)
+          if (cancelled) return
+          results.push({ algorithm: algo, hash })
+        }
+        setHashes(results)
+        setError('')
+      } catch (e) {
+        if (cancelled) return
+        setHashes([])
+        setError(e instanceof Error ? e.message : 'Cannot compute the hash')
       }
-      
-      setHashes(results)
       setIsComputing(false)
     }
 
     computeHashes()
+    return () => { cancelled = true }
   }, [input, selectedAlgorithm])
 
   const handleClear = () => {
@@ -113,7 +129,9 @@ export default function HashTool() {
               Hash output{selectedAlgorithm === 'all' ? 's' : ''}
             </SectionLabel>
             
-            {hashes.length > 0 ? (
+            {error ? (
+              <Alert variant="error" size="sm">{error}</Alert>
+            ) : hashes.length > 0 ? (
               <div className="space-y-2">
                 {hashes.map(({ algorithm, hash }) => (
                   <div 
