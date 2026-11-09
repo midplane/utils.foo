@@ -1,40 +1,29 @@
 import { useState, useMemo, useCallback, useEffect } from 'react'
 import { Calculator, Settings2, SlidersHorizontal, Hash, Share2, Link, Plus, Trash2 } from 'lucide-react'
-import { parse, evaluate, isSymbolNode, MathNode } from 'mathjs'
 import ReactECharts from 'echarts-for-react'
 import type { EChartsOption } from 'echarts'
 import { Card, CardContent, CardHeader } from '../../components/ui/Card'
 import { Button } from '../../components/ui/Button'
 import { ToolHeader } from '../../components/ui/ToolHeader'
 import { cn } from '../../lib/utils'
+import {
+  DEFAULT_VAR,
+  decodeState,
+  encodeState,
+  evaluateExpression,
+  evaluateLines,
+  findInputVarNames,
+  formatNumber,
+  sampleSweep,
+  type AppState,
+  type FormulaLine,
+  type VarConfig,
+  type VarsMap,
+} from './engine'
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-
-interface VarConfig {
-  value: number
-  min: number
-  max: number
-  step: number
-}
-
-interface FormulaLine {
-  id: string
-  name: string      // Variable name (empty for final result line)
-  expression: string
-}
-
-interface AppState {
-  lines: FormulaLine[]
-  vars: Record<string, VarConfig>
-  sweepVar: string
-}
-
-type VarsMap = Record<string, VarConfig>
 type InputMode = 'slider' | 'input'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
-
-const DEFAULT_VAR: VarConfig = { value: 50, min: 0, max: 100, step: 1 }
 
 interface Preset {
   label: string
@@ -137,8 +126,6 @@ const PRESETS: Preset[] = [
   },
 ]
 
-const CHART_POINTS = 80
-
 const FONT = "'JetBrains Mono', ui-monospace, monospace"
 const C = {
   cream: '#FFFBF5',
@@ -151,42 +138,7 @@ const C = {
   borderDark: '#D6D3D1',
 }
 
-// ─── URL State Management ─────────────────────────────────────────────────────
-
-// Base64url encoding (URL-safe, no padding)
-function toBase64Url(str: string): string {
-  const base64 = btoa(unescape(encodeURIComponent(str)))
-  return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
-}
-
-function fromBase64Url(base64url: string): string {
-  // Restore standard base64 characters and padding
-  let base64 = base64url.replace(/-/g, '+').replace(/_/g, '/')
-  while (base64.length % 4) base64 += '='
-  return decodeURIComponent(escape(atob(base64)))
-}
-
-function encodeState(state: AppState): string {
-  try {
-    return toBase64Url(JSON.stringify(state))
-  } catch {
-    return ''
-  }
-}
-
-function decodeState(hash: string): AppState | null {
-  try {
-    const json = fromBase64Url(hash)
-    const state = JSON.parse(json) as AppState
-    // Validate basic structure
-    if (Array.isArray(state.lines) && typeof state.vars === 'object') {
-      return state
-    }
-  } catch {
-    // Invalid state
-  }
-  return null
-}
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function getInitialState(): AppState {
   // Check URL hash for state
@@ -202,98 +154,8 @@ function getInitialState(): AppState {
   }
 }
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-const builtinCache = new Map<string, boolean>()
-
-function isBuiltin(name: string): boolean {
-  if (builtinCache.has(name)) return builtinCache.get(name)!
-  let result = false
-  try {
-    const val = evaluate(name)
-    result = typeof val === 'function' || typeof val === 'number'
-  } catch {
-    // Not a builtin
-  }
-  builtinCache.set(name, result)
-  return result
-}
-
-function extractVarsFromExpression(expression: string, definedVars: Set<string>): string[] {
-  const names: string[] = []
-  try {
-    parse(expression).traverse((node: MathNode) => {
-      if (isSymbolNode(node) && !isBuiltin(node.name) && !definedVars.has(node.name)) {
-        names.push(node.name)
-      }
-    })
-  } catch {
-    // Parse failed
-  }
-  return [...new Set(names)]
-}
-
 function generateId(): string {
   return Math.random().toString(36).slice(2, 9)
-}
-
-// Evaluate an expression, optionally supporting math expressions in input
-function evaluateExpression(expr: string): number | null {
-  if (!expr.trim()) return null
-  try {
-    const result = evaluate(expr)
-    if (typeof result === 'number' && isFinite(result)) {
-      return result
-    }
-  } catch {
-    // Invalid expression
-  }
-  return null
-}
-
-// Evaluate all formula lines and return computed values + final result
-function evaluateLines(
-  lines: FormulaLine[],
-  inputVars: VarsMap
-): { computedVars: Record<string, number>; result: number | null; error: string | null } {
-  const computedVars: Record<string, number> = {}
-  
-  // Start with input variable values
-  for (const [name, config] of Object.entries(inputVars)) {
-    computedVars[name] = config.value
-  }
-  
-  let result: number | null = null
-  let error: string | null = null
-  
-  for (const line of lines) {
-    if (!line.expression.trim()) continue
-    
-    try {
-      const val = evaluate(line.expression, computedVars)
-      if (typeof val !== 'number') {
-        error = `"${line.name || 'result'}" is not a number`
-        break
-      }
-      if (!isFinite(val)) {
-        error = val === Infinity ? 'Division by zero' : 'Invalid result'
-        break
-      }
-      
-      if (line.name) {
-        // This is an intermediate variable
-        computedVars[line.name] = val
-      } else {
-        // This is the final result line
-        result = val
-      }
-    } catch (e) {
-      error = e instanceof Error ? e.message : 'Evaluation failed'
-      break
-    }
-  }
-  
-  return { computedVars, result, error }
 }
 
 // ─── Variable Row Component ───────────────────────────────────────────────────
@@ -435,6 +297,8 @@ function VarRow({ name, config, onChange, onConfigChange }: VarRowProps) {
                 {field}
               </span>
               <input
+                // Remount when the value changes elsewhere (preset load), so the field does not show a stale value
+                key={config[field]}
                 type="number"
                 defaultValue={config[field]}
                 onBlur={(e) => handleUpdate(field, e.target.value)}
@@ -505,7 +369,7 @@ function VariableControls({
             <div key={name} className="mb-2 flex items-center justify-between">
               <span className="text-sm font-mono text-[var(--color-ink-light)]">{name}</span>
               <span className="text-sm font-mono text-[var(--color-ink)] tabular-nums">
-                {computedVars[name]?.toLocaleString(undefined, { maximumFractionDigits: 4 }) ?? '—'}
+                {computedVars[name] !== undefined ? formatNumber(computedVars[name]) : '—'}
               </span>
             </div>
           ))}
@@ -581,33 +445,14 @@ function SweepChart({ lines, inputVars, sweepVar, onSweepVarChange }: SweepChart
       return { data: [], error: null }
     }
 
-    const { min, max } = inputVars[sweepVar]!
-    const points: { x: number; y: number }[] = []
-
     try {
-      const range = max - min
-      for (let i = 0; i <= CHART_POINTS; i++) {
-        const x = min + (range * i) / CHART_POINTS
-        
-        // Create modified input vars with sweep value
-        const modifiedVars: VarsMap = {}
-        for (const [k, cfg] of Object.entries(inputVars)) {
-          modifiedVars[k] = { ...cfg, value: k === sweepVar ? x : cfg.value }
-        }
-        
-        const { result } = evaluateLines(lines, modifiedVars)
-        if (result !== null && isFinite(result)) {
-          points.push({
-            x: parseFloat(x.toFixed(4)),
-            y: parseFloat(result.toFixed(6)),
-          })
-        }
-      }
-      return { data: points, error: null }
+      return { data: sampleSweep(lines, inputVars, sweepVar), error: null }
     } catch (e) {
       return { data: [], error: e instanceof Error ? e.message : 'Evaluation failed' }
     }
   }, [lines, inputVars, sweepVar, varNames.length])
+
+  const hasPlottable = data.some(([, y]) => y !== null)
 
   const option: EChartsOption = useMemo(() => {
     const axisLabel = {
@@ -628,10 +473,10 @@ function SweepChart({ lines, inputVars, sweepVar, onSweepVarChange }: SweepChart
         padding: [8, 12],
         textStyle: { fontFamily: FONT, fontSize: 11, color: '#FFFBF5' },
         formatter: (params: unknown) => {
-          const p = params as { data: [number, number] }[]
-          if (p.length > 0) {
-            const point = p[0]!
-            return `${sweepVar} = <b>${point.data[0].toLocaleString()}</b><br/>result = <b>${point.data[1].toLocaleString(undefined, { maximumFractionDigits: 4 })}</b>`
+          const p = params as { data: [number, number | string] }[]
+          const point = p.find((q) => typeof q.data[1] === 'number')
+          if (point) {
+            return `${sweepVar} = <b>${point.data[0].toLocaleString()}</b><br/>result = <b>${formatNumber(point.data[1] as number)}</b>`
           }
           return ''
         },
@@ -660,14 +505,15 @@ function SweepChart({ lines, inputVars, sweepVar, onSweepVarChange }: SweepChart
         axisTick: { show: false },
         axisLabel: {
           ...axisLabel,
-          formatter: (v: number) => v.toLocaleString(undefined, { maximumFractionDigits: 2 }),
+          formatter: (v: number) => formatNumber(v),
         },
         splitLine: { lineStyle: { color: C.border, type: 'dashed' } },
       },
       series: [
         {
           type: 'line',
-          data: data.map((p) => [p.x, p.y]),
+          // '-' is the ECharts marker for a gap in the line
+          data: data.map(([x, y]) => [x, y ?? '-']),
           smooth: 0.3,
           symbol: 'none',
           lineStyle: { width: 2.5, color: C.accent },
@@ -712,7 +558,7 @@ function SweepChart({ lines, inputVars, sweepVar, onSweepVarChange }: SweepChart
 
       {sweepError ? (
         <p className="text-xs text-[var(--color-error-text)] font-mono">{sweepError}</p>
-      ) : data.length === 0 ? (
+      ) : !hasPlottable ? (
         <p className="text-xs text-[var(--color-ink-muted)] italic font-mono">
           No plottable data.
         </p>
@@ -738,22 +584,8 @@ export default function FormulaVisualizer() {
 
   // Extract input variables from all expressions (variables not defined by a formula line)
   const { inputVars } = useMemo(() => {
-    const defined = new Set<string>()
-    const allReferenced: string[] = []
-    
-    for (const line of lines) {
-      if (line.name) {
-        defined.add(line.name)
-      }
-      const refs = extractVarsFromExpression(line.expression, defined)
-      allReferenced.push(...refs)
-    }
-    
-    // Input vars are referenced but not defined
-    const inputVarNames = [...new Set(allReferenced)].filter(n => !defined.has(n))
-    
     const inputVars: VarsMap = {}
-    for (const name of inputVarNames) {
+    for (const name of findInputVarNames(lines)) {
       inputVars[name] = varOverrides[name] ?? { ...DEFAULT_VAR }
     }
     
@@ -966,7 +798,7 @@ export default function FormulaVisualizer() {
             ) : result !== null ? (
               <div className="inline-flex items-center px-6 py-4 bg-[var(--color-accent)]/10 border border-[var(--color-accent)]/30 rounded-xl">
                 <span className="text-4xl font-bold text-[var(--color-accent)] tabular-nums font-mono">
-                  {result.toLocaleString(undefined, { maximumFractionDigits: 4 })}
+                  {formatNumber(result)}
                 </span>
               </div>
             ) : (
