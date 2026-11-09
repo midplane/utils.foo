@@ -9,38 +9,31 @@ import { ToolHeader } from '../../components/ui/ToolHeader'
 import { FlowDivider } from '../../components/ui/FlowDivider'
 import { SectionLabel } from '../../components/ui/SectionLabel'
 import { SegmentedControl, SegmentedControlItem } from '../../components/ui/SegmentedControl'
+import { Alert } from '../../components/ui/Alert'
 import { Info, KeyRound, ShieldCheck, Trash2 } from 'lucide-react'
-
-type HmacAlgorithm = 'SHA-256' | 'SHA-512'
-
-async function computeHmac(message: string, secret: string, algorithm: HmacAlgorithm): Promise<string> {
-  const enc = new TextEncoder()
-  const keyMaterial = await crypto.subtle.importKey(
-    'raw',
-    enc.encode(secret),
-    { name: 'HMAC', hash: algorithm },
-    false,
-    ['sign']
-  )
-  const sig = await crypto.subtle.sign('HMAC', keyMaterial, enc.encode(message))
-  return Array.from(new Uint8Array(sig)).map(b => b.toString(16).padStart(2, '0')).join('')
-}
+import { computeHmac, type HmacAlgorithm } from './hmac'
 
 export default function HmacGeneratorTool() {
   const [algorithm, setAlgorithm] = useState<HmacAlgorithm | 'both'>('both')
   const [message, setMessage] = useState('The quick brown fox jumps over the lazy dog')
   const [secret, setSecret] = useState('super-secret-key')
   const [results, setResults] = useState<{ algo: HmacAlgorithm; hmac: string }[]>([])
+  const [error, setError] = useState('')
 
+  // An empty message is a valid HMAC input. Web Crypto does not accept an empty key.
   useEffect(() => {
     let cancelled = false
     const algos: HmacAlgorithm[] = algorithm === 'both' ? ['SHA-256', 'SHA-512'] : [algorithm]
-    if (!message || !secret) {
-      Promise.resolve().then(() => { if (!cancelled) setResults([]) })
+    if (!secret) {
+      Promise.resolve().then(() => { if (!cancelled) { setResults([]); setError('') } })
     } else {
       Promise.all(algos.map(a => computeHmac(message, secret, a).then(hmac => ({ algo: a, hmac }))))
-        .then(res => { if (!cancelled) setResults(res) })
-        .catch(() => { if (!cancelled) setResults([]) })
+        .then(res => { if (!cancelled) { setResults(res); setError('') } })
+        .catch((e: unknown) => {
+          if (cancelled) return
+          setResults([])
+          setError(e instanceof Error ? e.message : 'Cannot compute the HMAC.')
+        })
     }
     return () => { cancelled = true }
   }, [message, secret, algorithm])
@@ -106,7 +99,9 @@ export default function HmacGeneratorTool() {
             <SectionLabel>
               HMAC output{algorithm === 'both' ? 's' : ''}
             </SectionLabel>
-            {results.length > 0 ? (
+            {error ? (
+              <Alert variant="error" size="sm">Cannot compute the HMAC: {error}</Alert>
+            ) : results.length > 0 ? (
               <div className="space-y-2">
                 {results.map(({ algo, hmac }) => (
                   <div key={algo} className="p-2.5 bg-[var(--color-success-bg-subtle)] border border-[var(--color-success-border)] rounded-lg">
@@ -123,7 +118,7 @@ export default function HmacGeneratorTool() {
             ) : (
               <div className="p-4 bg-[var(--color-cream-dark)] border border-[var(--color-border)] rounded-lg text-center">
                 <span className="text-xs text-[var(--color-ink-muted)]">
-                  {message && secret ? 'Computing…' : 'Enter a message and secret key above.'}
+                  {secret ? 'Computing…' : 'Enter a secret key above.'}
                 </span>
               </div>
             )}
