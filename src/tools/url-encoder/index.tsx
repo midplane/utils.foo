@@ -11,9 +11,7 @@ import { SegmentedControl, SegmentedControlItem } from '../../components/ui/Segm
 import { Alert } from '../../components/ui/Alert'
 import { cn } from '../../lib/utils'
 import { ArrowLeftRight, Info, Link2, MoveLeft, MoveRight, Trash2 } from 'lucide-react'
-
-type Mode = 'encode' | 'decode'
-type EncodeType = 'component' | 'full'
+import { convert, type EncodeType, type Mode } from './convert'
 
 export default function UrlEncoderTool() {
   const [mode, setMode] = useState<Mode>('encode')
@@ -23,31 +21,15 @@ export default function UrlEncoderTool() {
   const [output, setOutput] = useState('foo%3Dbar%26baz%3Dqux%20quux')
   const [error, setError] = useState('')
 
+  const applyResult = (value: string, nextMode: Mode, nextType: EncodeType) => {
+    const result = convert(value, nextMode, nextType)
+    setOutput(result.output)
+    setError(result.error)
+  }
+
   const handleInputChange = (value: string) => {
     setInput(value)
-    setError('')
-
-    if (!value.trim()) {
-      setOutput('')
-      return
-    }
-
-    try {
-      if (mode === 'encode') {
-        const encoded = encodeType === 'component' 
-          ? encodeURIComponent(value)
-          : encodeURI(value)
-        setOutput(encoded)
-      } else {
-        const decoded = encodeType === 'component'
-          ? decodeURIComponent(value)
-          : decodeURI(value)
-        setOutput(decoded)
-      }
-    } catch {
-      setError(mode === 'decode' ? 'Invalid encoded input' : 'Failed to encode')
-      setOutput('')
-    }
+    applyResult(value, mode, encodeType)
   }
 
   const handleModeChange = (newMode: Mode) => {
@@ -59,9 +41,7 @@ export default function UrlEncoderTool() {
 
   const handleEncodeTypeChange = (newType: EncodeType) => {
     setEncodeType(newType)
-    if (input) {
-      handleInputChange(input)
-    }
+    applyResult(input, mode, newType)
   }
 
   const handleClear = () => {
@@ -75,22 +55,7 @@ export default function UrlEncoderTool() {
       const newMode = mode === 'encode' ? 'decode' : 'encode'
       setMode(newMode)
       setInput(output)
-      try {
-        if (newMode === 'encode') {
-          const encoded = encodeType === 'component'
-            ? encodeURIComponent(output)
-            : encodeURI(output)
-          setOutput(encoded)
-        } else {
-          const decoded = encodeType === 'component'
-            ? decodeURIComponent(output)
-            : decodeURI(output)
-          setOutput(decoded)
-        }
-      } catch {
-        setError(newMode === 'decode' ? 'Invalid encoded input' : 'Failed to encode')
-        setOutput('')
-      }
+      applyResult(output, newMode, encodeType)
     }
   }
 
