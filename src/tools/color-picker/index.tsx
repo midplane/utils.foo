@@ -6,93 +6,7 @@ import { InfoCard } from '../../components/ui/InfoCard'
 import { ToolHeader } from '../../components/ui/ToolHeader'
 import { cn } from '../../lib/utils'
 import { Info, Pipette } from 'lucide-react'
-
-// ─── Color conversion helpers ─────────────────────────────────────────────────
-
-interface RGB { r: number; g: number; b: number }
-interface HSL { h: number; s: number; l: number }
-
-function hexToRgb(hex: string): RGB | null {
-  const clean = hex.replace('#', '')
-  if (!/^[0-9a-fA-F]{6}$/.test(clean)) return null
-  return {
-    r: parseInt(clean.slice(0, 2), 16),
-    g: parseInt(clean.slice(2, 4), 16),
-    b: parseInt(clean.slice(4, 6), 16),
-  }
-}
-
-function rgbToHex({ r, g, b }: RGB): string {
-  return '#' + [r, g, b].map(n => n.toString(16).padStart(2, '0')).join('')
-}
-
-function rgbToHsl({ r, g, b }: RGB): HSL {
-  const rn = r / 255, gn = g / 255, bn = b / 255
-  const max = Math.max(rn, gn, bn), min = Math.min(rn, gn, bn)
-  let h = 0, s = 0
-  const l = (max + min) / 2
-
-  if (max !== min) {
-    const d = max - min
-    s = l > 0.5 ? d / (2 - max - min) : d / (max + min)
-    switch (max) {
-      case rn: h = ((gn - bn) / d + (gn < bn ? 6 : 0)) / 6; break
-      case gn: h = ((bn - rn) / d + 2) / 6; break
-      case bn: h = ((rn - gn) / d + 4) / 6; break
-    }
-  }
-
-  return {
-    h: Math.round(h * 360),
-    s: Math.round(s * 100),
-    l: Math.round(l * 100),
-  }
-}
-
-function hslToRgb({ h, s, l }: HSL): RGB {
-  const sn = s / 100, ln = l / 100
-  const c = (1 - Math.abs(2 * ln - 1)) * sn
-  const x = c * (1 - Math.abs((h / 60) % 2 - 1))
-  const m = ln - c / 2
-  let r: number, g: number, b: number
-
-  if (h < 60)       { r = c; g = x; b = 0 }
-  else if (h < 120) { r = x; g = c; b = 0 }
-  else if (h < 180) { r = 0; g = c; b = x }
-  else if (h < 240) { r = 0; g = x; b = c }
-  else if (h < 300) { r = x; g = 0; b = c }
-  else              { r = c; g = 0; b = x }
-
-  return {
-    r: Math.round((r + m) * 255),
-    g: Math.round((g + m) * 255),
-    b: Math.round((b + m) * 255),
-  }
-}
-
-function parseRgbString(value: string): RGB | null {
-  const m = value.match(/(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/)
-  if (!m) return null
-  const r = parseInt(m[1]!), g = parseInt(m[2]!), b = parseInt(m[3]!)
-  if ([r, g, b].some(n => n < 0 || n > 255)) return null
-  return { r, g, b }
-}
-
-function parseHslString(value: string): HSL | null {
-  const m = value.match(/(\d+)\s*,\s*(\d+)%?\s*,\s*(\d+)%?/)
-  if (!m) return null
-  const h = parseInt(m[1]!), s = parseInt(m[2]!), l = parseInt(m[3]!)
-  if (h < 0 || h > 360 || s < 0 || s > 100 || l < 0 || l > 100) return null
-  return { h, s, l }
-}
-
-function getContrastColor(hex: string): string {
-  const rgb = hexToRgb(hex)
-  if (!rgb) return '#000000'
-  // WCAG relative luminance
-  const lum = 0.2126 * rgb.r / 255 + 0.7152 * rgb.g / 255 + 0.0722 * rgb.b / 255
-  return lum > 0.5 ? '#1a1a1a' : '#ffffff'
-}
+import { getContrastColor, hexToRgb, hslToRgb, parseHslString, parseRgbString, rgbToHex, rgbToHsl, type RGB } from './color'
 
 // ─── Presets / swatches ───────────────────────────────────────────────────────
 
@@ -120,22 +34,23 @@ export default function ColorPickerTool() {
   const hsl = rgbToHsl(rgb)
   const contrastColor = getContrastColor(hex)
 
-  const applyRgb = useCallback((newRgb: RGB) => {
+  // Do not rewrite the field that the user is typing in. A rewrite moves the
+  // cursor to the end and can make some values impossible to type.
+  const applyRgb = useCallback((newRgb: RGB, source: 'rgb' | 'hsl') => {
     const newHex = rgbToHex(newRgb)
     const newHsl = rgbToHsl(newRgb)
     setHex(newHex)
     setHexInput(newHex)
-    setRgbInput(`${newRgb.r}, ${newRgb.g}, ${newRgb.b}`)
-    setHslInput(`${newHsl.h}, ${newHsl.s}%, ${newHsl.l}%`)
+    if (source !== 'rgb') setRgbInput(`${newRgb.r}, ${newRgb.g}, ${newRgb.b}`)
+    if (source !== 'hsl') setHslInput(`${newHsl.h}, ${newHsl.s}%, ${newHsl.l}%`)
   }, [])
 
   const handleHexChange = (value: string) => {
     setHexInput(value)
     setHexError('')
-    const normalized = value.startsWith('#') ? value : '#' + value
-    const parsed = hexToRgb(normalized)
+    const parsed = hexToRgb(value)
     if (!parsed) { setHexError('Must be a valid 6-digit hex color'); return }
-    setHex(normalized)
+    setHex(rgbToHex(parsed))
     setRgbInput(`${parsed.r}, ${parsed.g}, ${parsed.b}`)
     const h = rgbToHsl(parsed)
     setHslInput(`${h.h}, ${h.s}%, ${h.l}%`)
@@ -148,7 +63,7 @@ export default function ColorPickerTool() {
     setRgbError('')
     const parsed = parseRgbString(value)
     if (!parsed) { setRgbError('Must be r, g, b (0–255)'); return }
-    applyRgb(parsed)
+    applyRgb(parsed, 'rgb')
     setHexError('')
     setHslError('')
   }
@@ -158,7 +73,7 @@ export default function ColorPickerTool() {
     setHslError('')
     const parsed = parseHslString(value)
     if (!parsed) { setHslError('Must be h (0-360), s% (0-100), l% (0-100)'); return }
-    applyRgb(hslToRgb(parsed))
+    applyRgb(hslToRgb(parsed), 'hsl')
     setHexError('')
     setRgbError('')
   }
