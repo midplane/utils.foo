@@ -23,6 +23,7 @@ import { Workflow, Trash2, Download, Code, Eye, Columns2, ZoomIn, ZoomOut, Shrin
 import { cn } from '../../lib/utils'
 import { appTheme, appThemeDark } from '../../lib/codemirrorTheme'
 import { useTheme } from '../../contexts/ThemeContext'
+import { resolveSvgForRaster } from './raster'
 
 // ─── Samples ──────────────────────────────────────────────────────────────────
 
@@ -159,74 +160,6 @@ const SAMPLE_OPTIONS = [
 
 type ViewMode = 'split' | 'editor' | 'preview'
 
-// ─── resolveSvgForRaster ──────────────────────────────────────────────────────
-// Canvas cannot resolve CSS custom properties or color-mix(). Before PNG export
-// we inline all vars to literal hex values, strip @import, and inject a solid
-// background rect so the PNG isn't transparent.
-
-function hexToRgb(hex: string): [number, number, number] {
-  const h = hex.replace('#', '')
-  return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)]
-}
-
-function mixHex(fg: string, bg: string, fgPct: number): string {
-  const f = hexToRgb(fg), b = hexToRgb(bg), t = fgPct / 100
-  return '#' + ([0, 1, 2] as const)
-    .map(i => Math.round(f[i]! * t + b[i]! * (1 - t)).toString(16).padStart(2, '0'))
-    .join('')
-}
-
-function resolveSvgForRaster(svg: string): string {
-  // Extract --bg and --fg seed colors from the root <svg> style attribute
-  const bgMatch = svg.match(/--bg:(#[0-9a-fA-F]{6})/)
-  const fgMatch = svg.match(/--fg:(#[0-9a-fA-F]{6})/)
-  const bg = bgMatch?.[1] ?? '#ffffff'
-  const fg = fgMatch?.[1] ?? '#000000'
-
-  // Pre-compute all derived vars used by beautiful-mermaid
-  const vars: Record<string, string> = {
-    '--bg':           bg,
-    '--fg':           fg,
-    '--_text':        fg,
-    '--_text-sec':    mixHex(fg, bg, 60),
-    '--_text-muted':  mixHex(fg, bg, 40),
-    '--_text-faint':  mixHex(fg, bg, 25),
-    '--_line':        mixHex(fg, bg, 50),
-    '--_arrow':       mixHex(fg, bg, 85),
-    '--_node-fill':   mixHex(fg, bg, 3),
-    '--_node-stroke': mixHex(fg, bg, 20),
-    '--_group-fill':  bg,
-    '--_group-hdr':   mixHex(fg, bg, 5),
-    '--_label-bg':    bg,
-  }
-
-  // Also pick up any explicit overrides defined in the SVG (--accent, --surface, etc.)
-  for (const [, name, value] of svg.matchAll(/--([a-z][\w-]*):\s*(#[0-9a-fA-F]{6})/g)) {
-    if (!vars[`--${name}`]) vars[`--${name!}`] = value!
-  }
-
-  // Replace every var(--xxx) reference with its resolved value, up to 3 passes
-  // to handle vars that reference other vars
-  let out = svg
-  for (let pass = 0; pass < 3; pass++) {
-    out = out.replace(/var\(--([\w-]+)(?:,\s*[^)]+)?\)/g, (_, name: string) => vars[`--${name}`] ?? bg)
-  }
-
-  // Strip @import (Google Fonts — cross-origin, blocked when loading from blob)
-  out = out.replace(/@import[^;]+;/g, '')
-
-  // Inject solid background rect immediately after the opening <svg ...> tag
-  const insertAt = out.indexOf('>') + 1
-  const vbMatch = out.match(/viewBox="([-\d.]+) ([-\d.]+) ([\d.]+) ([\d.]+)"/)
-  const wMatch = out.match(/\bwidth="([\d.]+)"/)
-  const hMatch = out.match(/\bheight="([\d.]+)"/)
-  const bgRect = vbMatch
-    ? `<rect x="${vbMatch[1]}" y="${vbMatch[2]}" width="${vbMatch[3]}" height="${vbMatch[4]}" fill="${bg}"/>`
-    : `<rect x="0" y="0" width="${wMatch?.[1] ?? 800}" height="${hMatch?.[1] ?? 600}" fill="${bg}"/>`
-
-  return out.slice(0, insertAt) + bgRect + out.slice(insertAt)
-}
-
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function MermaidTool() {
@@ -284,7 +217,7 @@ export default function MermaidTool() {
 
   const svgScale = useMemo(() => {
     if (!svgW || !svgH || !paneSize.w || !paneSize.h) return 1
-    const padding = 32 // account for p-4 on each side
+    const padding = 32 // margin inside the content box, which already excludes p-4
     return Math.min(1, (paneSize.w - padding) / svgW, (paneSize.h - padding) / svgH)
   }, [svgW, svgH, paneSize])
 
@@ -484,28 +417,38 @@ export default function MermaidTool() {
 
               {/* ── Preview pane ─────────────────────────────────────────── */}
               <div
-                ref={previewPaneRef}
                 className={cn(
-                  'relative rounded-lg border border-[var(--color-border)] overflow-auto flex flex-col items-center justify-center p-4',
+                  'relative rounded-lg border border-[var(--color-border)] overflow-hidden',
                   viewMode === 'editor' && 'hidden',
                 )}
                 style={{ height: PANE_HEIGHT, background: THEMES[themeName]?.bg ?? '#fff' }}
               >
-                {error ? (
-                  <div className="w-full p-3 bg-[var(--color-error-bg)] border border-[var(--color-error-border)] rounded-lg text-xs text-[var(--color-error-text)] font-mono whitespace-pre-wrap">
-                    {error}
-                  </div>
-                ) : svg ? (
-                  <div
-                    className="max-w-full"
-                    style={{ transform: `scale(${effectiveScale})`, transformOrigin: 'center center' }}
-                    dangerouslySetInnerHTML={{ __html: svg }}
-                  />
-                ) : (
-                  <p className="text-xs text-[var(--color-ink-muted)] italic mt-8">
-                    Start typing to render a diagram
-                  </p>
-                )}
+                {/* The zoom sets the layout size, not a transform, so the scroll
+                    area matches the diagram. Auto margins centre it without
+                    pushing the top-left corner out of the scroll area. */}
+                <div
+                  ref={previewPaneRef}
+                  className={cn(
+                    'h-full overflow-auto flex flex-col p-4',
+                    !svg && 'items-center justify-center',
+                  )}
+                >
+                  {error ? (
+                    <div className="w-full p-3 bg-[var(--color-error-bg)] border border-[var(--color-error-border)] rounded-lg text-xs text-[var(--color-error-text)] font-mono whitespace-pre-wrap">
+                      {error}
+                    </div>
+                  ) : svg ? (
+                    <div
+                      className="m-auto shrink-0 [&>svg]:block [&>svg]:w-full [&>svg]:h-full"
+                      style={svgW && svgH ? { width: svgW * effectiveScale, height: svgH * effectiveScale } : undefined}
+                      dangerouslySetInnerHTML={{ __html: svg }}
+                    />
+                  ) : (
+                    <p className="text-xs text-[var(--color-ink-muted)] italic mt-8">
+                      Start typing to render a diagram
+                    </p>
+                  )}
+                </div>
 
                 {/* ── Zoom controls overlay ──────────────────────────────── */}
                 {svg && (
