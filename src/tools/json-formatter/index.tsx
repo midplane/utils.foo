@@ -115,6 +115,7 @@ export default function JsonFormatterTool() {
         EditorState.readOnly.of(true),
         EditorView.editable.of(false),
         EditorView.lineWrapping,
+        EditorView.contentAttributes.of({ "aria-label": "Query result" }),
       ],
     });
 
@@ -151,6 +152,7 @@ export default function JsonFormatterTool() {
         json(),
         lintGutter(),
         linter(jsonParseLinter()),
+        EditorView.contentAttributes.of({ "aria-label": "JSON input" }),
         themeComp.current.of(isDarkRef.current ? appThemeDark : appTheme),
         EditorView.updateListener.of(
           (update: import("@codemirror/view").ViewUpdate) => {
@@ -301,8 +303,8 @@ export default function JsonFormatterTool() {
           <ExpandableCardHeader>
             <div className="flex flex-col gap-1.5">
               {/* Row 1: Primary actions */}
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-1.5">
+              <div className="flex flex-wrap items-center justify-between gap-1.5">
+                <div className="flex flex-wrap items-center gap-1.5">
                   <Button variant="secondary" size="sm" onClick={handlePrettify} className="gap-1.5 text-xs h-7 px-3">
                     <AlignLeft className="w-3 h-3" />
                     Prettify
@@ -319,7 +321,8 @@ export default function JsonFormatterTool() {
                     variant="secondary"
                     size="sm"
                     onClick={() => setFilterOpen((v) => !v)}
-                    className={cn("gap-1.5 text-xs h-7 px-3", filterOpen && "text-[var(--color-accent)] border-[var(--color-accent)]")}
+                    aria-pressed={filterOpen}
+                    className={cn("gap-1.5 text-xs h-7 px-3", filterOpen && "text-[var(--color-accent-text)] border-[var(--color-accent)]")}
                   >
                     <ListFilter className="w-3 h-3" />
                     Filter
@@ -338,8 +341,8 @@ export default function JsonFormatterTool() {
               </div>
 
               {/* Row 2: Secondary actions */}
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-1.5">
+              <div className="flex flex-wrap items-center justify-between gap-1.5">
+                <div className="flex flex-wrap items-center gap-1.5">
                   <Button variant="secondary" size="sm" onClick={handleEscape} className="gap-1.5 text-xs h-7 px-3">
                     <Quote className="w-3 h-3" />
                     Escape
@@ -368,9 +371,9 @@ export default function JsonFormatterTool() {
           <ExpandableCardContent>
             {/* ── Filter controls — full-width row, right column only ────── */}
             {filterOpen && (
-              <div className="grid grid-cols-2 gap-3 mb-2 animate-fade-in">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-2 animate-fade-in">
                 {/* Left column: empty placeholder to keep alignment */}
-                <div />
+                <div className="hidden md:block" />
 
                 {/* Right column: expression input + cheatsheet */}
                 <div className="flex flex-col gap-2">
@@ -387,12 +390,15 @@ export default function JsonFormatterTool() {
                       Run
                     </Button>
                     <button
+                      type="button"
                       onClick={() => setShowCheatsheet((v) => !v)}
                       title="JSONPath syntax reference"
+                      aria-label="JSONPath syntax reference"
+                      aria-pressed={showCheatsheet}
                       className={cn(
                         "inline-flex items-center justify-center w-7 h-7 rounded-lg transition-colors cursor-pointer shrink-0",
                         showCheatsheet
-                          ? "text-[var(--color-accent)] bg-orange-50"
+                          ? "text-[var(--color-accent-text)] bg-[var(--color-cream-dark)]"
                           : "text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] hover:bg-[var(--color-cream-dark)]"
                       )}
                     >
@@ -414,7 +420,7 @@ export default function JsonFormatterTool() {
                       <div className="grid grid-cols-2 gap-x-4 gap-y-0.5">
                         {JSONPATH_CHEATSHEET.map((row) => (
                           <div key={row.expr} className="flex items-baseline gap-2">
-                            <code className="text-[11px] font-mono text-[var(--color-accent)] shrink-0">{row.expr}</code>
+                            <code className="text-[11px] font-mono text-[var(--color-accent-text)] shrink-0">{row.expr}</code>
                             <span className="text-[10px] text-[var(--color-ink-muted)]">{row.desc}</span>
                           </div>
                         ))}
@@ -431,7 +437,7 @@ export default function JsonFormatterTool() {
             )}
 
             {/* Two-pane layout when filter is open, single-pane otherwise */}
-            <div className={cn(filterOpen && "grid grid-cols-2 gap-3")}>
+            <div className={cn(filterOpen && "grid grid-cols-1 md:grid-cols-2 gap-3")}>
 
               {/* ── Source pane ─────────────────────────────────────────────── */}
               <div className="flex flex-col gap-1">
@@ -440,7 +446,7 @@ export default function JsonFormatterTool() {
                   style={{ height: expanded ? EXPANDED_PANE_HEIGHT : "560px" }}
                   className={cn(
                     "rounded-lg",
-                    validState === "invalid" && "outline outline-2 outline-red-300",
+                    validState === "invalid" && "outline outline-2 outline-[var(--color-error-border)]",
                   )}
                 />
                 {/* Stats row */}

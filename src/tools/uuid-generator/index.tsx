@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react'
 import { Card, CardContent, CardHeader } from '../../components/ui/Card'
 import { Button } from '../../components/ui/Button'
+import { Badge } from '../../components/ui/Badge'
 import { CopyButton } from '../../components/ui/CopyButton'
 import { InfoCard } from '../../components/ui/InfoCard'
 import { ToolHeader } from '../../components/ui/ToolHeader'
@@ -209,7 +210,7 @@ export default function UuidGeneratorTool() {
           {/* v4 */}
           <div className="px-3 py-3 bg-[var(--color-cream-dark)] rounded-lg border border-[var(--color-border)]">
             <div className="flex items-center gap-2 mb-1.5">
-              <span className="px-1.5 py-0.5 text-[10px] font-bold rounded bg-[var(--color-accent)] text-white">V4</span>
+              <Badge>V4</Badge>
               <h3 className="text-xs font-semibold text-[var(--color-ink)]">Random</h3>
               <span className="text-[10px] text-[var(--color-ink-muted)] font-mono">122 bits of entropy</span>
             </div>
@@ -224,7 +225,7 @@ export default function UuidGeneratorTool() {
           {/* v5 */}
           <div className="px-3 py-3 bg-[var(--color-cream-dark)] rounded-lg border border-[var(--color-border)]">
             <div className="flex items-center gap-2 mb-1.5">
-              <span className="px-1.5 py-0.5 text-[10px] font-bold rounded bg-[var(--color-accent)] text-white">V5</span>
+              <Badge>V5</Badge>
               <h3 className="text-xs font-semibold text-[var(--color-ink)]">Name-based (SHA-1)</h3>
               <span className="text-[10px] text-[var(--color-ink-muted)] font-mono">deterministic</span>
             </div>
@@ -242,7 +243,7 @@ export default function UuidGeneratorTool() {
           {/* v7 */}
           <div className="px-3 py-3 bg-[var(--color-cream-dark)] rounded-lg border border-[var(--color-border)]">
             <div className="flex items-center gap-2 mb-1.5">
-              <span className="px-1.5 py-0.5 text-[10px] font-bold rounded bg-[var(--color-accent)] text-white">V7</span>
+              <Badge>V7</Badge>
               <h3 className="text-xs font-semibold text-[var(--color-ink)]">Time-ordered (Unix timestamp)</h3>
               <span className="text-[10px] text-[var(--color-ink-muted)] font-mono">ms precision</span>
             </div>

@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
 import { Search, Star } from 'lucide-react'
 import { ToolCard } from '../components/ToolCard'
+import { EmptyState } from '../components/ui'
 import { searchTools, tools } from '../tools/registry'
 import { useFavorites } from '../hooks/useFavorites'
 
@@ -33,19 +34,23 @@ export function Home() {
 
   return (
     <div className="space-y-4">
+      <h1 className="sr-only">Developer utilities</h1>
+
       {/* Search */}
       <div className="relative w-full">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-ink-muted)]" />
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-ink-muted)]" aria-hidden="true" />
         <input
           ref={searchInputRef}
           type="search"
           placeholder="Search tools..."
+          aria-label="Search tools"
+          aria-keyshortcuts="/"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full pl-9 pr-4 py-2 text-sm bg-[var(--color-input-bg)] border border-[var(--color-input-border)] shadow-[var(--shadow-input-inset)] rounded-lg text-[var(--color-ink)] placeholder-[var(--color-ink-muted)] focus:border-[var(--color-border-dark)] transition-all"
+          className="w-full pl-9 pr-10 py-2 text-sm bg-[var(--color-input-bg)] border border-[var(--color-input-border)] shadow-[var(--shadow-input-inset)] rounded-lg text-[var(--color-ink)] placeholder-[var(--color-ink-muted)] focus:border-[var(--color-accent)] transition-colors"
         />
         {!searchQuery && (
-          <kbd className="absolute right-2 top-1/2 -translate-y-1/2 px-1.5 py-0.5 text-[10px] font-mono text-[var(--color-ink-muted)] bg-[var(--color-cream-dark)] border border-[var(--color-border)] rounded">
+          <kbd aria-hidden="true" className="absolute right-2 top-1/2 -translate-y-1/2 px-1.5 py-0.5 text-[10px] font-mono text-[var(--color-ink-muted)] bg-[var(--color-cream-dark)] border border-[var(--color-border)] rounded">
             /
           </kbd>
         )}
@@ -80,7 +85,7 @@ export function Home() {
       {/* Divider with count */}
       <div className="flex items-center gap-3">
         <div className="flex-1 h-px bg-[var(--color-border)]" />
-        <span className="text-[10px] uppercase tracking-wider text-[var(--color-ink-muted)]">
+        <span className="text-[10px] uppercase tracking-wider text-[var(--color-ink-muted)]" aria-live="polite">
           {searchQuery ? `${totalCount} found` : `${tools.length} tools`}
         </span>
         <div className="flex-1 h-px bg-[var(--color-border)]" />
@@ -101,9 +106,7 @@ export function Home() {
         </div>
       ) : (
         !favoriteTools.length && (
-          <div className="text-center py-8 animate-fade-in">
-            <p className="text-sm text-[var(--color-ink-muted)]">No tools found matching "{searchQuery}"</p>
-          </div>
+          <EmptyState className="animate-fade-in" message={`No tools match "${searchQuery}". Try a shorter or different word.`} />
         )
       )}
     </div>

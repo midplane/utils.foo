@@ -215,7 +215,7 @@ function VarRow({ name, config, onChange, onConfigChange }: VarRowProps) {
   return (
     <div className="mb-4">
       <div className="flex items-center justify-between mb-1">
-        <span className="text-sm font-mono text-[var(--color-accent)]">{name}</span>
+        <span className="text-sm font-mono text-[var(--color-accent-text)]">{name}</span>
         <div className="flex items-center gap-1.5">
           <div className="flex items-center bg-[var(--color-surface)] border border-[var(--color-border)] rounded overflow-hidden">
             <button
@@ -223,7 +223,7 @@ function VarRow({ name, config, onChange, onConfigChange }: VarRowProps) {
               className={cn(
                 'p-1 transition-colors cursor-pointer',
                 inputMode === 'slider'
-                  ? 'bg-[var(--color-border-dark)] text-[var(--color-accent)]'
+                  ? 'bg-[var(--color-border-dark)] text-[var(--color-accent-text)]'
                   : 'text-[var(--color-ink-muted)] hover:text-[var(--color-ink-light)]'
               )}
               title="Slider"
@@ -235,7 +235,7 @@ function VarRow({ name, config, onChange, onConfigChange }: VarRowProps) {
               className={cn(
                 'p-1 transition-colors cursor-pointer',
                 inputMode === 'input'
-                  ? 'bg-[var(--color-border-dark)] text-[var(--color-accent)]'
+                  ? 'bg-[var(--color-border-dark)] text-[var(--color-accent-text)]'
                   : 'text-[var(--color-ink-muted)] hover:text-[var(--color-ink-light)]'
               )}
               title="Expression input (supports math like 1000*12)"
@@ -249,7 +249,7 @@ function VarRow({ name, config, onChange, onConfigChange }: VarRowProps) {
             className={cn(
               'p-0.5 rounded transition-colors cursor-pointer',
               showConfig
-                ? 'text-[var(--color-accent)]'
+                ? 'text-[var(--color-accent-text)]'
                 : 'text-[var(--color-ink-muted)] hover:text-[var(--color-ink-light)]'
             )}
             title="Configure range"
@@ -399,7 +399,7 @@ function FormulaLineRow({ line, isLast, canDelete, onChange, onDelete }: Formula
             value={line.name}
             onChange={(e) => onChange(line.id, { name: e.target.value.replace(/[^a-zA-Z0-9_]/g, '') })}
             placeholder="var"
-            className="w-24 text-sm font-mono bg-[var(--color-input-bg)] border border-[var(--color-input-border)] shadow-[var(--shadow-input-inset)] rounded-md px-2 py-1.5 text-[var(--color-accent)] placeholder-[var(--color-ink-muted)] focus:border-[var(--color-accent)]"
+            className="w-24 text-sm font-mono bg-[var(--color-input-bg)] border border-[var(--color-input-border)] shadow-[var(--shadow-input-inset)] rounded-md px-2 py-1.5 text-[var(--color-accent-text)] placeholder-[var(--color-ink-muted)] focus:border-[var(--color-accent)]"
           />
           <span className="text-[var(--color-ink-muted)]">=</span>
         </>
@@ -540,10 +540,11 @@ function SweepChart({ lines, inputVars, sweepVar, onSweepVarChange }: SweepChart
   return (
     <div className="mt-4">
       <div className="flex items-center gap-3 mb-3">
-        <span className="text-[10px] uppercase tracking-wider font-semibold text-[var(--color-ink-muted)]">
+        <label htmlFor="formula-sweep-var" className="text-[10px] uppercase tracking-wider font-semibold text-[var(--color-ink-muted)]">
           Sweep variable
-        </span>
+        </label>
         <select
+          id="formula-sweep-var"
           value={sweepVar}
           onChange={(e) => onSweepVarChange(e.target.value)}
           className="text-xs font-mono bg-[var(--color-input-bg)] border border-[var(--color-input-border)] shadow-[var(--shadow-input-inset)] rounded-md px-2 py-1 text-[var(--color-ink)] focus:border-[var(--color-accent)] cursor-pointer"
@@ -717,7 +718,8 @@ export default function FormulaVisualizer() {
               <select
                 defaultValue=""
                 onChange={handlePreset}
-                className="h-7 px-2 text-xs font-mono rounded border border-[var(--color-border)] bg-[var(--color-cream)] text-[var(--color-ink)] cursor-pointer"
+                aria-label="Load a preset formula"
+                className="h-7 px-2 text-xs font-mono rounded-md border border-[var(--color-input-border)] bg-[var(--color-input-bg)] text-[var(--color-ink)] focus:border-[var(--color-accent)] cursor-pointer"
               >
                 <option value="" disabled>
                   Load preset...
@@ -750,7 +752,7 @@ export default function FormulaVisualizer() {
           
           <button
             onClick={handleAddLine}
-            className="mt-2 flex items-center gap-1.5 text-xs font-mono text-[var(--color-ink-muted)] hover:text-[var(--color-accent)] transition-colors cursor-pointer"
+            className="mt-2 flex items-center gap-1.5 text-xs font-mono text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] transition-colors cursor-pointer"
           >
             <Plus size={14} />
             Add intermediate variable

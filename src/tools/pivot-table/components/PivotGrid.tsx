@@ -608,7 +608,7 @@ export function PivotGrid({
                           className={cn(
                             'px-3 py-1.5 text-right border-b border-r border-[var(--color-border)] tabular-nums',
                             line.showsValues &&
-                              'cursor-pointer hover:text-[var(--color-accent-text)] focus-visible:outline-offset-[-2px]',
+                              'cursor-pointer hover:text-[var(--color-ink)] focus-visible:outline-offset-[-2px]',
                             isTotalColumn && 'bg-[var(--color-cream-dark)]/60 font-semibold'
                           )}
                           style={background ? { backgroundColor: background } : undefined}
@@ -699,7 +699,7 @@ function CollapseLabel({
       onClick={onToggle}
       aria-expanded={!collapsed}
       aria-label={`${collapsed ? 'Expand' : 'Collapse'} ${text}`}
-      className="inline-flex items-center gap-0.5 hover:text-[var(--color-accent-text)] transition-colors cursor-pointer"
+      className="inline-flex items-center gap-0.5 hover:text-[var(--color-ink)] transition-colors cursor-pointer"
       style={padding}
     >
       {collapsed ? (
@@ -745,7 +745,7 @@ function HeaderLabel({
       onClick={() => onToggle(cell.toggleKey)}
       aria-expanded={!cell.collapsed}
       aria-label={`${cell.collapsed ? 'Expand' : 'Collapse'} ${text}`}
-      className="inline-flex items-center gap-0.5 hover:text-[var(--color-accent-text)] transition-colors cursor-pointer"
+      className="inline-flex items-center gap-0.5 hover:text-[var(--color-ink)] transition-colors cursor-pointer"
     >
       {cell.collapsed ? (
         <ChevronRight className="w-3 h-3 shrink-0" aria-hidden="true" />
@@ -810,7 +810,7 @@ function SortButton({
       onClick={onClick}
       title={`Sort rows by ${label}`}
       className={cn(
-        'group inline-flex items-center gap-1 hover:text-[var(--color-accent-text)] transition-colors cursor-pointer',
+        'group inline-flex items-center gap-1 hover:text-[var(--color-ink)] transition-colors cursor-pointer',
         state && 'text-[var(--color-accent-text)]'
       )}
     >

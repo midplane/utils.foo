@@ -28,7 +28,7 @@ export const ToolHeader = forwardRef<HTMLDivElement, ToolHeaderProps>(
           {accentedSuffix && (
             <>
               {' '}
-              <span className="text-[var(--color-accent)]">{accentedSuffix}</span>
+              <span className="text-[var(--color-accent-text)]">{accentedSuffix}</span>
             </>
           )}
         </h1>

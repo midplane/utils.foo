@@ -143,6 +143,7 @@ export default function DataConverterTool() {
         extensions: [
           basicSetup,
           EditorView.lineWrapping,
+          EditorView.contentAttributes.of({ 'aria-label': 'Input data' }),
           themeComp.current.of(isDarkRef.current ? appThemeDark : appTheme),
           inputLangComp.current.of([]),
           EditorView.updateListener.of((u) => {
@@ -159,6 +160,7 @@ export default function DataConverterTool() {
         extensions: [
           basicSetup,
           EditorView.lineWrapping,
+          EditorView.contentAttributes.of({ 'aria-label': 'Converted output' }),
           themeComp.current.of(isDarkRef.current ? appThemeDark : appTheme),
           outputLangComp.current.of([]),
           EditorView.editable.of(false),
@@ -303,7 +305,7 @@ export default function DataConverterTool() {
             )}
 
             {/* Two-pane editor layout */}
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {/* Input pane */}
               <div className="flex flex-col gap-1">
                 <div className="flex items-center justify-between">

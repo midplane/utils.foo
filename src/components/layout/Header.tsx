@@ -14,7 +14,7 @@ export function Header() {
       <div className={cn('mx-auto px-4 py-3.5 flex items-center justify-between', widthClass)}>
         <Link to="/" className="group flex items-center gap-2">
           <div className="relative">
-            <div className="w-6 h-6 bg-[var(--color-ink)] rounded flex items-center justify-center group-hover:bg-[var(--color-accent)] transition-colors duration-300">
+            <div aria-hidden="true" className="w-6 h-6 bg-[var(--color-ink)] rounded flex items-center justify-center group-hover:bg-[var(--color-ink-light)] transition-colors duration-300">
               <span className="text-[var(--color-cream)] text-[10px] font-bold tracking-tight">{siteMark}</span>
             </div>
           </div>
@@ -26,8 +26,8 @@ export function Header() {
         <div className="flex items-center gap-2">
           <div className="hidden sm:flex items-center gap-1.5 px-2 py-1 bg-[var(--color-cream-dark)] rounded-full border border-[var(--color-border)]">
             <div className="relative flex items-center justify-center">
-              <span className="w-1.5 h-1.5 bg-[var(--color-success-icon)] rounded-full" />
-              <span className="absolute w-1.5 h-1.5 bg-[var(--color-success-icon)] rounded-full animate-ping" />
+              <span className="w-1.5 h-1.5 bg-[var(--color-success-icon)] rounded-full" aria-hidden="true" />
+              <span aria-hidden="true" className="absolute w-1.5 h-1.5 bg-[var(--color-success-icon)] rounded-full animate-ping" />
             </div>
             <span className="text-[10px] text-[var(--color-ink-muted)] font-medium">
               client-side only
@@ -38,13 +38,14 @@ export function Header() {
           </span>
 
           <button
+            type="button"
             onClick={toggle}
             aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
             className="ml-1 p-1.5 rounded-lg text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] hover:bg-[var(--color-cream-dark)] border border-transparent hover:border-[var(--color-border)] transition-colors"
           >
             {isDark
-              ? <Sun className="w-3.5 h-3.5" />
-              : <Moon className="w-3.5 h-3.5" />
+              ? <Sun className="w-3.5 h-3.5" aria-hidden="true" />
+              : <Moon className="w-3.5 h-3.5" aria-hidden="true" />
             }
           </button>
         </div>

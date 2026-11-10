@@ -10,7 +10,7 @@ export function Footer() {
     <footer className="border-t border-[var(--color-border)] bg-[var(--color-cream)] mt-auto">
       <div className={cn('mx-auto px-4 py-3', widthClass)}>
         <div className="flex items-center justify-between text-[10px] text-[var(--color-ink-muted)]">
-          <Link to="/" className="flex items-center gap-1.5 hover:text-[var(--color-accent)] transition-colors">
+          <Link to="/" className="flex items-center gap-1.5 hover:text-[var(--color-ink)] transition-colors">
             <span className="font-medium">
               {sitePrefix}{siteSuffix && <><span className="text-[var(--color-accent)]">.</span>{siteSuffix}</>}
             </span>
@@ -21,16 +21,16 @@ export function Footer() {
               href="https://github.com/midplane/utils.foo"
               target="_blank"
               rel="noopener noreferrer"
-              className="hover:text-[var(--color-accent)] transition-colors"
+              className="hover:text-[var(--color-ink)] transition-colors"
             >
               GitHub
             </a>
-            <span className="text-[var(--color-border-dark)]">·</span>
+            <span className="text-[var(--color-border-dark)]" aria-hidden="true">·</span>
             <a
               href="https://github.com/midplane/utils.foo/issues"
               target="_blank"
               rel="noopener noreferrer"
-              className="hover:text-[var(--color-accent)] transition-colors"
+              className="hover:text-[var(--color-ink)] transition-colors"
             >
               Raise a request
             </a>

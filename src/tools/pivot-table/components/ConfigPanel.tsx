@@ -857,7 +857,7 @@ export function ConfigPanel({
               type="button"
               onClick={addValue}
               aria-label="Add value metric"
-              className="inline-flex items-center gap-0.5 px-1.5 py-1 text-[var(--color-accent-text)] hover:bg-[var(--color-accent)]/10 rounded transition-colors cursor-pointer"
+              className="inline-flex items-center gap-0.5 px-1.5 py-1 text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] hover:bg-[var(--color-cream-dark)] rounded transition-colors cursor-pointer"
             >
               <Plus className="w-3 h-3" aria-hidden="true" />
             </button>

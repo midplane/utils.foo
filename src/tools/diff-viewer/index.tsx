@@ -124,6 +124,7 @@ export default function DiffViewerTool() {
         extensions: [
           basicSetup,
           EditorView.lineWrapping,
+          EditorView.contentAttributes.of({ 'aria-label': 'Original text' }),
           themeComp.current.of(isDarkRef.current ? diffThemeDark : diffTheme),
           langCompartmentA.current.of([]),
           EditorView.updateListener.of((u) => {
@@ -136,6 +137,7 @@ export default function DiffViewerTool() {
         extensions: [
           basicSetup,
           EditorView.lineWrapping,
+          EditorView.contentAttributes.of({ 'aria-label': 'Modified text' }),
           themeComp.current.of(isDarkRef.current ? diffThemeDark : diffTheme),
           langCompartmentB.current.of([]),
           EditorView.updateListener.of((u) => {
@@ -282,6 +284,7 @@ export default function DiffViewerTool() {
                     className="h-6 text-[10px] font-mono pl-1.5 pr-5 rounded-md border border-[var(--color-border)] bg-[var(--color-cream-dark)] text-[var(--color-ink-muted)] hover:border-[var(--color-border-dark)] focus:border-[var(--color-accent)] focus:text-[var(--color-ink)] transition-colors cursor-pointer appearance-none"
                     style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%2378716C'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 4px center' }}
                     title="Language for syntax highlighting"
+                    aria-label="Language for syntax highlighting"
                   >
                     <option value="auto">auto: {detectedLang}</option>
                     {LANG_OPTIONS.map((l) => (

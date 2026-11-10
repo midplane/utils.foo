@@ -75,9 +75,9 @@ const STATUS_GROUPS: StatusGroup[] = [
   {
     range: '4xx',
     label: 'Client Error',
-    color: 'bg-orange-100',
-    textColor: 'text-orange-700',
-    borderColor: 'border-orange-300',
+    color: 'bg-[var(--color-purple-bg)]',
+    textColor: 'text-[var(--color-purple-text)]',
+    borderColor: 'border-[var(--color-purple-border)]',
     codes: [
       { code: 400, name: 'Bad Request', description: 'The server cannot process the request due to malformed syntax, invalid framing, or deceptive routing.' },
       { code: 401, name: 'Unauthorized', description: 'Authentication is required and has failed or has not been provided.' },
@@ -219,7 +219,7 @@ export default function HttpStatusCodesTool() {
 
 function StatusCard({ item, group }: { item: StatusCode; group: StatusGroup }) {
   return (
-    <Card className={`border-l-2 ${group.borderColor}`}>
+    <Card className={group.borderColor}>
       <CardContent className="py-3 px-4">
         <div className="flex items-baseline gap-2 mb-1">
           <span className={`font-mono text-sm font-bold ${group.textColor}`}>{item.code}</span>

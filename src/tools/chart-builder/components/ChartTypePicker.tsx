@@ -63,7 +63,7 @@ export function ChartTypePicker({
               className={cn(
                 'flex flex-col items-center gap-1 py-2 rounded-md border transition-colors cursor-pointer',
                 active
-                  ? 'border-[var(--color-accent)] bg-[var(--color-accent)]/10 text-[var(--color-accent)]'
+                  ? 'border-[var(--color-accent)] bg-[var(--color-accent)]/10 text-[var(--color-accent-text)]'
                   : 'border-[var(--color-border)] text-[var(--color-ink-muted)] hover:border-[var(--color-border-dark)] hover:text-[var(--color-ink)]'
               )}
             >
@@ -87,7 +87,7 @@ export function ChartTypePicker({
               className={cn(
                 'flex-1 inline-flex items-center justify-center gap-1 py-1 rounded-md border text-[10px] font-mono capitalize transition-colors cursor-pointer',
                 orientation === o
-                  ? 'border-[var(--color-accent)] text-[var(--color-accent)]'
+                  ? 'border-[var(--color-accent)] text-[var(--color-accent-text)]'
                   : 'border-[var(--color-border)] text-[var(--color-ink-muted)] hover:border-[var(--color-border-dark)]'
               )}
             >

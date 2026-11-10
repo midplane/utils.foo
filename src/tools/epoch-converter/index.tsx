@@ -87,8 +87,8 @@ export default function EpochConverter() {
 
       {/* Live Clock - Compact */}
       <Card className="overflow-hidden">
-        <div className="bg-[var(--color-ink)] px-3 py-2">
-          <div className="flex items-center justify-between text-[var(--color-cream)]">
+        <div className="bg-[var(--color-cream-dark)] px-3 py-2">
+          <div className="flex items-center justify-between gap-3 flex-wrap text-[var(--color-ink)]">
             <div className="flex items-center gap-2">
               <div className="relative">
                 <span className="w-1.5 h-1.5 bg-[var(--color-success-icon)] rounded-full block" />
@@ -98,14 +98,14 @@ export default function EpochConverter() {
             </div>
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
-                <span className="text-[10px] text-[var(--color-cream)]/50 uppercase">sec</span>
+                <span className="text-[10px] text-[var(--color-ink-muted)] uppercase">sec</span>
                 <span className="font-mono text-sm tabular-nums">{nowSeconds}</span>
-                <CopyButton text={nowSeconds.toString()} className="!py-0.5 !px-1.5 bg-white/10 border-white/20 text-[var(--color-cream)] hover:bg-white/20 text-[9px]" />
+                <CopyButton text={nowSeconds.toString()} />
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-[10px] text-[var(--color-cream)]/50 uppercase">ms</span>
+                <span className="text-[10px] text-[var(--color-ink-muted)] uppercase">ms</span>
                 <span className="font-mono text-sm tabular-nums">{nowMs}</span>
-                <CopyButton text={nowMs.toString()} className="!py-0.5 !px-1.5 bg-white/10 border-white/20 text-[var(--color-cream)] hover:bg-white/20 text-[9px]" />
+                <CopyButton text={nowMs.toString()} />
               </div>
             </div>
           </div>

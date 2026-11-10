@@ -259,6 +259,7 @@ export default function MermaidTool() {
         StreamLanguage.define(stex),
         themeComp.current.of(isDarkRef.current ? appThemeDark : appTheme),
         EditorView.lineWrapping,
+        EditorView.contentAttributes.of({ 'aria-label': 'Mermaid source' }),
         EditorView.updateListener.of((update) => {
           if (update.docChanged) setCode(update.state.doc.toString())
         }),
@@ -345,9 +346,9 @@ export default function MermaidTool() {
         {/* Main card */}
         <ExpandableCard expanded={expanded} onExpandedChange={setExpanded}>
           <ExpandableCardHeader>
-            <div className="flex items-center justify-between gap-2">
+            <div className="flex flex-wrap items-center justify-between gap-2">
               {/* Left: view toggles + sample picker */}
-              <div className="flex items-center gap-1.5">
+              <div className="flex flex-wrap items-center gap-1.5">
                 {/* View mode */}
                 <SegmentedControl value={viewMode} onChange={(v) => setViewMode(v as ViewMode)}>
                   {(['editor', 'split', 'preview'] as ViewMode[]).map((mode) => {
@@ -370,6 +371,7 @@ export default function MermaidTool() {
                 <div className="w-32">
                   <Select
                     options={SAMPLE_OPTIONS}
+                    aria-label="Load a sample diagram"
                     value=""
                     onChange={e => { if (e.target.value) handleSample(e.target.value) }}
                     className="h-7 text-xs py-0"
@@ -378,10 +380,11 @@ export default function MermaidTool() {
               </div>
 
               {/* Right: theme picker + actions */}
-              <div className="flex items-center gap-1.5">
+              <div className="flex flex-wrap items-center gap-1.5">
                 <div className="w-36">
                   <Select
                     options={THEME_OPTIONS}
+                    aria-label="Diagram theme"
                     value={themeName}
                     onChange={e => { localStorage.setItem('mermaid-theme', e.target.value); setThemeName(e.target.value) }}
                     className="h-7 text-xs py-0"
@@ -405,7 +408,7 @@ export default function MermaidTool() {
           </ExpandableCardHeader>
 
           <ExpandableCardContent>
-            <div className={cn(viewMode === 'split' && 'grid grid-cols-2 gap-3')}>
+            <div className={cn(viewMode === 'split' && 'grid grid-cols-1 md:grid-cols-2 gap-3')}>
 
               {/* ── Editor pane ─────────────────────────────────────────── */}
               <div
@@ -477,7 +480,7 @@ export default function MermaidTool() {
                       className={cn(
                         'inline-flex items-center justify-center w-6 h-6 rounded transition-colors cursor-pointer',
                         userZoom === null
-                          ? 'text-[var(--color-accent)]'
+                          ? 'text-[var(--color-accent-text)]'
                           : 'text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] hover:bg-[var(--color-cream-dark)]'
                       )}
                     >
@@ -495,7 +498,7 @@ export default function MermaidTool() {
               </span>
               <ExpandHint />
               <span className="text-[10px] text-[var(--color-ink-muted)] ml-auto">
-                Powered by <a href="https://github.com/lukilabs/beautiful-mermaid" target="_blank" rel="noopener noreferrer" className="hover:text-[var(--color-accent)] transition-colors">beautiful-mermaid</a>
+                Powered by <a href="https://github.com/lukilabs/beautiful-mermaid" target="_blank" rel="noopener noreferrer" className="underline underline-offset-2 hover:text-[var(--color-ink)] transition-colors">beautiful-mermaid</a>
               </span>
             </div>
           </ExpandableCardContent>

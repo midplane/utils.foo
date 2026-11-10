@@ -107,7 +107,9 @@
   --color-surface: #332D29;
   --color-ink: #F2EDE8;
   --color-ink-light: #CFC8C1;
-  --color-ink-muted: #9A8F88;
+  /* 5.0:1 on --color-surface. The previous #9A8F88 was 4.3:1 there and failed
+     AA for every label, hint and secondary button on a card in dark mode. */
+  --color-ink-muted: #A69B94;
   --color-accent: #F97316;
   --color-accent-hover: #EA580C;
   --color-accent-text: #F97316;
@@ -200,7 +202,13 @@ body[data-expanded-card='true'] main {
 }
 
 ::selection {
-  background-color: rgba(234, 88, 12, 0.2);
+  background-color: color-mix(in srgb, var(--color-accent) 25%, transparent);
+}
+
+input,
+textarea,
+[contenteditable] {
+  caret-color: var(--color-accent);
 }
 
 /* Animations */
@@ -307,7 +315,18 @@ body[data-expanded-card='true'] main {
   }
 }
 
-/* Scrollbar */
+/* Scrollbar. Firefox reads the standard properties; Chromium and Safari read
+   the ::-webkit-scrollbar rules below. */
+html {
+  scrollbar-color: var(--color-border-dark) var(--color-cream);
+}
+
+@supports selector(::-webkit-scrollbar) {
+  html {
+    scrollbar-color: auto;
+  }
+}
+
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;

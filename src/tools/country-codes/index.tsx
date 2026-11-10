@@ -1,8 +1,9 @@
 import { useState } from 'react'
-import { Flag, Search, X } from 'lucide-react'
+import { Flag } from 'lucide-react'
 import { Card } from '../../components/ui/Card'
 import { ToolHeader } from '../../components/ui/ToolHeader'
 import { EmptyState } from '../../components/ui/EmptyState'
+import { SearchInput } from '../../components/ui/SearchInput'
 
 // ─── Data ─────────────────────────────────────────────────────────────────────
 
@@ -294,7 +295,7 @@ export default function CountryCodesTool() {
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <ToolHeader icon={<Flag />} title="Country" accentedSuffix="Codes" />
-        <SearchBox query={query} onChange={setQuery} placeholder="Search country, code or +dial…" />
+        <SearchInput value={query} onChange={setQuery} placeholder="Search country, code or +dial…" label="Search countries" className="w-full sm:w-64" />
       </div>
 
       {/* Stats */}
@@ -328,7 +329,7 @@ export default function CountryCodesTool() {
                     className={`border-b border-[var(--color-border)] last:border-0 hover:bg-[var(--color-cream-dark)] transition-colors ${i % 2 === 0 ? '' : 'bg-[var(--color-cream-dark)]/40'}`}
                   >
                     <td className="px-4 py-2 text-[var(--color-ink)]">{e.name}</td>
-                    <td className="px-4 py-2 text-[var(--color-accent)] font-bold">{e.alpha2}</td>
+                    <td className="px-4 py-2 text-[var(--color-accent-text)] font-bold">{e.alpha2}</td>
                     <td className="px-4 py-2 text-[var(--color-ink-muted)]">{e.alpha3}</td>
                     <td className="px-4 py-2 text-[var(--color-ink-muted)]">{e.numeric}</td>
                     <td className="px-4 py-2 text-[var(--color-ink-muted)]">{e.dial ?? '—'}</td>
@@ -338,31 +339,6 @@ export default function CountryCodesTool() {
             </table>
           </div>
         </Card>
-      )}
-    </div>
-  )
-}
-
-// ─── Search box ───────────────────────────────────────────────────────────────
-
-function SearchBox({ query, onChange, placeholder }: { query: string; onChange: (v: string) => void; placeholder: string }) {
-  return (
-    <div className="relative w-full sm:w-64">
-      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--color-ink-muted)]" />
-      <input
-        type="search"
-        placeholder={placeholder}
-        value={query}
-        onChange={(e) => onChange(e.target.value)}
-        className="w-full pl-9 pr-8 py-1.5 text-xs bg-[var(--color-input-bg)] border border-[var(--color-input-border)] shadow-[var(--shadow-input-inset)] rounded-lg text-[var(--color-ink)] placeholder-[var(--color-ink-muted)] focus:border-[var(--color-accent)] transition-all font-mono"
-      />
-      {query && (
-        <button
-          onClick={() => onChange('')}
-          className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 hover:bg-[var(--color-cream-dark)] rounded transition-colors cursor-pointer"
-        >
-          <X className="w-3 h-3 text-[var(--color-ink-muted)]" />
-        </button>
       )}
     </div>
   )

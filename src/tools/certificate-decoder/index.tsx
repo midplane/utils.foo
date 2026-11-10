@@ -164,7 +164,7 @@ export default function CertificateDecoderTool() {
             <div className="space-y-4">
               {/* Subject */}
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-accent)] mb-1">Subject</p>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-accent-text)] mb-1">Subject</p>
                 <Row label="DN">{cert.subject}</Row>
                 {cert.san.length > 0 && (
                   <Row label="SANs">
@@ -179,13 +179,13 @@ export default function CertificateDecoderTool() {
 
               {/* Issuer */}
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-accent)] mb-1">Issuer</p>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-accent-text)] mb-1">Issuer</p>
                 <Row label="DN">{cert.issuer}</Row>
               </div>
 
               {/* Validity */}
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-accent)] mb-1">Validity</p>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-accent-text)] mb-1">Validity</p>
                 <Row label="Not Before">{formatDate(cert.notBefore)}</Row>
                 <Row label="Not After">
                   <span className={cert.expired ? 'text-[var(--color-error-text)]' : cert.daysRemaining < 30 ? 'text-[var(--color-warning-text)]' : ''}>
@@ -199,14 +199,14 @@ export default function CertificateDecoderTool() {
 
               {/* Public Key */}
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-accent)] mb-1">Public Key</p>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-accent-text)] mb-1">Public Key</p>
                 <Row label="Algorithm">{cert.publicKeyAlgorithm}</Row>
                 {cert.publicKeyBits && <Row label="Key Size">{cert.publicKeyBits} bits</Row>}
               </div>
 
               {/* Misc */}
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-accent)] mb-1">Certificate</p>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-accent-text)] mb-1">Certificate</p>
                 <Row label="Version">{cert.version}</Row>
                 <Row label="Serial">{cert.serialNumber}</Row>
                 <Row label="Sig. Algorithm">{cert.signatureAlgorithm}</Row>

@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Settings2, X } from 'lucide-react'
 import { cn } from '../../../lib/utils'
 import { SectionLabel } from '../../../components/ui/SectionLabel'
-import { PALETTES, type SeriesMark, type SeriesStyle, type ChartType, type PaletteName } from '../chartOption'
+import { PALETTES, contrastTextOn, readPalette, type SeriesMark, type SeriesStyle, type ChartType, type PaletteName } from '../chartOption'
 
 interface SeriesPanelProps {
   numericCols: string[]
@@ -57,7 +57,7 @@ export function SeriesPanel({
                     ? 'border-transparent'
                     : 'border-[var(--color-border)] bg-[var(--color-surface)]'
                 )}
-                style={isActive ? { backgroundColor: color, borderColor: color } : {}}
+                style={isActive ? { backgroundColor: color, borderColor: color, color: contrastTextOn(color, readPalette(false)) } : {}}
               >
                 <button
                   type="button"
@@ -65,19 +65,21 @@ export function SeriesPanel({
                   onClick={() => onToggle(col)}
                   className={cn(
                     'inline-flex items-center gap-1.5 pl-2.5 pr-1.5 py-1 text-[11px] font-mono cursor-pointer',
-                    isActive ? 'text-white font-semibold' : 'text-[var(--color-ink-muted)]'
+                    // Active chips inherit a computed text colour from the wrapper: series
+                    // colours range from pale to dark, and white failed on mid-tones.
+                    isActive ? 'font-semibold' : 'text-[var(--color-ink-muted)]'
                   )}
                 >
                   <span
                     className="w-2 h-2 rounded-full flex-shrink-0"
-                    style={{ backgroundColor: isActive ? 'rgba(255,255,255,0.7)' : color }}
+                    style={{ backgroundColor: isActive ? 'currentColor' : color }}
                   />
                   {col}
                   {isActive && style.axis === 'right' && (
-                    <span className="text-[9px] opacity-80">R</span>
+                    <span className="text-[9px]">R</span>
                   )}
                   {isActive && supportsMark && style.mark && (
-                    <span className="text-[9px] opacity-80">{style.mark[0]!.toUpperCase()}</span>
+                    <span className="text-[9px]">{style.mark[0]!.toUpperCase()}</span>
                   )}
                 </button>
                 {isActive && (
@@ -85,7 +87,7 @@ export function SeriesPanel({
                     type="button"
                     aria-label={`Settings for ${col}`}
                     onClick={() => setOpen(open === col ? null : col)}
-                    className="px-1.5 py-1 text-white/80 hover:text-white cursor-pointer"
+                    className="px-1.5 py-1 opacity-80 hover:opacity-100 cursor-pointer"
                   >
                     <Settings2 className="w-3 h-3" />
                   </button>
@@ -160,7 +162,7 @@ export function SeriesPanel({
                             className={cn(
                               'px-2 py-0.5 text-[10px] font-mono rounded border cursor-pointer capitalize',
                               (style.axis ?? 'left') === side
-                                ? 'border-[var(--color-accent)] text-[var(--color-accent)]'
+                                ? 'border-[var(--color-accent)] text-[var(--color-accent-text)]'
                                 : 'border-[var(--color-border)] text-[var(--color-ink-muted)]'
                             )}
                           >
@@ -183,7 +185,7 @@ export function SeriesPanel({
                             className={cn(
                               'px-2 py-0.5 text-[10px] font-mono rounded border cursor-pointer capitalize',
                               (style.mark ?? 'bar') === mark
-                                ? 'border-[var(--color-accent)] text-[var(--color-accent)]'
+                                ? 'border-[var(--color-accent)] text-[var(--color-accent-text)]'
                                 : 'border-[var(--color-border)] text-[var(--color-ink-muted)]'
                             )}
                           >

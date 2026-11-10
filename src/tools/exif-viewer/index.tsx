@@ -125,9 +125,9 @@ function GpsCard({ gps }: { gps: ExifData }) {
           href={`https://www.openstreetmap.org/?mlat=${coords.lat}&mlon=${coords.lng}#map=16/${coords.lat.toFixed(6)}/${coords.lng.toFixed(6)}`}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-[var(--color-accent)] text-white hover:opacity-90 transition-opacity"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-[var(--color-ink)] text-[var(--color-cream)] hover:bg-[var(--color-ink-light)] transition-colors"
         >
-          <MapPin className="w-3 h-3" />
+          <MapPin className="w-3 h-3" aria-hidden="true" />
           View on OpenStreetMap
         </a>
       </CardContent>
@@ -248,22 +248,28 @@ export default function ExifViewerTool() {
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
             onClick={() => fileInputRef.current?.click()}
+            onKeyDown={e => {
+              if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fileInputRef.current?.click() }
+            }}
+            role="button"
+            tabIndex={0}
+            aria-label="Choose an image file, or drop one here"
             className={cn(
               'relative flex flex-col items-center justify-center gap-3 p-8 rounded-xl border-2 border-dashed cursor-pointer transition-all',
               isDragging
                 ? 'border-[var(--color-accent)] bg-[var(--color-accent)]/5'
-                : 'border-[var(--color-border)] hover:border-[var(--color-accent)]/50 hover:bg-[var(--color-cream-dark)]',
+                : 'border-[var(--color-border)] hover:border-[var(--color-border-dark)] hover:bg-[var(--color-cream-dark)]',
             )}
           >
             <div className={cn(
               'w-12 h-12 rounded-xl flex items-center justify-center transition-colors',
-              isDragging ? 'bg-[var(--color-accent)]/10 text-[var(--color-accent)]' : 'bg-[var(--color-cream-dark)] text-[var(--color-ink-muted)]',
+              isDragging ? 'bg-[var(--color-accent)]/10 text-[var(--color-accent-text)]' : 'bg-[var(--color-cream-dark)] text-[var(--color-ink-muted)]',
             )}>
-              <Upload className="w-6 h-6" />
+              <Upload className="w-6 h-6" aria-hidden="true" />
             </div>
             <div className="text-center">
               <p className="text-sm font-medium text-[var(--color-ink)]">
-                Drop an image here or <span className="text-[var(--color-accent)]">browse</span>
+                Drop an image here or <span className="text-[var(--color-accent-text)]">browse</span>
               </p>
               <p className="text-xs text-[var(--color-ink-muted)] mt-1">
                 Supports JPEG and TIFF files with EXIF metadata

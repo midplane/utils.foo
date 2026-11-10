@@ -88,7 +88,7 @@ function D2Editor({ initial, shared, linkError }: { initial: ShareState; shared:
 
   return (
     <div className="space-y-3">
-      <ToolHeader icon={<Workflow />} title="D2 Diagrams" />
+      <ToolHeader icon={<Workflow />} title="D2" accentedSuffix="Diagrams" />
       <p className="text-xs text-[var(--color-ink-muted)]">
         Write D2 and turn it into a diagram. Rendering runs locally in your browser.
       </p>

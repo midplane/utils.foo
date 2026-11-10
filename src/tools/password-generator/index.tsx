@@ -81,6 +81,7 @@ export default function PasswordGeneratorTool() {
             </div>
             <input
               type="range"
+              aria-label="Password length"
               min={8}
               max={128}
               value={length}
@@ -99,16 +100,18 @@ export default function PasswordGeneratorTool() {
               {(Object.keys(CHARSETS) as CharsetKey[]).map(key => (
                 <button
                   key={key}
+                  type="button"
+                  aria-pressed={enabled[key]}
                   onClick={() => setEnabled(prev => ({ ...prev, [key]: !prev[key] }))}
                   className={cn(
                     'px-3 py-2 text-xs rounded-lg border text-left transition-all',
                     enabled[key]
-                      ? 'bg-[var(--color-accent)]/10 border-[var(--color-accent)] text-[var(--color-accent)]'
+                      ? 'bg-[var(--color-accent)]/10 border-[var(--color-accent)] text-[var(--color-ink)]'
                       : 'bg-[var(--color-surface)] border-[var(--color-border)] text-[var(--color-ink-muted)]'
                   )}
                 >
                   <span className="font-semibold capitalize">{key}</span>
-                  <span className="block text-[9px] font-mono opacity-70 mt-0.5 truncate">
+                  <span className="block text-[9px] font-mono mt-0.5 truncate">
                     {CHARSETS[key].slice(0, 20)}{CHARSETS[key].length > 20 ? '…' : ''}
                   </span>
                 </button>
@@ -118,20 +121,22 @@ export default function PasswordGeneratorTool() {
 
           {/* Exclude ambiguous */}
           <button
+            type="button"
+            aria-pressed={excludeAmbiguous}
             onClick={() => setExcludeAmbiguous(p => !p)}
             className={cn(
               'w-full flex items-center gap-2 px-3 py-2 text-xs rounded-lg border transition-all text-left',
               excludeAmbiguous
-                ? 'bg-[var(--color-accent)]/10 border-[var(--color-accent)] text-[var(--color-accent)]'
+                ? 'bg-[var(--color-accent)]/10 border-[var(--color-accent)] text-[var(--color-ink)]'
                 : 'bg-[var(--color-surface)] border-[var(--color-border)] text-[var(--color-ink-muted)]'
             )}
           >
             <div className={cn(
               'w-3.5 h-3.5 rounded border flex items-center justify-center flex-shrink-0',
-              excludeAmbiguous ? 'bg-[var(--color-accent)] border-[var(--color-accent)]' : 'border-current'
+              excludeAmbiguous ? 'bg-[var(--color-accent-text)] border-[var(--color-accent-text)]' : 'border-current'
             )}>
               {excludeAmbiguous && (
-                <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-2.5 h-2.5 text-[var(--color-cream)]" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                 </svg>
               )}

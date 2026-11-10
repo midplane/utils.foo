@@ -150,7 +150,7 @@ export default function QrGeneratorTool() {
                   <button
                     key={p.label}
                     onClick={() => setText(p.value)}
-                    className="text-[10px] px-2 py-0.5 rounded-md border border-[var(--color-border)] bg-[var(--color-cream-dark)] text-[var(--color-ink-muted)] hover:border-[var(--color-accent)] hover:text-[var(--color-accent)] transition-colors cursor-pointer font-mono"
+                    className="text-[10px] px-2 py-0.5 rounded-md border border-[var(--color-border)] bg-[var(--color-cream-dark)] text-[var(--color-ink-muted)] hover:border-[var(--color-border-dark)] hover:text-[var(--color-ink)] transition-colors cursor-pointer font-mono"
                   >
                     {p.label}
                   </button>
@@ -188,6 +188,7 @@ export default function QrGeneratorTool() {
                 </div>
                 <input
                   type="range"
+                  aria-label="Size in pixels"
                   min={128}
                   max={512}
                   step={32}
@@ -208,6 +209,7 @@ export default function QrGeneratorTool() {
                 </div>
                 <input
                   type="range"
+                  aria-label="Margin in modules"
                   min={0}
                   max={6}
                   step={1}
@@ -228,6 +230,7 @@ export default function QrGeneratorTool() {
                         type="color"
                         value={fgColor}
                         onChange={(e) => setFgColor(e.target.value)}
+                        aria-label="Pick foreground color"
                         className="absolute inset-0 opacity-0 w-full h-full cursor-pointer"
                       />
                     </div>
@@ -235,6 +238,7 @@ export default function QrGeneratorTool() {
                       type="text"
                       value={fgColor}
                       onChange={(e) => setFgColor(e.target.value)}
+                      aria-label="Foreground color hex"
                       className="flex-1 min-w-0 text-xs font-mono text-[var(--color-ink)] bg-transparent"
                       maxLength={7}
                     />
@@ -249,6 +253,7 @@ export default function QrGeneratorTool() {
                         type="color"
                         value={bgColor}
                         onChange={(e) => setBgColor(e.target.value)}
+                        aria-label="Pick background color"
                         className="absolute inset-0 opacity-0 w-full h-full cursor-pointer"
                       />
                     </div>
@@ -256,6 +261,7 @@ export default function QrGeneratorTool() {
                       type="text"
                       value={bgColor}
                       onChange={(e) => setBgColor(e.target.value)}
+                      aria-label="Background color hex"
                       className="flex-1 min-w-0 text-xs font-mono text-[var(--color-ink)] bg-transparent"
                       maxLength={7}
                     />

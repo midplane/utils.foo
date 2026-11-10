@@ -20,7 +20,8 @@ const baseRules = {
     outline: 'none',
   },
   '&.cm-focused': {
-    outline: 'none',
+    // The editor is a form field: like Input, focus shows as an accent edge.
+    outline: '1px solid var(--color-accent)',
   },
   '.cm-scroller': {
     overflow: 'auto',
@@ -32,6 +33,11 @@ const baseRules = {
     borderRight: '1px solid var(--color-border)',
     color: 'var(--color-ink-muted)',
     fontSize: '11px',
+  },
+  // basicSetup's dark default is a translucent cyan that drops syntax colours
+  // under 3:1; the warm token keeps them readable in both themes.
+  '.cm-activeLine': {
+    backgroundColor: 'color-mix(in srgb, var(--color-editor-active-line) 60%, transparent)',
   },
   '.cm-activeLineGutter': {
     backgroundColor: 'var(--color-editor-active-line)',

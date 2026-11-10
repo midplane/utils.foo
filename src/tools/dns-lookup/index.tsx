@@ -6,6 +6,7 @@ import { CopyButton } from '../../components/ui/CopyButton'
 import { ToolHeader } from '../../components/ui/ToolHeader'
 import { Alert } from '../../components/ui/Alert'
 import { EmptyState } from '../../components/ui/EmptyState'
+import { InfoCard } from '../../components/ui/InfoCard'
 import { Globe, Loader2, Info } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import {
@@ -26,12 +27,14 @@ import {
 function RecordBadge({ type, active, onClick }: { type: RecordType; active: boolean; onClick: () => void }) {
   return (
     <button
+      type="button"
       onClick={onClick}
+      aria-pressed={active}
       className={cn(
-        'px-2.5 py-1 rounded text-xs font-mono font-semibold border transition-colors',
+        'px-2.5 py-1 rounded text-xs font-mono font-semibold border transition-colors cursor-pointer',
         active
-          ? 'bg-[var(--color-accent)] text-white border-[var(--color-accent)]'
-          : 'bg-[var(--color-cream-dark)] text-[var(--color-ink-muted)] border-[var(--color-border)] hover:border-[var(--color-accent)] hover:text-[var(--color-accent)]'
+          ? 'bg-[var(--color-accent-text)] text-[var(--color-cream)] border-[var(--color-accent-text)]'
+          : 'bg-[var(--color-cream-dark)] text-[var(--color-ink-muted)] border-[var(--color-border)] hover:border-[var(--color-border-dark)] hover:text-[var(--color-ink)]'
       )}
     >
       {type}
@@ -46,7 +49,7 @@ function RecordSection({ result }: { result: RecordResult }) {
   return (
     <div>
       <div className="flex items-center gap-2 mb-1.5">
-        <span className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-accent)]">
+        <span className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-accent-text)]">
           {result.type}
         </span>
         {result.status === 'error' && (
@@ -245,28 +248,16 @@ export default function DnsLookupTool() {
 
       {/* Info cards */}
       <div className="grid grid-cols-2 gap-2">
-        <div className="px-3 py-2 bg-[var(--color-cream-dark)] rounded-lg border border-[var(--color-border)]">
-          <div className="flex gap-2 items-start">
-            <Info className="w-3.5 h-3.5 text-[var(--color-accent)] flex-shrink-0 mt-0.5" />
-            <div>
-              <h3 className="font-semibold text-[var(--color-ink)] text-xs">DNS-over-HTTPS</h3>
-              <p className="text-[10px] text-[var(--color-ink-muted)] leading-tight mt-0.5">
-                Queries use Cloudflare's DoH API (1.1.1.1). Results reflect Cloudflare's resolver cache — TTLs may differ from authoritative servers.
-              </p>
-            </div>
-          </div>
-        </div>
-        <div className="px-3 py-2 bg-[var(--color-cream-dark)] rounded-lg border border-[var(--color-border)]">
-          <div className="flex gap-2 items-start">
-            <Globe className="w-3.5 h-3.5 text-[var(--color-accent)] flex-shrink-0 mt-0.5" />
-            <div>
-              <h3 className="font-semibold text-[var(--color-ink)] text-xs">Record types</h3>
-              <p className="text-[10px] text-[var(--color-ink-muted)] leading-tight mt-0.5">
-                Toggle which record types to query. At least one must remain selected. Enter key triggers the lookup.
-              </p>
-            </div>
-          </div>
-        </div>
+        <InfoCard
+          icon={<Info className="text-[var(--color-accent)]" />}
+          title="DNS-over-HTTPS"
+          description="Queries use Cloudflare's DoH API (1.1.1.1). Results reflect Cloudflare's resolver cache — TTLs may differ from authoritative servers."
+        />
+        <InfoCard
+          icon={<Globe className="text-[var(--color-accent)]" />}
+          title="Record types"
+          description="Toggle which record types to query. At least one must remain selected. Enter key triggers the lookup."
+        />
       </div>
     </div>
   )

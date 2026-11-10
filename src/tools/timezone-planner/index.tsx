@@ -3,7 +3,7 @@ import { Card } from '../../components/ui/Card'
 import { Button } from '../../components/ui/Button'
 import { CopyButton } from '../../components/ui/CopyButton'
 import { ToolHeader } from '../../components/ui/ToolHeader'
-import { Calendar, CalendarClock, ChevronDown, Globe, MousePointer2, Search, Sparkles } from 'lucide-react'
+import { Calendar, CalendarClock, ChevronDown, Globe, MousePointer2, Search, Sparkles, User, X } from 'lucide-react'
 import {
   MS_PER_HOUR,
   buildSlotText,
@@ -193,14 +193,15 @@ function SearchDropdown({
 
   return (
     <div ref={ref} className="relative">
-      <div className="flex items-center gap-1 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg px-2.5 py-1.5 focus-within:border-[var(--color-border-dark)]">
-        <Search className="w-3.5 h-3.5 text-[var(--color-ink-muted)] shrink-0" />
+      <div className="relative">
+        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--color-ink-muted)] pointer-events-none" aria-hidden="true" />
         <input
           ref={inputRef}
           type="text"
           placeholder="Add timezone…"
+          aria-label="Add timezone"
           value={query}
-          className="flex-1 text-xs bg-transparent outline-none placeholder-[var(--color-ink-muted)]/60 text-[var(--color-ink)] min-w-0"
+          className="w-full pl-8 pr-2.5 py-1.5 text-xs bg-[var(--color-input-bg)] border border-[var(--color-input-border)] shadow-[var(--shadow-input-inset)] rounded-lg placeholder-[var(--color-ink-muted)] text-[var(--color-ink)] focus:border-[var(--color-accent)] transition-colors"
           onChange={e => { setQuery(e.target.value); setOpen(true) }}
           onFocus={() => setOpen(true)}
         />
@@ -213,6 +214,7 @@ function SearchDropdown({
             return (
               <button
                 key={t.iana}
+                type="button"
                 className="w-full flex items-center justify-between px-3 py-2 text-xs hover:bg-[var(--color-cream-dark)] transition-colors cursor-pointer text-left"
                 onMouseDown={() => select(t.iana)}
               >
@@ -282,25 +284,29 @@ function TZRow({
         <div className="relative w-4 h-4 shrink-0">
           {/* YOU badge — hidden on hover */}
           {isLocal && (
-            <div className="absolute inset-0 rounded-full bg-[var(--color-accent)] flex items-center justify-center group-hover:opacity-0 transition-opacity">
-              <span className="text-[6px] text-white font-bold">YOU</span>
+            <div
+              className="absolute inset-0 rounded-full bg-[var(--color-accent-text)] flex items-center justify-center text-[var(--color-cream)] group-hover:opacity-0 group-focus-within:opacity-0 transition-opacity"
+              title="Your timezone"
+            >
+              <User className="w-2.5 h-2.5" aria-hidden="true" />
+              <span className="sr-only">Your timezone</span>
             </div>
           )}
           {/* Remove button — shown on hover for all rows */}
           <button
+            type="button"
             onClick={onRemove}
-            className={`absolute inset-0 rounded flex items-center justify-center text-[var(--color-ink-muted)] hover:text-[var(--color-error-icon)] hover:bg-[var(--color-error-bg)] cursor-pointer transition-opacity ${
-              isLocal ? 'opacity-0 group-hover:opacity-100' : 'opacity-0 group-hover:opacity-100'
-            }`}
+            aria-label={`Remove ${tz.label}`}
+            className="absolute inset-0 rounded flex items-center justify-center text-[var(--color-ink-muted)] hover:text-[var(--color-error-icon)] hover:bg-[var(--color-error-bg)] cursor-pointer transition-opacity opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
           >
-            <XIcon className="w-3 h-3" />
+            <X className="w-3 h-3" aria-hidden="true" />
           </button>
         </div>
         <div className="min-w-0">
           <div className="text-xs font-semibold text-[var(--color-ink)] truncate leading-tight">{tz.label}</div>
           <div className="flex items-center gap-1">
             <span className="text-[9px] text-[var(--color-ink-muted)]">{tz.abbr}</span>
-            <span className="text-[9px] text-[var(--color-ink-muted)]/60">·</span>
+            <span className="text-[9px] text-[var(--color-ink-muted)]" aria-hidden="true">·</span>
             <span className="text-[9px] text-[var(--color-ink-muted)] tabular-nums">{currentTime}</span>
           </div>
         </div>
@@ -557,7 +563,7 @@ export default function TimezonePlanner() {
               >
                 {AXIS_LABELS.includes(i) && (
                   <span className={`text-[8px] font-mono tabular-nums select-none ${
-                    i === currentUTCHour ? 'text-[var(--color-accent)] font-semibold' : 'text-[var(--color-ink-muted)]/70'
+                    i === currentUTCHour ? 'text-[var(--color-ink)] font-bold' : 'text-[var(--color-ink-muted)]'
                   }`}>
                     {i === 0 ? '12a' : i < 12 ? `${i}a` : i === 12 ? '12p' : `${i - 12}p`}
                   </span>
@@ -570,7 +576,7 @@ export default function TimezonePlanner() {
         {/* UTC label */}
         <div className="flex">
           <div className="w-40 shrink-0 px-3 py-0.5 border-r border-[var(--color-border)] bg-[var(--color-cream-dark)]/50">
-            <span className="text-[8px] text-[var(--color-ink-muted)]/50 font-mono">UTC</span>
+            <span className="text-[8px] text-[var(--color-ink-muted)] font-mono">UTC</span>
           </div>
           <div className="flex-1" />
         </div>
@@ -607,7 +613,7 @@ export default function TimezonePlanner() {
         {/* Pinned hover tooltip bar */}
         {pinnedHour !== null && !isDragging && (
           <div className="px-3 py-1.5 bg-[var(--color-ink)] text-[var(--color-cream)] text-[10px] font-mono flex items-center gap-3 flex-wrap">
-            <span className="font-semibold text-[var(--color-accent)]">
+            <span className="font-semibold">
               {pinnedHour === 0 ? '12 AM' : pinnedHour < 12 ? `${pinnedHour} AM` : pinnedHour === 12 ? '12 PM' : `${pinnedHour - 12} PM`} UTC
             </span>
             {zones.map(tz => (
@@ -670,9 +676,10 @@ export default function TimezonePlanner() {
                   variant="ghost"
                   size="sm"
                   onClick={() => setSelectedRange(null)}
+                  aria-label="Clear selection"
                   className="!py-1 !px-1.5"
                 >
-                  <XIcon className="w-3 h-3" />
+                  <X className="w-3 h-3" aria-hidden="true" />
                 </Button>
               </div>
             </div>
@@ -783,16 +790,6 @@ function LegendDot({ color, label }: { color: string; label: string }) {
       <div className={`w-2 h-2 rounded-sm ${color}`} />
       <span className="text-[10px] text-[var(--color-ink-muted)]">{label}</span>
     </div>
-  )
-}
-
-// ─── Icons ────────────────────────────────────────────────────────────────────
-
-function XIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-    </svg>
   )
 }
 

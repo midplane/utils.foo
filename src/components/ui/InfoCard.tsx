@@ -31,7 +31,7 @@ export const InfoCard = forwardRef<HTMLDivElement, InfoCardProps>(
             {icon}
           </span>
           <div>
-            <h3 className="font-semibold text-[var(--color-ink)] text-xs">{title}</h3>
+            <h2 className="font-semibold text-[var(--color-ink)] text-xs">{title}</h2>
             <p className="text-[10px] text-[var(--color-ink-muted)] leading-tight mt-0.5">
               {description}
             </p>

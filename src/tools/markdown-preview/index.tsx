@@ -63,30 +63,30 @@ function greet(name: string): string {
 // ─── Prose styles injected into the preview iframe / div ──────────────────────
 
 const PROSE_STYLES = `
-  .md-body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 14px; line-height: 1.7; color: #1C1917; }
-  .md-body h1,.md-body h2,.md-body h3,.md-body h4 { font-weight: 700; margin: 1.2em 0 0.4em; line-height: 1.25; color: #1C1917; }
-  .md-body h1 { font-size: 1.6em; border-bottom: 2px solid #E7E5E4; padding-bottom: 0.25em; }
-  .md-body h2 { font-size: 1.3em; border-bottom: 1px solid #E7E5E4; padding-bottom: 0.2em; }
+  .md-body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 14px; line-height: 1.7; color: var(--color-ink); }
+  .md-body h1,.md-body h2,.md-body h3,.md-body h4 { font-weight: 700; margin: 1.2em 0 0.4em; line-height: 1.25; color: var(--color-ink); text-wrap: balance; }
+  .md-body h1 { font-size: 1.6em; border-bottom: 1px solid var(--color-border); padding-bottom: 0.25em; }
+  .md-body h2 { font-size: 1.3em; border-bottom: 1px solid var(--color-border); padding-bottom: 0.2em; }
   .md-body h3 { font-size: 1.1em; }
   .md-body p { margin: 0.6em 0; }
-  .md-body a { color: #EA580C; text-decoration: underline; }
-  .md-body code { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.85em; background: #FFF7ED; border: 1px solid #E7E5E4; border-radius: 4px; padding: 0.1em 0.35em; }
+  .md-body a { color: var(--color-accent-text); text-decoration: underline; text-underline-offset: 2px; }
+  .md-body code { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.85em; background: var(--color-cream-dark); border: 1px solid var(--color-border); border-radius: 4px; padding: 0.1em 0.35em; }
   .md-body pre { background: #1C1917; border-radius: 8px; padding: 1em; overflow-x: auto; margin: 0.8em 0; }
-  .md-body pre code { background: none; border: none; padding: 0; color: #FFF7ED; font-size: 0.82em; }
-  .md-body blockquote { border-left: 3px solid #EA580C; margin: 0.8em 0; padding: 0.2em 0.8em; color: #78716C; background: #FFF7ED; border-radius: 0 6px 6px 0; }
+  .md-body pre code { background: none; border: none; padding: 0; color: #F2EDE8; font-size: 0.82em; }
+  .md-body blockquote { border-left: 3px solid var(--color-border-dark); margin: 0.8em 0; padding: 0.2em 0.8em; color: var(--color-ink-light); }
   .md-body ul,.md-body ol { padding-left: 1.5em; margin: 0.5em 0; }
   .md-body ul { list-style-type: disc; }
   .md-body ul ul { list-style-type: circle; }
   .md-body ul ul ul { list-style-type: square; }
   .md-body ol { list-style-type: decimal; }
   .md-body li { margin: 0.2em 0; display: list-item; }
-  .md-body li input[type=checkbox] { margin-right: 0.4em; accent-color: #EA580C; }
-  .md-body table { border-collapse: collapse; width: 100%; margin: 0.8em 0; font-size: 0.9em; }
-  .md-body th { background: #FFF7ED; font-weight: 600; text-align: left; }
-  .md-body th,.md-body td { border: 1px solid #E7E5E4; padding: 0.4em 0.75em; }
-  .md-body tr:nth-child(even) { background: #FFFBF5; }
+  .md-body li input[type=checkbox] { margin-right: 0.4em; accent-color: var(--color-accent); }
+  .md-body table { border-collapse: collapse; width: 100%; margin: 0.8em 0; font-size: 0.9em; font-variant-numeric: tabular-nums; }
+  .md-body th { background: var(--color-cream-dark); font-weight: 600; text-align: left; }
+  .md-body th,.md-body td { border: 1px solid var(--color-border); padding: 0.4em 0.75em; }
+  .md-body tr:nth-child(even) { background: var(--color-cream); }
   .md-body img { max-width: 100%; border-radius: 6px; }
-  .md-body hr { border: none; border-top: 1px solid #E7E5E4; margin: 1.2em 0; }
+  .md-body hr { border: none; border-top: 1px solid var(--color-border); margin: 1.2em 0; }
 
   /* ── Syntax highlighting (highlight.js tokens) ──
      Code blocks sit on a dark surface in both themes, so a single
@@ -118,20 +118,10 @@ const PROSE_STYLES = `
   .md-body .hljs-emphasis { font-style: italic; }
   .md-body .hljs-strong { font-weight: 700; }
 
-  /* ── Dark mode overrides ── */
-  .dark .md-body { color: #F2EDE8; }
-  .dark .md-body h1,.dark .md-body h2,.dark .md-body h3,.dark .md-body h4 { color: #F2EDE8; }
-  .dark .md-body h1 { border-bottom-color: #3A3430; }
-  .dark .md-body h2 { border-bottom-color: #3A3430; }
-  .dark .md-body a { color: #F97316; }
-  .dark .md-body code { background: #332A1E; border-color: #4A4440; color: #F2EDE8; }
+  /* ── Dark mode overrides ──
+     Everything else follows the theme tokens; only the fixed dark code
+     surface needs a deeper step so it still reads as a panel on the page. */
   .dark .md-body pre { background: #141210; }
-  .dark .md-body pre code { color: #CFC8C1; }
-  .dark .md-body blockquote { color: #9A8F88; background: #231F1C; border-left-color: #F97316; }
-  .dark .md-body th { background: #231F1C; color: #F2EDE8; }
-  .dark .md-body th,.dark .md-body td { border-color: #3A3430; color: #F2EDE8; }
-  .dark .md-body tr:nth-child(even) { background: #2C2621; }
-  .dark .md-body hr { border-top-color: #3A3430; }
 `
 
 // ─── View modes ───────────────────────────────────────────────────────────────
@@ -166,6 +156,7 @@ export default function MarkdownPreviewTool() {
         markdown(),
         themeComp.current.of(isDarkRef.current ? appThemeDark : appTheme),
         EditorView.lineWrapping,
+        EditorView.contentAttributes.of({ 'aria-label': 'Markdown source' }),
         EditorView.updateListener.of((update) => {
           if (update.docChanged) {
             setSource(update.state.doc.toString())
@@ -252,7 +243,7 @@ export default function MarkdownPreviewTool() {
           <ExpandableCardContent>
             <div
               className={cn(
-                viewMode === 'split' && 'grid grid-cols-2 gap-3',
+                viewMode === 'split' && 'grid grid-cols-1 md:grid-cols-2 gap-3',
               )}
             >
               {/* ── Editor pane ───────────────────────────────────────────── */}
@@ -265,6 +256,9 @@ export default function MarkdownPreviewTool() {
 
               {/* ── Preview pane ──────────────────────────────────────────── */}
               <div
+                tabIndex={0}
+                role="region"
+                aria-label="Rendered preview"
                 className={cn(
                   'overflow-y-auto rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-5 py-4',
                   viewMode === 'editor' && 'hidden',
@@ -287,7 +281,7 @@ export default function MarkdownPreviewTool() {
               </span>
               <ExpandHint />
               <span className="text-[10px] text-[var(--color-ink-muted)] ml-auto">
-                Rendered with <a href="https://marked.js.org" target="_blank" rel="noopener noreferrer" className="hover:text-[var(--color-accent)] transition-colors">marked</a> · GFM enabled
+                Rendered with <a href="https://marked.js.org" target="_blank" rel="noopener noreferrer" className="underline underline-offset-2 hover:text-[var(--color-ink)] transition-colors">marked</a> · GFM enabled
               </span>
             </div>
           </ExpandableCardContent>

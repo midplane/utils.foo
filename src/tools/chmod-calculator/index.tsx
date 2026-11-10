@@ -49,12 +49,15 @@ function PermRow({
         {(['read', 'write', 'execute'] as const).map(bit => (
           <button
             key={bit}
+            type="button"
             onClick={() => toggle(bit)}
+            aria-pressed={permSet[bit]}
+            aria-label={`${label} ${bit}`}
             className={cn(
-              'w-8 h-8 rounded-lg text-xs font-mono font-bold border transition-all',
+              'w-8 h-8 rounded-lg text-xs font-mono font-bold border transition-all cursor-pointer',
               permSet[bit]
-                ? 'bg-[var(--color-accent)] text-white border-[var(--color-accent)] shadow-sm'
-                : 'bg-[var(--color-cream-dark)] text-[var(--color-ink-muted)] border-[var(--color-border)] hover:border-[var(--color-accent)] hover:text-[var(--color-accent)]'
+                ? 'bg-[var(--color-accent-text)] text-[var(--color-cream)] border-[var(--color-accent-text)] shadow-sm'
+                : 'bg-[var(--color-cream-dark)] text-[var(--color-ink-muted)] border-[var(--color-border)] hover:border-[var(--color-border-dark)] hover:text-[var(--color-ink)]'
             )}
           >
             {bit[0]?.toUpperCase()}
@@ -129,19 +132,21 @@ export default function ChmodCalculatorTool() {
         {PRESETS.map(p => (
           <button
             key={p.octal}
+            type="button"
+            aria-pressed={octal === p.octal}
             onClick={() => {
               const parsed = octalToPermissions(p.octal)!
               updateFromPerms(parsed)
             }}
             className={cn(
-              'px-2.5 py-1 text-xs rounded-lg border transition-all flex items-center gap-1.5',
+              'px-2.5 py-1 text-xs rounded-lg border transition-all flex items-center gap-1.5 cursor-pointer',
               octal === p.octal
-                ? 'bg-[var(--color-accent)] text-white border-[var(--color-accent)]'
-                : 'bg-[var(--color-cream-dark)] text-[var(--color-ink-muted)] border-[var(--color-border)] hover:text-[var(--color-ink)]'
+                ? 'bg-[var(--color-accent-text)] text-[var(--color-cream)] border-[var(--color-accent-text)]'
+                : 'bg-[var(--color-cream-dark)] text-[var(--color-ink-muted)] border-[var(--color-border)] hover:border-[var(--color-border-dark)] hover:text-[var(--color-ink)]'
             )}
           >
             <span className="font-mono font-bold">{p.octal}</span>
-            <span className="text-[10px] opacity-70">{p.description}</span>
+            <span className="text-[10px]">{p.description}</span>
           </button>
         ))}
       </div>
@@ -205,11 +210,11 @@ export default function ChmodCalculatorTool() {
           </div>
 
           {/* chmod command */}
-          <div className="flex items-center justify-between px-3 py-2 bg-[var(--color-ink)] rounded-lg">
-            <code className="font-mono text-sm text-[var(--color-cream)]">
-              chmod <span className="text-[var(--color-success-text)]">{octal}</span> file
+          <div className="flex items-center justify-between px-3 py-2 bg-[var(--color-cream-dark)] border border-[var(--color-border)] rounded-lg">
+            <code className="font-mono text-sm text-[var(--color-ink)]">
+              chmod <span className="font-semibold text-[var(--color-success-text)]">{octal}</span> file
             </code>
-            <CopyButton text={`chmod ${octal} file`} className="!bg-white/10 !border-white/20 !text-[var(--color-cream)] hover:!bg-white/20" />
+            <CopyButton text={`chmod ${octal} file`} />
           </div>
         </CardContent>
       </Card>

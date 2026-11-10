@@ -116,7 +116,7 @@ export default function UnicodeConverterTool() {
 
           {/* Combined Output */}
           {charInfos.length > 0 && (
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
               <div className="p-2 bg-[var(--color-cream-dark)] border border-[var(--color-border)] rounded-lg">
                 <div className="flex items-center justify-between mb-1">
                   <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-ink-muted)]">Text</span>
@@ -145,7 +145,7 @@ export default function UnicodeConverterTool() {
           {charInfos.length > 0 && (
             <div className="space-y-1">
               <SectionLabel>Character Details</SectionLabel>
-              <div className="max-h-64 overflow-y-auto space-y-1.5">
+              <div className="max-h-64 overflow-y-auto space-y-1.5" tabIndex={0} role="region" aria-label="Character details">
                 {charInfos.map((info, idx) => (
                   <div 
                     key={idx}

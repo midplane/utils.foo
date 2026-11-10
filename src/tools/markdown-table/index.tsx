@@ -147,21 +147,26 @@ export default function MarkdownTableTool() {
                           value={col.header}
                           onChange={e => updateHeader(col.id, e.target.value)}
                           placeholder={`Col ${ci + 1}`}
+                          aria-label={`Column ${ci + 1} header`}
                           className="h-6 text-xs font-semibold px-1.5 flex-1 min-w-0"
                         />
                         {/* Alignment cycle */}
                         <button
+                          type="button"
                           onClick={() => cycleAlign(col.id)}
                           title={`Align: ${col.align}`}
-                          className="flex-shrink-0 w-5 h-5 flex items-center justify-center rounded text-[var(--color-ink-muted)] hover:text-[var(--color-accent)] hover:bg-orange-50 transition-colors cursor-pointer"
+                          aria-label={`Column ${ci + 1} alignment: ${col.align}`}
+                          className="flex-shrink-0 w-5 h-5 flex items-center justify-center rounded text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] hover:bg-[var(--color-cream-dark)] transition-colors cursor-pointer"
                         >
                           {ALIGN_ICONS[col.align]}
                         </button>
                         {/* Remove column */}
                         {columns.length > 1 && (
                           <button
+                            type="button"
                             onClick={() => removeColumn(col.id)}
                             title="Remove column"
+                            aria-label={`Remove column ${ci + 1}`}
                             className="flex-shrink-0 w-5 h-5 flex items-center justify-center rounded text-[var(--color-ink-muted)] hover:text-[var(--color-error-icon)] hover:bg-[var(--color-error-bg)] transition-colors cursor-pointer"
                           >
                             <Trash2 className="w-3 h-3" />
@@ -173,9 +178,11 @@ export default function MarkdownTableTool() {
                   {/* Add column button */}
                   <th className="border border-[var(--color-border)] bg-[var(--color-cream-dark)] px-1 py-1 w-8">
                     <button
+                      type="button"
                       onClick={addColumn}
                       title="Add column"
-                      className="w-6 h-6 flex items-center justify-center rounded text-[var(--color-ink-muted)] hover:text-[var(--color-accent)] hover:bg-orange-50 transition-colors cursor-pointer mx-auto"
+                      aria-label="Add column"
+                      className="w-6 h-6 flex items-center justify-center rounded text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] hover:bg-[var(--color-surface)] transition-colors cursor-pointer mx-auto"
                     >
                       <Plus className="w-3.5 h-3.5" />
                     </button>
@@ -185,9 +192,9 @@ export default function MarkdownTableTool() {
 
               {/* Data rows */}
               <tbody>
-                {rows.map((row) => (
+                {rows.map((row, ri) => (
                   <tr key={row.id} className="group">
-                    {columns.map(col => (
+                    {columns.map((col, ci) => (
                       <td
                         key={col.id}
                         className={cn(
@@ -200,6 +207,7 @@ export default function MarkdownTableTool() {
                           value={row.cells[col.id] ?? ''}
                           onChange={e => updateCell(row.id, col.id, e.target.value)}
                           placeholder="—"
+                          aria-label={`Row ${ri + 1}, column ${ci + 1}`}
                           className={cn(
                             'h-6 text-xs px-1.5',
                             col.align === 'center' && 'text-center',
@@ -212,9 +220,11 @@ export default function MarkdownTableTool() {
                     <td className="border border-[var(--color-border)] px-1 py-1 w-8">
                       {rows.length > 1 && (
                         <button
+                          type="button"
                           onClick={() => removeRow(row.id)}
                           title="Remove row"
-                          className="w-6 h-6 flex items-center justify-center rounded text-[var(--color-ink-muted)] hover:text-[var(--color-error-icon)] hover:bg-[var(--color-error-bg)] transition-colors cursor-pointer mx-auto opacity-0 group-hover:opacity-100"
+                          aria-label={`Remove row ${ri + 1}`}
+                          className="w-6 h-6 flex items-center justify-center rounded text-[var(--color-ink-muted)] hover:text-[var(--color-error-icon)] hover:bg-[var(--color-error-bg)] transition-colors cursor-pointer mx-auto opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100"
                         >
                           <Trash2 className="w-3 h-3" />
                         </button>

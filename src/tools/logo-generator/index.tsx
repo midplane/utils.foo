@@ -144,6 +144,7 @@ export default function LogoGenerator() {
             </CardHeader>
             <CardContent>
               <textarea
+                aria-label="Logo text"
                 value={text}
                 onChange={e => setText(e.target.value)}
                 rows={3}
@@ -165,10 +166,13 @@ export default function LogoGenerator() {
                 {BG_PRESETS.map(p => (
                   <button
                     key={p.label}
+                    type="button"
                     onClick={() => applyPreset(p.bg, p.fg)}
                     title={p.label}
+                    aria-label={`${p.label} preset`}
+                    aria-pressed={bgColor === p.bg}
                     className={cn(
-                      'w-6 h-6 rounded border-2 transition-transform hover:scale-110',
+                      'w-6 h-6 rounded border-2 transition-transform hover:scale-110 cursor-pointer',
                       bgColor === p.bg ? 'border-[var(--color-accent)] scale-110' : 'border-transparent'
                     )}
                     style={{ background: p.bg }}
@@ -184,9 +188,11 @@ export default function LogoGenerator() {
                       type="color"
                       value={bgColor}
                       onChange={e => setBgColor(e.target.value)}
+                      aria-label="Pick background color"
                       className="w-8 h-8 rounded cursor-pointer border border-[var(--color-border)] p-0.5 bg-[var(--color-surface)]"
                     />
                     <Input
+                      aria-label="Background color hex"
                       value={bgColor}
                       onChange={e => setBgColor(e.target.value)}
                       className="flex-1 font-mono text-xs"
@@ -200,9 +206,11 @@ export default function LogoGenerator() {
                       type="color"
                       value={fgColor}
                       onChange={e => setFgColor(e.target.value)}
+                      aria-label="Pick text color"
                       className="w-8 h-8 rounded cursor-pointer border border-[var(--color-border)] p-0.5 bg-[var(--color-surface)]"
                     />
                     <Input
+                      aria-label="Text color hex"
                       value={fgColor}
                       onChange={e => setFgColor(e.target.value)}
                       className="flex-1 font-mono text-xs"
@@ -221,17 +229,19 @@ export default function LogoGenerator() {
             <CardContent className="space-y-3">
               {/* Font family */}
               <div>
-                <label className="block text-[10px] text-[var(--color-ink-muted)] mb-1 uppercase tracking-wider">Font</label>
-                <div className="flex flex-wrap gap-1">
+                <span id="logo-font-label" className="block text-[10px] text-[var(--color-ink-muted)] mb-1 uppercase tracking-wider">Font</span>
+                <div role="group" aria-labelledby="logo-font-label" className="flex flex-wrap gap-1">
                   {FONT_FAMILIES.map(f => (
                     <button
                       key={f.value}
+                      type="button"
+                      aria-pressed={fontFamily === f.value}
                       onClick={() => setFontFamily(f.value)}
                       className={cn(
-                        'px-2 py-1 text-xs rounded border transition-all',
+                        'px-2 py-1 text-xs rounded border transition-all cursor-pointer',
                         fontFamily === f.value
-                          ? 'bg-[var(--color-ink)] text-[var(--color-cream)] border-[var(--color-ink)]'
-                          : 'bg-[var(--color-surface)] text-[var(--color-ink)] border-[var(--color-border)] hover:border-[var(--color-ink-muted)]'
+                          ? 'bg-[var(--color-accent-text)] text-[var(--color-cream)] border-[var(--color-accent-text)]'
+                          : 'bg-[var(--color-surface)] text-[var(--color-ink)] border-[var(--color-border)] hover:border-[var(--color-border-dark)]'
                       )}
                       style={{ fontFamily: f.value }}
                     >
@@ -243,17 +253,19 @@ export default function LogoGenerator() {
 
               {/* Font weight */}
               <div>
-                <label className="block text-[10px] text-[var(--color-ink-muted)] mb-1 uppercase tracking-wider">Weight</label>
-                <div className="flex flex-wrap gap-1">
+                <span id="logo-weight-label" className="block text-[10px] text-[var(--color-ink-muted)] mb-1 uppercase tracking-wider">Weight</span>
+                <div role="group" aria-labelledby="logo-weight-label" className="flex flex-wrap gap-1">
                   {FONT_WEIGHTS.map(w => (
                     <button
                       key={w.value}
+                      type="button"
+                      aria-pressed={fontWeight === w.value}
                       onClick={() => setFontWeight(w.value)}
                       className={cn(
-                        'px-2 py-1 text-xs rounded border transition-all',
+                        'px-2 py-1 text-xs rounded border transition-all cursor-pointer',
                         fontWeight === w.value
-                          ? 'bg-[var(--color-ink)] text-[var(--color-cream)] border-[var(--color-ink)]'
-                          : 'bg-[var(--color-surface)] text-[var(--color-ink)] border-[var(--color-border)] hover:border-[var(--color-ink-muted)]'
+                          ? 'bg-[var(--color-accent-text)] text-[var(--color-cream)] border-[var(--color-accent-text)]'
+                          : 'bg-[var(--color-surface)] text-[var(--color-ink)] border-[var(--color-border)] hover:border-[var(--color-border-dark)]'
                       )}
                       style={{ fontWeight: w.value }}
                     >
@@ -266,10 +278,11 @@ export default function LogoGenerator() {
               {/* Font size */}
               <div>
                 <div className="flex items-center justify-between mb-1">
-                  <label className="text-[10px] text-[var(--color-ink-muted)] uppercase tracking-wider">Size</label>
+                  <label htmlFor="logo-size" className="text-[10px] text-[var(--color-ink-muted)] uppercase tracking-wider">Size</label>
                   <span className="text-[10px] font-mono text-[var(--color-ink-muted)]">{fontSize}px</span>
                 </div>
-                 <input
+                <input
+                  id="logo-size"
                   type="range"
                   min={12}
                   max={600}
@@ -282,10 +295,11 @@ export default function LogoGenerator() {
               {/* Letter spacing */}
               <div>
                 <div className="flex items-center justify-between mb-1">
-                  <label className="text-[10px] text-[var(--color-ink-muted)] uppercase tracking-wider">Letter spacing</label>
+                  <label htmlFor="logo-letter-spacing" className="text-[10px] text-[var(--color-ink-muted)] uppercase tracking-wider">Letter spacing</label>
                   <span className="text-[10px] font-mono text-[var(--color-ink-muted)]">{letterSpacing}px</span>
                 </div>
                 <input
+                  id="logo-letter-spacing"
                   type="range"
                   min={-10}
                   max={30}
@@ -298,10 +312,11 @@ export default function LogoGenerator() {
               {/* Line height (only relevant for multi-line) */}
               <div>
                 <div className="flex items-center justify-between mb-1">
-                  <label className="text-[10px] text-[var(--color-ink-muted)] uppercase tracking-wider">Line height</label>
+                  <label htmlFor="logo-line-height" className="text-[10px] text-[var(--color-ink-muted)] uppercase tracking-wider">Line height</label>
                   <span className="text-[10px] font-mono text-[var(--color-ink-muted)]">{lineHeight.toFixed(1)}</span>
                 </div>
                 <input
+                  id="logo-line-height"
                   type="range"
                   min={0.8}
                   max={2.5}
@@ -322,8 +337,8 @@ export default function LogoGenerator() {
             <CardContent className="space-y-3">
               {/* Aspect ratio */}
               <div>
-                <label className="block text-[10px] text-[var(--color-ink-muted)] mb-1 uppercase tracking-wider">Aspect ratio</label>
-                <SegmentedControl value={ratio.value} onChange={(v) => setRatio(ASPECT_RATIOS.find(r => r.value === v) ?? ASPECT_RATIOS[0]!)} variant="bordered">
+                <span className="block text-[10px] text-[var(--color-ink-muted)] mb-1 uppercase tracking-wider">Aspect ratio</span>
+                <SegmentedControl label="Aspect ratio" value={ratio.value} onChange={(v) => setRatio(ASPECT_RATIOS.find(r => r.value === v) ?? ASPECT_RATIOS[0]!)} variant="bordered">
                   {ASPECT_RATIOS.map(r => (
                     <SegmentedControlItem key={r.value} value={r.value} className="px-2 py-1 font-mono">
                       {r.label}

@@ -45,7 +45,7 @@ const FALLBACKS: Record<'light' | 'dark', Palette> = {
     border: '#E7E5E4', borderDark: '#D6D3D1', tooltipText: '#FFFBF5',
   },
   dark: {
-    background: '#1C1917', ink: '#F2EDE8', inkLight: '#CFC8C1', inkMuted: '#9A8F88',
+    background: '#1C1917', ink: '#F2EDE8', inkLight: '#CFC8C1', inkMuted: '#A69B94',
     border: '#3A3430', borderDark: '#4A4440', tooltipText: '#1C1917',
   },
 }

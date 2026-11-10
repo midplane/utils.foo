@@ -166,7 +166,7 @@ export function DataInput<S extends SampleOption>({
     >
       {dragging && (
         <div className="absolute inset-0 z-20 flex items-center justify-center rounded-lg bg-[var(--color-surface)]/85 pointer-events-none">
-          <span className="inline-flex items-center gap-2 text-sm font-medium text-[var(--color-accent)]">
+          <span className="inline-flex items-center gap-2 text-sm font-medium text-[var(--color-accent-text)]">
             <FileDown className="w-4 h-4" aria-hidden="true" />
             Drop a CSV or TSV file
           </span>

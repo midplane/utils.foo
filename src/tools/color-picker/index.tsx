@@ -115,6 +115,7 @@ export default function ColorPickerTool() {
               value={hex}
               onChange={e => handlePickerChange(e.target.value)}
               className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+              aria-label="Pick a color"
               title="Pick a color"
             />
           </div>
@@ -194,14 +195,14 @@ export default function ColorPickerTool() {
           </div>
 
           {/* CSS variable snippet */}
-          <div className="flex items-center justify-between px-3 py-2 bg-[var(--color-ink)] rounded-lg">
-            <code className="font-mono text-xs text-[var(--color-cream)]">
+          <div className="flex items-center justify-between px-3 py-2 bg-[var(--color-cream-dark)] border border-[var(--color-border)] rounded-lg">
+            <code className="font-mono text-xs text-[var(--color-ink)]">
               <span className="text-[var(--color-info-text)]">--color</span>
               {': '}
               <span className="text-[var(--color-success-text)]">{hex.toUpperCase()}</span>
               {';'}
             </code>
-            <CopyButton text={`--color: ${hex.toUpperCase()};`} className="!bg-white/10 !border-white/20 !text-[var(--color-cream)] hover:!bg-white/20" />
+            <CopyButton text={`--color: ${hex.toUpperCase()};`} />
           </div>
         </CardContent>
       </Card>
